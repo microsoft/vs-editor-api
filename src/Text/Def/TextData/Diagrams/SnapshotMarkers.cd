@@ -1,0 +1,50 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<ClassDiagram MajorVersion="1" MinorVersion="1">
+  <Struct Name="Microsoft.VisualStudio.Text.SnapshotPoint">
+    <Position X="3.25" Y="3.5" Width="1.75" />
+    <Members>
+      <Method Name="Equals" Hidden="true" />
+      <Method Name="GetHashCode" Hidden="true" />
+      <Method Name="operator !=" Hidden="true" />
+      <Method Name="operator ==" Hidden="true" />
+      <Field Name="position" Hidden="true" />
+      <Field Name="snapshot" Hidden="true" />
+      <Method Name="SnapshotPoint" Hidden="true" />
+      <Method Name="ToInt32" Hidden="true" />
+    </Members>
+    <TypeIdentifier>
+      <HashCode>AAIAACAAAAggAAQkwAGCIgAAQAAAAIAAAABAKAAAAiE=</HashCode>
+      <FileName>Model\SnapshotPoint.cs</FileName>
+    </TypeIdentifier>
+    <ShowAsAssociation>
+      <Property Name="Snapshot" />
+    </ShowAsAssociation>
+    <Lollipop Position="0.2" />
+  </Struct>
+  <Struct Name="Microsoft.VisualStudio.Text.SnapshotSpan">
+    <Position X="6.75" Y="3.5" Width="2.25" />
+    <Members>
+      <Method Name="Equals" Hidden="true" />
+      <Method Name="GetHashCode" Hidden="true" />
+      <Method Name="operator !=" Hidden="true" />
+      <Method Name="operator ==" Hidden="true" />
+      <Method Name="SnapshotSpan" Hidden="true" />
+      <Method Name="ToString" Hidden="true" />
+    </Members>
+    <TypeIdentifier>
+      <HashCode>AAJAAAAAADAgAAAsgEAAAABAAAAQAoAAAAAACgIQAiA=</HashCode>
+      <FileName>Model\SnapshotSpan.cs</FileName>
+    </TypeIdentifier>
+    <ShowAsAssociation>
+      <Property Name="Snapshot" />
+    </ShowAsAssociation>
+  </Struct>
+  <Interface Name="Microsoft.VisualStudio.Text.ITextSnapshot" Collapsed="true">
+    <Position X="5" Y="2.25" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>IACAAIAAgAAAAAAYKAAIAARAAAQAAAQCAAAAAAEAKAA=</HashCode>
+      <FileName>Model\ITextSnapshot.cs</FileName>
+    </TypeIdentifier>
+  </Interface>
+  <Font Name="Segoe UI" Size="9" />
+</ClassDiagram>

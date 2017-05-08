@@ -1,0 +1,77 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<ClassDiagram MajorVersion="1" MinorVersion="1">
+  <Comment CommentText="Provision - extension points for creating taggers on source buffers.">
+    <Position X="3.542" Y="0.802" Height="0.75" Width="1.7" />
+  </Comment>
+  <Comment CommentText="Aggregation is a provided service that takes care of creating, projecting, and aggregating tags/taggers over a buffer or view.  Currently, consumers of tagging must consume tags by getting aggregators for the buffer or view they are interested in (there is no explicit ITagConsumer or the like).  The buffer version of this service is here, in TextLogic, and the view version is in TextUI (IVewTagAggregatorFactoryService).">
+    <Position X="10.782" Y="0.541" Height="1.625" Width="3.064" />
+  </Comment>
+  <Comment CommentText=" &lt;-- Tag Creation      Aggregation --&gt;">
+    <Position X="7" Y="3.875" Height="0.802" Width="2.356" />
+  </Comment>
+  <Comment CommentText="On the consumer side, tags are retrieved by passing in a SnapshotSpan and returned as MappingTagSpans.  The change event at this level is in terms of mapping spans.">
+    <Position X="8.75" Y="4.865" Height="1.729" Width="2.148" />
+  </Comment>
+  <Comment CommentText="On the producer side, tags are retrieved (by the aggregator) by passing in a NormalizedSnapshotSpanCollection, and returned as TagSpans.  In this way, producers need have no knowledge of projection/buffer graphs.  The change event at this level also is in terms of SnapshotSpans.">
+    <Position X="5.635" Y="4.875" Height="1.75" Width="2.096" />
+  </Comment>
+  <Class Name="Microsoft.VisualStudio.Text.Tagging.TagSpan&lt;T&gt;">
+    <Position X="1.75" Y="2.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAgAAAAAAAAAAAAAAAAAAAAAAAAAAIAAAA=</HashCode>
+      <FileName>Tagging\TagSpan.cs</FileName>
+    </TypeIdentifier>
+    <Lollipop Position="0.2" />
+  </Class>
+  <Class Name="Microsoft.VisualStudio.Text.Tagging.MappingTagSpan&lt;T&gt;" Collapsed="true">
+    <Position X="13.75" Y="3.75" Width="2" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAgAAAAAAAAAAAAAAAAAAAAAAAAAAIAAAA=</HashCode>
+      <FileName>Tagging\MappingTagSpan.cs</FileName>
+    </TypeIdentifier>
+    <Lollipop Position="0.2" />
+  </Class>
+  <Class Name="Microsoft.VisualStudio.Text.Tagging.TagsChangedEventArgs" Collapsed="true">
+    <Position X="13.75" Y="4.5" Width="2.75" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIAAAA=</HashCode>
+      <FileName>Tagging\TagsChangedEventArgs.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Interface Name="Microsoft.VisualStudio.Text.Tagging.ITagAggregator&lt;T&gt;">
+    <Position X="11" Y="3.75" Width="2.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAIAAQAAAAAAAAAAAAAAAAAAAAAAAACAAAAAAAIA=</HashCode>
+      <FileName>Tagging\ITagAggregator.cs</FileName>
+    </TypeIdentifier>
+  </Interface>
+  <Interface Name="Microsoft.VisualStudio.Text.Tagging.IBufferTagAggregatorFactoryService">
+    <Position X="10.75" Y="2.25" Width="3" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAACAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Tagging\IBufferTagAggregatorFactoryService.cs</FileName>
+    </TypeIdentifier>
+  </Interface>
+  <Interface Name="Microsoft.VisualStudio.Text.Tagging.ITagger&lt;T&gt;">
+    <Position X="3.75" Y="3.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAIAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Tagging\ITagger.cs</FileName>
+    </TypeIdentifier>
+  </Interface>
+  <Interface Name="Microsoft.VisualStudio.Text.Tagging.ITaggerProvider">
+    <Position X="3.5" Y="2.25" Width="2" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAIAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Tagging\ITaggerProvider.cs</FileName>
+    </TypeIdentifier>
+  </Interface>
+  <Interface Name="Microsoft.VisualStudio.Text.Tagging.ITag" Collapsed="true">
+    <Position X="7.5" Y="2.25" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Tagging\ITag.cs</FileName>
+    </TypeIdentifier>
+  </Interface>
+  <Font Name="Segoe UI" Size="9" />
+</ClassDiagram>

@@ -1,0 +1,72 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<ClassDiagram MajorVersion="1" MinorVersion="1">
+  <Comment CommentText="Editor primitive types exposed in the definition assembly">
+    <Position X="7.261" Y="0.5" Height="0.781" Width="1.7" />
+  </Comment>
+  <Class Name="Microsoft.VisualStudio.Text.Editor.TextBuffer">
+    <Position X="3.5" Y="0.5" Width="3.25" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAQAQAAQAAAAAAAAAAAAAAAACAAAAQAAAAAg=</HashCode>
+      <FileName>Primitives\TextBuffer.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Microsoft.VisualStudio.Text.Editor.Caret">
+    <Position X="0.5" Y="4.5" Width="2.75" />
+    <TypeIdentifier>
+      <HashCode>AAAJAACgAIAAAAAAAACACAACJgAIAAAAAACAAAggAAQ=</HashCode>
+      <FileName>Primitives\Caret.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Microsoft.VisualStudio.Text.Editor.Selection">
+    <Position X="0.5" Y="12.25" Width="3.25" />
+    <TypeIdentifier>
+      <HashCode>AABAAAAAACAAAAAAAAIAAEAAAAAAAAAQAAAAQABAAAA=</HashCode>
+      <FileName>Primitives\Selection.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Microsoft.VisualStudio.Text.Editor.TextView">
+    <Position X="0.5" Y="0.5" Width="2.75" />
+    <TypeIdentifier>
+      <HashCode>AAAAQAAAAgARAARAIAAAAAAAEAAAAAgkAAAEAAEAQAA=</HashCode>
+      <FileName>Primitives\TextView.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Microsoft.VisualStudio.Text.Editor.TextRange">
+    <Position X="6.5" Y="12.25" Width="2.25" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAMABAMqAAQAAAAACEYAAAEAAIAQAALABg=</HashCode>
+      <FileName>Primitives\TextRange.cs</FileName>
+    </TypeIdentifier>
+    <Lollipop Position="0.1" />
+  </Class>
+  <Class Name="Microsoft.VisualStudio.Text.Editor.TextPoint">
+    <Position X="6.5" Y="3.25" Width="2.5" />
+    <TypeIdentifier>
+      <HashCode>AAAJABCAAIAQggIEJABYCAAKKiAIAgAQAAGAAQkgABU=</HashCode>
+      <FileName>Primitives\TextPoint.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Microsoft.VisualStudio.Text.Editor.DisplayTextPoint">
+    <Position X="4.25" Y="3.25" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAEAQEAAAAAAAAAAgAAAAAAAFAAAAAABA=</HashCode>
+      <FileName>Primitives\DisplayTextPoint.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Microsoft.VisualStudio.Text.Editor.DisplayTextRange">
+    <Position X="4.25" Y="12.25" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AEgQAAAAAAAAABAFAAAAAAAAAAgQAAAEAAAAAAAAABA=</HashCode>
+      <FileName>Primitives\DisplayTextRange.cs</FileName>
+    </TypeIdentifier>
+    <Lollipop Position="0.2" />
+  </Class>
+  <Enum Name="Microsoft.VisualStudio.Text.Editor.HowToShow">
+    <Position X="7.25" Y="1.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAACBCAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Primitives\HowToShow.cs</FileName>
+    </TypeIdentifier>
+  </Enum>
+  <Font Name="Segoe UI" Size="9" />
+</ClassDiagram>

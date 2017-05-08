@@ -1,0 +1,146 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup Label="BuildProps">
+    <BuildPropsFile>$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildProjectDirectory), Build.props))\Build.props</BuildPropsFile>
+  </PropertyGroup>
+  <Import Project="$(BuildPropsFile)" Condition="'$(BuildProps_Imported)'!='True' AND Exists('$(BuildPropsFile)') AND '$(VisualStudioDir)'==''" />
+  <Import Project="..\Platform.Settings.targets" />
+  <Import Project="$(PlatformPath)\Tools\Targets\Platform.Settings.Selector.targets" />
+  <PropertyGroup>
+    <AssemblyName>Microsoft.VisualStudio.Text.Data</AssemblyName>
+    <RootNamespace>Microsoft.VisualStudio.Text</RootNamespace>
+    <OutputPath>$(BinariesDirectory)\bin\$(BuildArchitecture)</OutputPath>
+    <OutputType>Library</OutputType>
+    <SignAssemblyAttribute>true</SignAssemblyAttribute>
+    <UseVsVersion>true</UseVsVersion>
+    <AssemblyAttributeClsCompliant>true</AssemblyAttributeClsCompliant>
+    <GenerateAssemblyRefs>true</GenerateAssemblyRefs>
+    <NoWarn>649;436;$(NoWarn)</NoWarn>
+    <GeneratedModuleId>Microsoft.VisualStudio.Text.Data</GeneratedModuleId>
+    <GeneratedModuleVersion>$(VsAssemblyVersion)</GeneratedModuleVersion>
+    <BuildArchitecturesAllowed>$(BuildArchitecturesAllowed);amd64;arm</BuildArchitecturesAllowed>
+  </PropertyGroup>
+  <!-- IDE specific Information -->
+  <PropertyGroup>
+    <ProjectGuid>{80A00E91-51E5-471C-80BA-0D863987ECC7}</ProjectGuid>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="AssemblyInfo.cs" />
+    <Compile Include="Differencing\ContinueProcessingPredicate.cs" />
+    <Compile Include="Differencing\Deprecated\DetermineLocalityCallback.cs" />
+    <Compile Include="Differencing\Difference.cs" />
+    <Compile Include="Differencing\DifferenceType.cs" />
+    <Compile Include="Differencing\IDifferenceService.cs" />
+    <Compile Include="Differencing\IHierarchicalDifferenceCollection.cs" />
+    <Compile Include="Differencing\IDifferenceCollection.cs" />
+    <Compile Include="Differencing\Deprecated\IHierarchicalStringDifferenceService.cs" />
+    <Compile Include="Differencing\ITextDifferencingSelectorService.cs" />
+    <Compile Include="Differencing\ITextDifferencingService.cs" />
+    <Compile Include="Differencing\ITokenizedStringList.cs" />
+    <Compile Include="Differencing\Match.cs" />
+    <Compile Include="Differencing\StringDifferenceTypes.cs" />
+    <Compile Include="Differencing\StringDifferenceOptions.cs" />
+    <Compile Include="Differencing\WordSplitBehavior.cs" />
+    <Compile Include="Document\EncodingChangedEventArgs.cs" />
+    <Compile Include="Document\FileUtilities.cs" />
+    <Compile Include="Document\IEncodingDetector.cs" />
+    <Compile Include="Document\ITextDocument.cs" />
+    <Compile Include="Document\ITextDocumentFactoryService.cs" />
+    <Compile Include="Document\ReloadResult.cs" />
+    <Compile Include="Document\TextDocumentEventArgs.cs" />
+    <Compile Include="Document\TextDocumentFileActionEventArgs.cs" />
+    <Compile Include="FxCopSuppressions.cs" />
+    <Compile Include="Model\ContentTypeChangedEventArgs.cs" />
+    <Compile Include="Model\CustomTrackToVersion.cs" />
+    <Compile Include="Model\EdgeInsertionMode.cs" />
+    <Compile Include="Model\EditOptions.cs" />
+    <Compile Include="Model\IExtensionErrorHandler.cs" />
+    <Compile Include="Model\IExtensionPerformanceTracker.cs" />
+    <Compile Include="Model\IMappingPoint.cs" />
+    <Compile Include="Model\IMappingSpan.cs" />
+    <Compile Include="Model\INormalizedTextChangeCollection.cs" />
+    <Compile Include="Model\IPersistentSpan.cs" />
+    <Compile Include="Model\IPersistentSpanFactory.cs" />
+    <Compile Include="Model\IReadOnlyRegion.cs" />
+    <Compile Include="Model\IReadOnlyRegionEdit.cs" />
+    <Compile Include="Model\ITextBuffer.cs" />
+    <Compile Include="Model\ITextBufferEdit.cs" />
+    <Compile Include="Model\ITextBufferFactory.cs" />
+    <Compile Include="Model\ITextChange.cs" />
+    <Compile Include="Model\ITextChange2.cs" />
+    <Compile Include="Model\ITextChange3.cs" />
+    <Compile Include="Model\ITextEdit.cs" />
+    <Compile Include="Model\ITextSnapshot.cs" />
+    <Compile Include="Model\ITextSnapshotLine.cs" />
+    <Compile Include="Model\ITextVersion.cs" />
+    <Compile Include="Model\ITrackingPoint.cs" />
+    <Compile Include="Model\ITrackingSpan.cs" />
+    <Compile Include="Model\NormalizedSnapshotSpanCollection.cs" />
+    <Compile Include="Model\NormalizedSpanCollection.cs" />
+    <Compile Include="Model\PointTrackingMode.cs" />
+    <Compile Include="Model\PositionAffinity.cs" />
+    <Compile Include="Model\PreContentChangedEventArgs.cs" />
+    <Compile Include="Model\Projection\ElisionBufferOptions.cs" />
+    <Compile Include="Model\Projection\ElisionSourceSpansChangedEventArgs.cs" />
+    <Compile Include="Model\Projection\GraphBufferContentTypeChangedEventArgs.cs" />
+    <Compile Include="Model\Projection\GraphBuffersChangedEventArgs.cs" />
+    <Compile Include="Model\Projection\IBufferGraph.cs" />
+    <Compile Include="Model\Projection\IBufferGraphFactoryService.cs" />
+    <Compile Include="Model\Projection\IElisionBuffer.cs" />
+    <Compile Include="Model\Projection\IElisionSnapshot.cs" />
+    <Compile Include="Model\Projection\IProjectionBuffer.cs" />
+    <Compile Include="Model\Projection\IProjectionBufferBase.cs" />
+    <Compile Include="Model\Projection\IProjectionBufferFactoryService.cs" />
+    <Compile Include="Model\Projection\IProjectionEditResolver.cs" />
+    <Compile Include="Model\Projection\IProjectionSnapshot.cs" />
+    <Compile Include="Model\Projection\IProjectionSnapshot2.cs" />
+    <Compile Include="Model\Projection\ProjectionBufferOptions.cs" />
+    <Compile Include="Model\Projection\ProjectionSourceBuffersChangedEventArgs.cs" />
+    <Compile Include="Model\Projection\ProjectionSourceSpansChangedEventArgs.cs" />
+    <Compile Include="Model\DynamicReadOnlyRegionQuery.cs" />
+    <Compile Include="Model\SnapshotPoint.cs" />
+    <Compile Include="Model\SnapshotSpan.cs" />
+    <Compile Include="Model\SnapshotSpanEventArgs.cs" />
+    <Compile Include="Model\Span.cs" />
+    <Compile Include="Model\SpanTrackingMode.cs" />
+    <Compile Include="Model\TextBufferCreatedEventArgs.cs" />
+    <Compile Include="Model\TextContentChangedEventArgs.cs" />
+    <Compile Include="Model\TextContentChangingEventArgs.cs" />
+    <Compile Include="Model\TextSnapshotChangedEventArgs.cs" />
+    <Compile Include="Model\TextSnapshotToTextReader.cs" />
+    <Compile Include="Model\Tracking.cs" />
+    <Compile Include="Model\TrackingFidelityMode.cs" />
+    <Reference Include="System" />
+    <CopyFile Include="Model\Microsoft.VisualStudio.Text.Model.Overview.mht">
+      <DestFolder>$(SuiteBinPath)\PlatformOverviews</DestFolder>
+      <Visible>false</Visible>
+    </CopyFile>
+    <EmbeddedResource Include="Strings.resx">
+      <SubType>Designer</SubType>
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>Strings.Designer.cs</LastGenOutput>
+    </EmbeddedResource>
+    <Compile Include="Strings.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>Strings.resx</DependentUpon>
+    </Compile>
+    <ProjectReference Include="..\..\..\Core\Def\CoreUtility.csproj">
+      <Project>{BA3DD7EC-3F13-4400-A3A9-96AD425B3369}</Project>
+      <Name>CoreUtility</Name>
+    </ProjectReference>
+    <None Include="Diagrams\*.cd" />
+  </ItemGroup>
+  <ItemGroup>
+    <PublishPartLinked Include="$(OutputPath)\$(AssemblyName).dll">
+      <Visibility>Inter</Visibility>
+      <FileType>Reference</FileType>
+      <DoNotCopyPDB>true</DoNotCopyPDB>
+    </PublishPartLinked>
+  </ItemGroup>
+  <!--Import the targets-->
+  <Import Project="$(PlatformPath)\Tools\Targets\Platform.Imports.targets" />
+  <PropertyGroup>
+    <CopyToSuiteBin>true</CopyToSuiteBin>
+  </PropertyGroup>
+</Project>

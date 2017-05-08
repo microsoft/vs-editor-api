@@ -1,0 +1,92 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<ClassDiagram MajorVersion="1" MinorVersion="1">
+  <Class Name="Microsoft.VisualStudio.Text.ReadOnlyRegionsChangedEventArgs">
+    <Position X="3.5" Y="3.25" Width="2.75" />
+    <Members>
+      <Field Name="newlyReadonlyRegions" Hidden="true" />
+      <Field Name="newlyWritableRegions" Hidden="true" />
+      <Method Name="ReadOnlyRegionsChangedEventArgs" Hidden="true" />
+    </Members>
+    <Compartments>
+      <Compartment Name="Fields" Collapsed="true" />
+    </Compartments>
+    <AssociationLine Name="NewlyReadonlyRegions" Type="Microsoft.VisualStudio.Text.NormalizedSpanCollection" FixedFromPoint="true">
+      <Path>
+        <Point X="4.062" Y="4.247" />
+        <Point X="4.062" Y="5.5" />
+      </Path>
+    </AssociationLine>
+    <AssociationLine Name="NewlyWritableRegions" Type="Microsoft.VisualStudio.Text.NormalizedSpanCollection" FixedFromPoint="true">
+      <Path>
+        <Point X="5.875" Y="4.247" />
+        <Point X="5.875" Y="5.5" />
+      </Path>
+    </AssociationLine>
+    <TypeIdentifier>
+      <HashCode>AAAAAAAACAAAAAAAAAAAAAAAAAAAAAAEAAAABAAgAAA=</HashCode>
+      <FileName>Model\ReadOnlyRegionsChangedEventArgs.cs</FileName>
+    </TypeIdentifier>
+    <ShowAsAssociation>
+      <Property Name="NewlyReadonlyRegions" />
+      <Property Name="NewlyWritableRegions" />
+    </ShowAsAssociation>
+  </Class>
+  <Class Name="Microsoft.VisualStudio.Text.NormalizedSpanCollection" Collapsed="true">
+    <Position X="3.5" Y="5.5" Width="2.75" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAQAAAkgAAAAABAQAAQAIAAAAAAAwAAEiA=</HashCode>
+      <FileName>Model\NormalizedSpanCollection.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Interface Name="Microsoft.VisualStudio.Text.IReadOnlyRegion">
+    <Position X="3.75" Y="1" Width="2" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAIAAAA=</HashCode>
+      <FileName>Model\IReadOnlyRegion.cs</FileName>
+    </TypeIdentifier>
+    <ShowAsAssociation>
+      <Property Name="EdgeInsertionMode" />
+      <Property Name="Span" />
+    </ShowAsAssociation>
+  </Interface>
+  <Interface Name="Microsoft.VisualStudio.Text.ITextSpan">
+    <Position X="7.25" Y="1" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAABAAAAAAIIIAAAAAAAAAAAAAAAAAAQAAAAAg=</HashCode>
+      <FileName>Model\ITextSpan.cs</FileName>
+    </TypeIdentifier>
+    <ShowAsAssociation>
+      <Property Name="TextBuffer" />
+      <Property Name="TrackingMode" />
+    </ShowAsAssociation>
+  </Interface>
+  <Interface Name="Microsoft.VisualStudio.Text.ITextBuffer" Collapsed="true">
+    <Position X="10.5" Y="1" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAABEAQAAABAAAABAAAAAgAAAGAAAAAAAAQAAQAACA=</HashCode>
+      <FileName>Model\ITextBuffer.cs</FileName>
+    </TypeIdentifier>
+  </Interface>
+  <Interface Name="Microsoft.VisualStudio.Text.IReadOnlyRegionEdit">
+    <Position X="7.25" Y="3.5" Width="2.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAABAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Model\IReadOnlyRegionEdit.cs</FileName>
+    </TypeIdentifier>
+  </Interface>
+  <Enum Name="Microsoft.VisualStudio.Text.EdgeInsertionMode">
+    <Position X="0.5" Y="1" Width="1.75" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAgAAAAAAAAAAAAAAAAEAAAAAAAA=</HashCode>
+      <FileName>Model\EdgeInsertionMode.cs</FileName>
+    </TypeIdentifier>
+  </Enum>
+  <Enum Name="Microsoft.VisualStudio.Text.SpanTrackingMode">
+    <Position X="10.5" Y="2" Width="1.75" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAgAAgAAAAAAAAAgAAAAAAAAAAAAIAAAAAAAAAA=</HashCode>
+      <FileName>Model\SpanTrackingMode.cs</FileName>
+    </TypeIdentifier>
+  </Enum>
+  <Font Name="Segoe UI" Size="9" />
+</ClassDiagram>

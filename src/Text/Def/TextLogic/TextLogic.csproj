@@ -1,0 +1,132 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup Label="BuildProps">
+    <BuildPropsFile>$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildProjectDirectory), Build.props))\Build.props</BuildPropsFile>
+  </PropertyGroup>
+  <Import Project="$(BuildPropsFile)" Condition="'$(BuildProps_Imported)'!='True' AND Exists('$(BuildPropsFile)') AND '$(VisualStudioDir)'==''" />
+  <Import Project="..\Platform.Settings.targets" />
+  <Import Project="$(PlatformPath)\Tools\Targets\Platform.Settings.Selector.targets" />
+  <PropertyGroup>
+    <AssemblyName>Microsoft.VisualStudio.Text.Logic</AssemblyName>
+    <OutputPath>$(BinariesDirectory)\bin\$(BuildArchitecture)</OutputPath>
+    <OutputType>Library</OutputType>
+    <SignAssemblyAttribute>true</SignAssemblyAttribute>
+    <UseVsVersion>true</UseVsVersion>
+    <AssemblyAttributeClsCompliant>true</AssemblyAttributeClsCompliant>
+    <GenerateAssemblyRefs>true</GenerateAssemblyRefs>
+    <NoWarn>649;436;$(NoWarn)</NoWarn>
+    <GeneratedModuleId>Microsoft.VisualStudio.Text.Logic</GeneratedModuleId>
+    <GeneratedModuleVersion>$(VsAssemblyVersion)</GeneratedModuleVersion>
+    <BuildArchitecturesAllowed>$(BuildArchitecturesAllowed);amd64;arm</BuildArchitecturesAllowed>
+  </PropertyGroup>
+  <!-- IDE specific Information -->
+  <PropertyGroup>
+    <ProjectGuid>{26FAFDBB-9C63-4F92-A176-6E350178DB67}</ProjectGuid>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="AssemblyInfo.cs" />
+    <Compile Include="Classification\ClassificationChangedEventArgs.cs" />
+    <Compile Include="Classification\ClassificationSpan.cs" />
+    <Compile Include="Classification\ClassificationTypeAttribute.cs" />
+    <Compile Include="Classification\IClassificationType.cs" />
+    <Compile Include="Classification\ClassificationTypeDefinition.cs" />
+    <Compile Include="Classification\IClassificationTypeRegistryService.cs" />
+    <Compile Include="Classification\IClassifier.cs" />
+    <Compile Include="Classification\IClassifierAggregatorService.cs" />
+    <Compile Include="Classification\IClassifierProvider.cs" />
+    <Compile Include="DifferenceBuffer\DifferenceBufferOptions.cs" />
+    <Compile Include="DifferenceBuffer\DifferenceMappingMode.cs" />
+    <Compile Include="DifferenceBuffer\DifferenceTrackingSpans.cs" />
+    <Compile Include="DifferenceBuffer\IDifferenceBuffer.cs" />
+    <Compile Include="DifferenceBuffer\IDifferenceBufferFactoryService.cs" />
+    <Compile Include="DifferenceBuffer\IgnoreWhiteSpaceBehavior.cs" />
+    <Compile Include="DifferenceBuffer\ISnapshotDifference.cs" />
+    <Compile Include="DifferenceBuffer\IgnoreDifferencePredicate.cs" />
+    <Compile Include="DifferenceBuffer\LineType.cs" />
+    <Compile Include="DifferenceBuffer\SnapshotDifferenceChangeEventArgs.cs" />
+    <Compile Include="DifferenceBuffer\SnapshotLineTransform.cs" />
+    <Compile Include="EditorOptions\DeferCreationAttribute.cs" />
+    <Compile Include="EditorOptions\EditorOptionKey.cs" />
+    <Compile Include="EditorOptions\DefaultOptions.cs" />
+    <Compile Include="Find\ITextSearchNavigator.cs" />
+    <Compile Include="Find\ITextSearchNavigatorFactoryService.cs" />
+    <Compile Include="Find\ITextSearchService.cs" />
+    <Compile Include="Find\ITextSearchService2.cs" />
+    <Compile Include="Navigation\ITextStructureNavigatorProvider.cs" />
+    <Compile Include="Navigation\ITextStructureNavigatorSelectorService.cs" />
+    <Compile Include="EditorOptions\EditorOptionChangedEventArgs.cs" />
+    <Compile Include="EditorOptions\EditorOptionDefinition.cs" />
+    <Compile Include="EditorOptions\IEditorOptions.cs" />
+    <Compile Include="EditorOptions\IEditorOptionsFactoryService.cs" />
+    <Compile Include="Tagging\TagAggregatorOptions.cs" />
+    <Compile Include="Tagging\BatchedTagsChangedEventArgs.cs" />
+    <Compile Include="Tagging\TrackingTagSpan.cs" />
+    <Compile Include="Tagging\ITagAggregator.cs" />
+    <Compile Include="Tagging\IBufferTagAggregatorFactoryService.cs" />
+    <Compile Include="Tagging\ITagger.cs" />
+    <Compile Include="Tagging\MappingTagSpan.cs" />
+    <Compile Include="Tagging\SimpleTagger.cs" />
+    <Compile Include="Tagging\TagsChangedEventArgs.cs" />
+    <Compile Include="Tagging\ITaggerProvider.cs" />
+    <Compile Include="Tagging\TagSpan.cs" />
+    <Compile Include="Tagging\TagTypeAttribute.cs" />
+    <Compile Include="Tags\ClassificationTag.cs" />
+    <Compile Include="Tags\IClassificationTag.cs" />
+    <Compile Include="Tags\IUrlTag.cs" />
+    <Compile Include="Tags\UrlTag.cs" />
+    <Compile Include="TextModel\ChangeTag.cs" />
+    <Compile Include="TextModel\ChangeTypes.cs" />
+    <Compile Include="TextModel\ITextDataModel.cs" />
+    <Compile Include="TextModel\TextDataModelContentTypeChangedEventArgs.cs" />
+    <Compile Include="Find\FindData.cs" />
+    <Compile Include="Find\FindOptions.cs" />
+    <Compile Include="FxCopSuppressions.cs" />
+    <Compile Include="Navigation\ITextStructureNavigator.cs" />
+    <Compile Include="Navigation\TextExtent.cs" />
+    <Compile Include="Tagging\ITag.cs" />
+    <Compile Include="TextModel\VirtualSnapshotPoint.cs" />
+    <Compile Include="TextModel\VirtualSnapshotSpan.cs" />
+    <Compile Include="Undo\IMergeTextUndoTransactionPolicy.cs" />
+    <Compile Include="Undo\ITextBufferUndoManager.cs" />
+    <Compile Include="Undo\ITextBufferUndoManagerProvider.cs" />
+    <Compile Include="Undo\ITextUndoHistory.cs" />
+    <Compile Include="Undo\ITextUndoHistoryRegistry.cs" />
+    <Compile Include="Undo\ITextUndoPrimitive.cs" />
+    <Compile Include="Undo\ITextUndoTransaction.cs" />
+    <Compile Include="Undo\TextUndoHistoryState.cs" />
+    <Compile Include="Undo\TextUndoRedoEventArgs.cs" />
+    <Compile Include="Undo\TextUndoTransactionCompletedEventArgs.cs" />
+    <Compile Include="Undo\TextUndoTransactionState.cs" />
+    <Reference Include="System" />
+    <Reference Include="System.ComponentModel.Composition" />
+    <Reference Include="System.Core" />
+    <CopyFile Include="Classification\Microsoft.VisualStudio.Text.Classification.Overview.mht">
+      <DestFolder>$(SuiteBinPath)\PlatformOverviews</DestFolder>
+      <Visible>false</Visible>
+    </CopyFile>
+    <ProjectReference Include="..\TextData\TextData.csproj">
+      <Project>{80A00E91-51E5-471C-80BA-0D863987ECC7}</Project>
+      <Name>TextData %28Text\Def\TextData\TextData%29</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\Core\Def\CoreUtility.csproj">
+      <Project>{BA3DD7EC-3F13-4400-A3A9-96AD425B3369}</Project>
+      <Name>CoreUtility</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <PublishPartLinked Include="$(OutputPath)\$(AssemblyName).dll">
+      <Visibility>Inter</Visibility>
+      <FileType>Reference</FileType>
+      <DoNotCopyPDB>true</DoNotCopyPDB>
+    </PublishPartLinked>
+  </ItemGroup>
+  <!--Import the targets-->
+  <Import Project="$(PlatformPath)\Tools\Targets\Platform.Imports.targets" />
+  <PropertyGroup>
+    <CopyToSuiteBin>true</CopyToSuiteBin>
+  </PropertyGroup>
+  <ItemGroup>
+    <None Include="Diagrams\Tagging.cd" />
+    <None Include="Diagrams\Undo.cd" />
+  </ItemGroup>
+</Project>
