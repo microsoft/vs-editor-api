@@ -1,6 +1,8 @@
+//
+//  Copyright (c) Microsoft Corporation. All rights reserved.
+//  Licensed under the MIT License. See License.txt in the project root for license information.
+//
 using System;
-using System.Collections.Generic;
-using System.Text;
 using System.ComponentModel.Composition;
 using Microsoft.VisualStudio.Utilities;
 
@@ -244,6 +246,21 @@ namespace Microsoft.VisualStudio.Text.Editor.OptionsExtensionMethods
 
             return options.GetOptionValue<bool>(DefaultTextViewHostOptions.ZoomControlId);
         }
+
+        /// <summary>
+        /// Determines whether the editor is in either "Extra Contrast" or "High Contrast" modes.
+        /// </summary>
+        /// <param name="options">The set of editor options.</param>
+        /// <returns><c>true</c> if the editor is in either "Extra Contrast" or "High Contrast" modes, otherwise <c>false</c>.</returns>
+        public static bool IsInContrastMode(this IEditorOptions options)
+        {
+            if(options == null)
+            {
+                throw new ArgumentNullException(nameof(options));
+            }
+
+            return options.GetOptionValue<bool>(DefaultTextViewHostOptions.IsInContrastModeId);
+        }
         #endregion
     }
 }
@@ -415,6 +432,12 @@ namespace Microsoft.VisualStudio.Text.Editor
         public const string ZoomControlName = "TextViewHost/ZoomControl";
 
         /// <summary>
+        /// Determines whether the editor is in either "Extra Contrast" or "High Contrast" modes.
+        /// </summary>
+        public static readonly EditorOptionKey<bool> IsInContrastModeId = new EditorOptionKey<bool>(IsInContrastModeName);
+        public const string IsInContrastModeName = "TextViewHost/IsInContrastMode";
+
+        /// <summary>
         /// Determines whether any annotations are shown over the vertical scroll bar.
         /// </summary>
         public const string ShowScrollBarAnnotationsOptionName = "OverviewMargin/ShowScrollBarAnnotationsOption";
@@ -494,6 +517,7 @@ namespace Microsoft.VisualStudio.Text.Editor
         /// </summary>
         public const string ErrorMarginWidthOptionName = "OverviewMargin/ErrorMarginWidth";
         public readonly static EditorOptionKey<double> ErrorMarginWidthOptionId = new EditorOptionKey<double>(ErrorMarginWidthOptionName);
+
         #endregion
     }
 
@@ -876,6 +900,17 @@ namespace Microsoft.VisualStudio.Text.Editor
         /// Gets the default text view host value.
         /// </summary>
         public override EditorOptionKey<bool> Key { get { return DefaultTextViewHostOptions.ZoomControlId; } }
+    }
+
+    /// <summary>
+    /// Determines whether the editor is in either "Extra Contrast" or "High Contrast" modes.
+    /// </summary>
+    [Export(typeof(EditorOptionDefinition))]
+    [Name(DefaultTextViewHostOptions.IsInContrastModeName)]
+    public sealed class IsInContrastModeOption : EditorOptionDefinition<bool>
+    {
+        public override bool Default => false;
+        public override EditorOptionKey<bool> Key => DefaultTextViewHostOptions.IsInContrastModeId;
     }
 
     /// <summary>

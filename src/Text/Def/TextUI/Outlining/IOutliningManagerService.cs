@@ -1,6 +1,7 @@
-// Copyright (c) Microsoft Corporation
-// All rights reserved
-
+//
+//  Copyright (c) Microsoft Corporation. All rights reserved.
+//  Licensed under the MIT License. See License.txt in the project root for license information.
+//
 namespace Microsoft.VisualStudio.Text.Outlining
 {
     using Microsoft.VisualStudio.Text.Editor;
@@ -21,6 +22,7 @@ namespace Microsoft.VisualStudio.Text.Outlining
         /// </summary>
         /// <remarks>
         /// The outlining manager is available only for views that have the <see cref="PredefinedTextViewRoles.Structured"/> role.
+        /// Also, while IOutliningManager implements IDisposable, callers should take care to not dispose of it.
         /// </remarks>
         /// <param name="textView">The <see cref="ITextView"/> from which to get the outlining manager.</param>
         /// <returns>A valid outlining manager if the view model supports outlining,
