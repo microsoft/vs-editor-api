@@ -1,4 +1,8 @@
-﻿namespace Microsoft.VisualStudio.Text
+﻿//
+//  Copyright (c) Microsoft Corporation. All rights reserved.
+//  Licensed under the MIT License. See License.txt in the project root for license information.
+//
+namespace Microsoft.VisualStudio.Text
 {
     /// <summary>
     /// The return value of Reload methods on <see cref="ITextDocument" />.

@@ -1,9 +1,11 @@
+//
+//  Copyright (c) Microsoft Corporation. All rights reserved.
+//  Licensed under the MIT License. See License.txt in the project root for license information.
+//
 namespace Microsoft.VisualStudio.Utilities
 {
     using System;
     using System.Collections.Generic;
-    using System.IO;
-    using System.ComponentModel.Composition;
 
     /// <summary>
     /// The service that manages associations between file names, extensions, and content types.

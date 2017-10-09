@@ -1,11 +1,9 @@
-﻿// Copyright (c) Microsoft Corporation
-// All rights reserved
-
+﻿//
+//  Copyright (c) Microsoft Corporation. All rights reserved.
+//  Licensed under the MIT License. See License.txt in the project root for license information.
+//
 namespace Microsoft.VisualStudio.Text.BraceCompletion
 {
-    using Microsoft.VisualStudio.Text;
-    using Microsoft.VisualStudio.Text.Editor;
-
     /// <summary>
     /// Represents a simple context used to extend the default brace completion behaviors to include 
     /// language-specific behaviors such as parsing and formatting.
