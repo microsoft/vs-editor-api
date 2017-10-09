@@ -1,6 +1,7 @@
-// Copyright (c) Microsoft Corporation
-// All rights reserved
-
+//
+//  Copyright (c) Microsoft Corporation. All rights reserved.
+//  Licensed under the MIT License. See License.txt in the project root for license information.
+//
 using System.Reflection;
 using System.Runtime.ConstrainedExecution;
 using System.Runtime.Versioning;
@@ -15,7 +16,7 @@ using System.Security.Permissions;
 
 [assembly: ComponentGuarantees(ComponentGuaranteesOptions.Stable)]
 
-[assembly: AssemblyConfiguration ("")]
+
 [assembly: AssemblyTrademark ("")]
 [assembly: AssemblyCulture ("")]
 #pragma warning disable 618

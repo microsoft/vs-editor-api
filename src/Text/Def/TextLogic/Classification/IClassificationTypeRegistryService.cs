@@ -1,13 +1,11 @@
-// ****************************************************************************
-// IClassificationTypeRegistryService.cs
-// Copyright (C) Microsoft Corporation.  All Rights Reserved.
-// ****************************************************************************
-
+//
+//  Copyright (c) Microsoft Corporation. All rights reserved.
+//  Licensed under the MIT License. See License.txt in the project root for license information.
+//
 namespace Microsoft.VisualStudio.Text.Classification
 {
     using System;
     using System.Collections.Generic;
-    using System.ComponentModel.Composition;
 
     /// <summary>
     /// The service that maintains the collection of all known classification types.

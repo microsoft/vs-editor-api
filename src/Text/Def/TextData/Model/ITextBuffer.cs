@@ -1,6 +1,7 @@
-// Copyright (c) Microsoft Corporation
-// All rights reserved
-
+//
+//  Copyright (c) Microsoft Corporation. All rights reserved.
+//  Licensed under the MIT License. See License.txt in the project root for license information.
+//
 namespace Microsoft.VisualStudio.Text
 {
     using System;
@@ -82,13 +83,21 @@ namespace Microsoft.VisualStudio.Text
         /// Occurs when a non-empty <see cref="ITextEdit"/> is successfully applied. 
         /// </summary>
         /// <remarks>
+        /// <para>
+        /// This is a performance critical event, whose handlers directly affect typing responsiveness.
+        /// Unless it's required to handle this event synchronously on the UI thread, please consider listening
+        /// to <see cref="ITextBuffer2.ChangedOnBackground"/> event instead.
+        /// </para>
+        /// <para>
         /// This event is raised after <see cref="ChangedHighPriority"/> events and before <see cref="ChangedLowPriority"/> events.
-        ///
+        ///</para>
+        ///<para>
         /// In the case that a second edit is applied by a listener of the Changed event (or the
         /// ChangedLowPriority or ChangedHighPriority events), the Changed events for the second edit 
         /// won't be raised until all listeners have been notified of the first edit (via ChangedLowPriority, Changed, and 
         /// ChangedHighPriority events).  That is, the events for subsequent edits are queued.  This ensures listeners
         /// receive the Changed events in the order the edits were applied.
+        /// </para>
         /// </remarks>
         event EventHandler<TextContentChangedEventArgs> Changed;
 
@@ -96,11 +105,19 @@ namespace Microsoft.VisualStudio.Text
         /// Occurs when a non-empty <see cref="ITextEdit"/> is successfully applied. 
         /// </summary>
         /// <remarks>
+        /// <para>
+        /// This is a performance critical event, whose handlers directly affect typing responsiveness.
+        /// Unless it's required to handle this event synchronously on the UI thread, please consider listening
+        /// to <see cref="ITextBuffer2.ChangedOnBackground"/> event instead.
+        /// </para>
+        /// <para>
         /// This event is raised after <see cref="ChangedHighPriority"/> and <see cref="Changed"/> events.
-        /// 
+        /// </para>
+        /// <para>
         /// Changed events for edits made within a ChangedLowPriority, <see cref="Changed"/>, or 
         /// <see cref="ChangedHighPriority" /> listener are queued. See <see cref="Changed"/> for more 
         /// information about event queuing.
+        /// </para>
         /// </remarks>
         event EventHandler<TextContentChangedEventArgs> ChangedLowPriority;
 
@@ -108,11 +125,19 @@ namespace Microsoft.VisualStudio.Text
         /// Occurs when a non-empty <see cref="ITextEdit"/> is successfully applied. 
         /// </summary>
         /// <remarks>
+        /// <para>
+        /// This is a performance critical event, whose handlers directly affect typing responsiveness.
+        /// Unless it's required to handle this event synchronously on the UI thread, please consider listening
+        /// to <see cref="ITextBuffer2.ChangedOnBackground"/> event instead.
+        /// </para>
+        /// <para>
         /// This event is raised before <see cref="Changed"/> and <see cref="ChangedHighPriority"/> events.
-        /// 
+        /// </para>
+        /// <para>
         /// Changed events for edits made within a ChangedLowPriority, <see cref="Changed"/>, or 
         /// <see cref="ChangedHighPriority" /> listener are queued. See <see cref="Changed"/> for more 
         /// information about event queuing.
+        /// </para>
         /// </remarks>
         event EventHandler<TextContentChangedEventArgs> ChangedHighPriority;
 

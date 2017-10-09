@@ -1,7 +1,8 @@
-// Copyright (c) Microsoft Corporation
-// All rights reserved
-
-    namespace Microsoft.VisualStudio.Text.Differencing
+//
+//  Copyright (c) Microsoft Corporation. All rights reserved.
+//  Licensed under the MIT License. See License.txt in the project root for license information.
+//
+namespace Microsoft.VisualStudio.Text.Differencing
 {
     /// <summary>
     /// The highlight mode for this <see cref="IDifferenceViewer"/>.

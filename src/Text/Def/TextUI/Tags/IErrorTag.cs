@@ -1,13 +1,9 @@
-// Copyright (c) Microsoft Corporation
-// All rights reserved
-
+//
+//  Copyright (c) Microsoft Corporation. All rights reserved.
+//  Licensed under the MIT License. See License.txt in the project root for license information.
+//
 namespace Microsoft.VisualStudio.Text.Tagging
 {
-    using System;
-    using System.Text;
-
-    using Microsoft.VisualStudio.Text.Adornments;
-
     /// <summary>
     /// Represents an error, which is used to place squiggle adornments on the view.
     /// </summary>

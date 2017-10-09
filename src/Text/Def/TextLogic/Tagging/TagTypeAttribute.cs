@@ -1,14 +1,11 @@
-﻿// Copyright (c) Microsoft Corporation
-// All rights reserved
-
+﻿//
+//  Copyright (c) Microsoft Corporation. All rights reserved.
+//  Licensed under the MIT License. See License.txt in the project root for license information.
+//
 namespace Microsoft.VisualStudio.Text.Tagging
 {
     using System;
-    using System.Collections.Generic;
-    using System.Text;
     using Microsoft.VisualStudio.Utilities;
-    using Microsoft.VisualStudio.Text.Tagging;
-    using System.ComponentModel.Composition;
 
     /// <summary>
     /// Declares the types of tags an <see cref="ITagger&lt;T&gt;"/>
