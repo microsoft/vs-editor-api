@@ -1,6 +1,7 @@
-﻿// Copyright (c) Microsoft Corporation
-// All rights reserved
-
+﻿//
+//  Copyright (c) Microsoft Corporation. All rights reserved.
+//  Licensed under the MIT License. See License.txt in the project root for license information.
+//
 namespace Microsoft.VisualStudio.Text.Adornments
 {
     /// <summary>
@@ -29,8 +30,13 @@ namespace Microsoft.VisualStudio.Text.Adornments
         public const string Warning = "compiler warning";
 
         /// <summary>
-        /// Represents a suggestion.
+        /// Represents a suggestion with no visual treatment.
         /// </summary>
         public const string Suggestion = "suggestion";
+
+        /// <summary>
+        /// Represents a suggestion with subtle visual treatment.
+        /// </summary>
+        public const string HintedSuggestion = "hinted suggestion";
     }
 }

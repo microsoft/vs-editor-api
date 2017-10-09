@@ -1,11 +1,11 @@
-// Copyright (c) Microsoft Corporation
-// All rights reserved
-
+//
+//  Copyright (c) Microsoft Corporation. All rights reserved.
+//  Licensed under the MIT License. See License.txt in the project root for license information.
+//
 namespace Microsoft.VisualStudio.Text
 {
     using System;
     using System.IO;
-    using System.Diagnostics;
 
     /// <summary>
     /// Provides a <see cref="TextReader"/> facade over a text snapshot.
@@ -121,23 +121,17 @@ namespace Microsoft.VisualStudio.Text
             if (_currentPosition == -1)
                 throw new ObjectDisposedException("TextSnapshotToTextReader");
 
-            if (_readLastLine)
+            if (_currentPosition >= _snapshot.Length)
                 return null;
 
             ITextSnapshotLine line = _snapshot.GetLineFromPosition(_currentPosition);
 
             //Handle the case where the current position is between a \r\n without crashing (but returning an empty string instead).
-            string text = (line.End > _currentPosition)
-                          ? _snapshot.GetText(_currentPosition, line.End - _currentPosition)
+            string text = (line.End.Position > _currentPosition)
+                          ? _snapshot.GetText(_currentPosition, line.End.Position - _currentPosition)
                           : string.Empty;
 
-            _currentPosition = line.EndIncludingLineBreak;
-
-            if (_currentPosition == _snapshot.Length)
-            {
-                //Do not read the last line in the buffer unless it contains some text.
-                _readLastLine = true;
-            }
+            _currentPosition = line.EndIncludingLineBreak.Position;
 
             return text;
         }
@@ -172,6 +166,5 @@ namespace Microsoft.VisualStudio.Text
 
         ITextSnapshot _snapshot;
         int _currentPosition;
-        bool _readLastLine;
     }
 }
