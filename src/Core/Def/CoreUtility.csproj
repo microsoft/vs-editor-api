@@ -1,75 +1,17 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <PropertyGroup Label="BuildProps">
-    <BuildPropsFile>$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildProjectDirectory), Build.props))\Build.props</BuildPropsFile>
-  </PropertyGroup>
-  <Import Project="$(BuildPropsFile)" Condition="'$(BuildProps_Imported)'!='True' AND Exists('$(BuildPropsFile)') AND '$(VisualStudioDir)'==''" />
-  <Import Project="..\Platform.Settings.targets" />
-  <Import Project="$(PlatformPath)\Tools\Targets\Platform.Settings.Selector.targets" />
+<Project Sdk="Microsoft.NET.Sdk" ToolsVersion="15.0">
   <PropertyGroup>
     <AssemblyName>Microsoft.VisualStudio.CoreUtility</AssemblyName>
-    <OutputType>Library</OutputType>
-    <OutputPath>$(BinariesDirectory)\bin\$(BuildArchitecture)</OutputPath>
-    <SignAssemblyAttribute>true</SignAssemblyAttribute>
-    <UseVsVersion>true</UseVsVersion>
-    <AssemblyAttributeClsCompliant>true</AssemblyAttributeClsCompliant>
-    <GenerateAssemblyRefs>true</GenerateAssemblyRefs>
-    <NoWarn>649;436;$(NoWarn)</NoWarn>
-    <GeneratedModuleId>Microsoft.VisualStudio.CoreUtility</GeneratedModuleId>
-    <GeneratedModuleVersion>$(VsAssemblyVersion)</GeneratedModuleVersion>
-    <BuildArchitecturesAllowed>$(BuildArchitecturesAllowed);amd64;arm</BuildArchitecturesAllowed>
+    <TargetFramework>net46</TargetFramework>
   </PropertyGroup>
-  <!-- IDE specific Information -->
-  <PropertyGroup>
-    <ProjectGuid>{BA3DD7EC-3F13-4400-A3A9-96AD425B3369}</ProjectGuid>
-  </PropertyGroup>
+
   <ItemGroup>
-    <Compile Include="BaseUtility\ITelemetryIdProvider.cs" />
-    <Compile Include="CoreUtilityAssemblyInfo.cs" />
-    <Compile Include="BaseUtility\SingletonBaseMetadataAttribute.cs" />
-    <Compile Include="BaseUtility\MultipleBaseMetadataAttribute.cs" />
-    <Compile Include="BaseUtility\BaseDefinitionAttribute.cs" />
-    <Compile Include="BaseUtility\DisplayNameAttribute.cs" />
-    <Compile Include="BaseUtility\FxCopSuppressions.cs" />
-    <Compile Include="BaseUtility\IOrderable.cs" />
-    <Compile Include="BaseUtility\IPropertyOwner.cs" />
-    <Compile Include="BaseUtility\NameAttribute.cs" />
-    <Compile Include="BaseUtility\OrderAttribute.cs" />
-    <Compile Include="BaseUtility\Orderer.cs" />
-    <Compile Include="BaseUtility\PropertyCollection.cs" />
-    <Compile Include="ContentType\FileExtensionToContentTypeDefinition.cs" />
-    <Compile Include="ContentType\FileExtensionAttribute.cs" />
-    <Compile Include="ContentType\FileNameAttribute.cs" />
-    <Compile Include="ContentType\IContentTypeDefinition.cs" />
-    <Compile Include="ContentType\IContentTypeDefinitionSource.cs" />
-    <Compile Include="ContentType\IContentTypeRegistryService.cs" />
-    <Compile Include="ContentType\IFileExtensionRegistryService.cs" />
-    <Compile Include="ContentType\IFileExtensionRegistryService2.cs" />
-    <Compile Include="ContentType\ContentTypeAttribute.cs" />
-    <Compile Include="ContentType\ContentTypeDefinition.cs" />
-    <Compile Include="ContentType\FxCopSuppressions.cs" />
-    <Compile Include="ContentType\IContentType.cs" />
-    <Reference Include="System" />
-    <Reference Include="System.Core" />
+    <PackageReference Include="Microsoft.VisualStudio.Threading" Version="$(MicrosoftVisualStudioThreadingVersion)" />
+    <PackageReference Include="Microsoft.VisualStudio.Validation" Version="$(MicrosoftVisualStudioValidationVersion)" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Reference Include="System.ComponentModel.Composition" />
-    <CopyFile Include="BaseUtility\Microsoft.VisualStudio.Utilities.Overview.mht">
-      <DestFolder>$(SuiteBinPath)\PlatformOverviews</DestFolder>
-      <Visible>false</Visible>
-    </CopyFile>
-    <CopyFile Include="BaseUtility\Microsoft.VisualStudio.Utilities.UsageGuide.mht">
-      <DestFolder>$(SuiteBinPath)\PlatformOverviews</DestFolder>
-      <Visible>false</Visible>
-    </CopyFile>
   </ItemGroup>
-  <ItemGroup>
-    <PublishPartCompiled Include="$(OutputPath)\$(AssemblyName).dll">
-      <Visibility>Inter</Visibility>
-      <FileType>Reference</FileType>
-    </PublishPartCompiled>
-  </ItemGroup>
-  <!--Import the targets-->
-  <Import Project="$(PlatformPath)\Tools\Targets\Platform.Imports.targets" />
-  <PropertyGroup>
-    <CopyToSuiteBin>true</CopyToSuiteBin>
-  </PropertyGroup>
+
 </Project>

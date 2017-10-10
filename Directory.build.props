@@ -1,0 +1,14 @@
+<Project>
+  <PropertyGroup>
+     <RootDirectory>$(MSBuildThisFileDirectory)</RootDirectory>
+     <OutDir>$(RootDirectory)\bin\$(Configuration)\$(MSBuildProjectName)\</OutDir>
+     <BaseIntermediateOutputPath>$(RootDirectory)\obj\$(Configuration)\$(MSBuildProjectName)\</BaseIntermediateOutputPath>
+     <IntermediateOutputPath>$(RootDirectory)\obj\$(Configuration)\$(MSBuildProjectName)\</IntermediateOutputPath>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <MicrosoftVisualStudioThreadingVersion>15.3.23</MicrosoftVisualStudioThreadingVersion>
+    <MicrosoftVisualStudioUtilitiesVersion>15.0.26606</MicrosoftVisualStudioUtilitiesVersion>
+    <MicrosoftVisualStudioValidationVersion>15.3.15</MicrosoftVisualStudioValidationVersion>
+  </PropertyGroup>
+</Project>
