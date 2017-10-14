@@ -5,8 +5,26 @@
     <SignAssembly>true</SignAssembly>
     <AssemblyOriginatorKeyFile>key.snk</AssemblyOriginatorKeyFile>
     <DelaySign>false</DelaySign>
+    <Version>15.0.0</Version>
+    <AssemblyVersion>15.0.0.0</AssemblyVersion>
+    <NuGetVersionEditor>15.3.1710.203</NuGetVersionEditor>
   </PropertyGroup>
 
+  <PropertyGroup>
+    <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+    <PackageId>Microsoft.VisualStudio.Text.Implementation</PackageId>
+    <Authors>vsideeng@microsoft.com</Authors>
+    <Owners>vsideeng@microsoft.com</Owners>
+    <Company>Microsoft</Company>
+    <Copyright>© Microsoft Corporation. All rights reserved.</Copyright>
+    <LicenseUrl>https://aka.ms/pexunj</LicenseUrl>
+    <RequireLicenseAcceptance>false</RequireLicenseAcceptance>
+    <Description>Microsoft® Visual Studio® Editor Platform</Description>
+    <PackageLicenseUrl>https://github.com/Microsoft/vs-editor-api/blob/367d01a0b186f034178c5d5338c436e203eff8b4/LICENSE</PackageLicenseUrl>
+    <PackageProjectUrl>https://github.com/Microsoft/vs-editor-api</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/Microsoft/vs-editor-api</RepositoryUrl>
+  </PropertyGroup>
+  
   <ItemGroup>
     <Compile Remove="Core\Def\**\*" />
     <Compile Remove="Language\**" />
@@ -21,12 +39,12 @@
 
   <ItemGroup>
     <PackageReference Include="System.Collections.Immutable" Version="1.3.1" />
-    <PackageReference Include="Microsoft.VisualStudio.CoreUtility" Version="15.3.1710.203" />
-    <PackageReference Include="Microsoft.VisualStudio.Language.StandardClassification" Version="15.3.1710.203" />
-    <PackageReference Include="Microsoft.VisualStudio.Text.Data" Version="15.3.1710.203" />
-    <PackageReference Include="Microsoft.VisualStudio.Text.Internal" Version="15.3.1710.203" />
-    <PackageReference Include="Microsoft.VisualStudio.Text.Logic" Version="15.3.1710.203" />
-    <PackageReference Include="Microsoft.VisualStudio.Text.UI" Version="15.3.1710.203" />
+    <PackageReference Include="Microsoft.VisualStudio.CoreUtility" Version="$(NuGetVersionEditor)" />
+    <PackageReference Include="Microsoft.VisualStudio.Language.StandardClassification" Version="$(NuGetVersionEditor)" />
+    <PackageReference Include="Microsoft.VisualStudio.Text.Data" Version="$(NuGetVersionEditor)" />
+    <PackageReference Include="Microsoft.VisualStudio.Text.Internal" Version="$(NuGetVersionEditor)" />
+    <PackageReference Include="Microsoft.VisualStudio.Text.Logic" Version="$(NuGetVersionEditor)" />
+    <PackageReference Include="Microsoft.VisualStudio.Text.UI" Version="$(NuGetVersionEditor)" />
   </ItemGroup>
 
 </Project>
