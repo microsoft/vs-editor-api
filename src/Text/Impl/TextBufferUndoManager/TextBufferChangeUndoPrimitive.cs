@@ -17,7 +17,7 @@ namespace Microsoft.VisualStudio.Text.BufferUndoManager.Implementation
     /// <summary>
     /// The UndoPrimitive for a text buffer change operation.
     /// </summary>
-    internal class TextBufferChangeUndoPrimitive : TextUndoPrimitive
+    public class TextBufferChangeUndoPrimitive : TextUndoPrimitive
     {
         #region Private Data Members
 
