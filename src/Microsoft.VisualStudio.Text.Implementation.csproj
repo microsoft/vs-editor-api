@@ -5,7 +5,7 @@
     <SignAssembly>true</SignAssembly>
     <AssemblyOriginatorKeyFile>key.snk</AssemblyOriginatorKeyFile>
     <DelaySign>false</DelaySign>
-    <Version>15.0.2</Version>
+    <Version>15.0.2-pre</Version>
     <AssemblyVersion>15.0.0.0</AssemblyVersion>
     <NuGetVersionEditor>15.6.150-preview</NuGetVersionEditor>
   </PropertyGroup>
@@ -28,13 +28,13 @@
   <ItemGroup>
     <Compile Remove="Core\Def\**\*" />
     <Compile Remove="Language\**" />
-    <Compile Remove="Text\Def\**\*" />
+    <Compile Remove="Text\Def\Text*\**\*" />
     <EmbeddedResource Remove="Core\Def\**\*" />
     <EmbeddedResource Remove="Language\**\*" />
-    <EmbeddedResource Remove="Text\Def\**\*" />
+    <EmbeddedResource Remove="Text\Def\Text*\**\*" />
     <None Remove="Core\Def\**\*" />
     <None Remove="Language\**\*" />
-    <None Remove="Text\Def\**\*" />
+    <None Remove="Text\Def\Text*\**\*" />
   </ItemGroup>
 
   <ItemGroup>
@@ -42,7 +42,6 @@
     <PackageReference Include="Microsoft.VisualStudio.CoreUtility" Version="$(NuGetVersionEditor)" />
     <PackageReference Include="Microsoft.VisualStudio.Language.StandardClassification" Version="$(NuGetVersionEditor)" />
     <PackageReference Include="Microsoft.VisualStudio.Text.Data" Version="$(NuGetVersionEditor)" />
-    <PackageReference Include="Microsoft.VisualStudio.Text.Internal" Version="$(NuGetVersionEditor)" />
     <PackageReference Include="Microsoft.VisualStudio.Text.Logic" Version="$(NuGetVersionEditor)" />
     <PackageReference Include="Microsoft.VisualStudio.Text.UI" Version="$(NuGetVersionEditor)" />
   </ItemGroup>

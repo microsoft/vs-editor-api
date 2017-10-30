@@ -30,9 +30,11 @@ namespace Microsoft.VisualStudio.Text.Utilities
         [Import]
         private JoinableTaskContext _joinableTaskContext;
 
+#if WINDOWS
         [Import(AllowDefault = true)]
         internal INonJoinableTaskTrackerInternal NonJoinableTaskTracker; // Optional in scenarios other than in VS process.
 
+#endif
         private FrugalList<IExtensionErrorHandler> _errorHandlers;
         private FrugalList<IExtensionPerformanceTracker> _perfTrackers;
 

@@ -26,7 +26,9 @@ namespace Microsoft.VisualStudio.Text.Operations.Implementation
     using Microsoft.VisualStudio.Utilities;
     using Microsoft.VisualStudio.Text.Outlining;
     using Microsoft.VisualStudio.Text.Tagging;
+#if WINDOWS
     using Microsoft.VisualStudio.Language.Intellisense.Utilities;
+#endif
 
     /// <summary>
     /// Provides a default operations set on top of the text editor
@@ -122,15 +124,15 @@ namespace Microsoft.VisualStudio.Text.Operations.Implementation
             {
                 bool success = false;
 
-                IWpfTextView view = _textView as IWpfTextView;
+                var view = _textView as ITextView;
 
                 // find line start
-                IWpfTextViewLine startViewLine = GetLineStart(view, view.Selection.Start.Position);
+                var startViewLine = GetLineStart(view, view.Selection.Start.Position);
                 SnapshotPoint start = startViewLine.Start;
                 ITextSnapshotLine startLine = start.GetContainingLine();
 
                 // find the last line view
-                IWpfTextViewLine endViewLine = GetLineEnd(view, view.Selection.End.Position);
+                var endViewLine = GetLineEnd(view, view.Selection.End.Position);
                 SnapshotPoint end = endViewLine.EndIncludingLineBreak;
                 ITextSnapshotLine endLine = endViewLine.End.GetContainingLine();
 
@@ -337,15 +339,15 @@ namespace Microsoft.VisualStudio.Text.Operations.Implementation
 
                 bool success = false;
 
-                IWpfTextView view = _textView as IWpfTextView;
+                var view = _textView as ITextView;
 
                 // find line start
-                IWpfTextViewLine startViewLine = GetLineStart(view, view.Selection.Start.Position);
+                var startViewLine = GetLineStart(view, view.Selection.Start.Position);
                 SnapshotPoint start = startViewLine.Start;
                 ITextSnapshotLine startLine = start.GetContainingLine();
 
                 // find the last line view
-                IWpfTextViewLine endViewLine = GetLineEnd(view, view.Selection.End.Position);
+                var endViewLine = GetLineEnd(view, view.Selection.End.Position);
                 ITextSnapshotLine endLine = endViewLine.End.GetContainingLine();
 
                 ITextSnapshot snapshot = endLine.Snapshot;
@@ -380,7 +382,7 @@ namespace Microsoft.VisualStudio.Text.Operations.Implementation
                 else
                 {
                     // nextLineExtent is different from prevLine.Extent and avoids issues around collapsed regions
-                    IWpfTextViewLine lastNextLine = GetLineEnd(view, endViewLine.EndIncludingLineBreak);
+                    var lastNextLine = GetLineEnd(view, endViewLine.EndIncludingLineBreak);
                     SnapshotSpan nextLineExtent = new SnapshotSpan(endViewLine.EndIncludingLineBreak, lastNextLine.End);
                     SnapshotSpan nextLineExtentIncludingLineBreak = new SnapshotSpan(endViewLine.EndIncludingLineBreak, lastNextLine.EndIncludingLineBreak);
 
@@ -546,9 +548,9 @@ namespace Microsoft.VisualStudio.Text.Operations.Implementation
             return ExecuteAction(Strings.MoveSelLinesDown, action, SelectionUpdate.Ignore, true);
         }
 
-        private static IWpfTextViewLine GetLineStart(IWpfTextView view, SnapshotPoint snapshotPoint)
+        private static ITextViewLine GetLineStart(ITextView view, SnapshotPoint snapshotPoint)
         {
-            IWpfTextViewLine line = view.GetTextViewLineContainingBufferPosition(snapshotPoint);
+            var line = view.GetTextViewLineContainingBufferPosition(snapshotPoint);
             while (!line.IsFirstTextViewLineForSnapshotLine)
             {
                 line = view.GetTextViewLineContainingBufferPosition(line.Start - 1);
@@ -556,9 +558,9 @@ namespace Microsoft.VisualStudio.Text.Operations.Implementation
             return line;
         }
 
-        private static IWpfTextViewLine GetLineEnd(IWpfTextView view, SnapshotPoint snapshotPoint)
+        private static ITextViewLine GetLineEnd(ITextView view, SnapshotPoint snapshotPoint)
         {
-            IWpfTextViewLine line = view.GetTextViewLineContainingBufferPosition(snapshotPoint);
+            var line = view.GetTextViewLineContainingBufferPosition(snapshotPoint);
             while (!line.IsLastTextViewLineForSnapshotLine)
             {
                 line = view.GetTextViewLineContainingBufferPosition(line.EndIncludingLineBreak);
@@ -1760,7 +1762,7 @@ namespace Microsoft.VisualStudio.Text.Operations.Implementation
         {
             Debug.Assert(startLine.LineNumber <= endLine.LineNumber);
 
-            IWpfTextView view = _textView as IWpfTextView;
+            var view = _textView as ITextView;
             bool isEditMade = false;
             bool success = true;
 
@@ -2252,6 +2254,7 @@ namespace Microsoft.VisualStudio.Text.Operations.Implementation
             // Clipboard may throw exceptions, so enclose Clipboard calls in a try-catch block
             try
             {
+#if WINDOWS
                 IDataObject dataObj = Clipboard.GetDataObject();
 
                 if (dataObj == null || !dataObj.GetDataPresent(typeof(string)))
@@ -2267,6 +2270,7 @@ namespace Microsoft.VisualStudio.Text.Operations.Implementation
 
                 dataHasLineCutCopyTag = dataObj.GetDataPresent(_clipboardLineBasedCutCopyTag);
                 dataHasBoxCutCopyTag = dataObj.GetDataPresent(_boxSelectionCutCopyTag);
+#endif
             }
             catch (System.Runtime.InteropServices.ExternalException)
             {
@@ -2362,7 +2366,11 @@ namespace Microsoft.VisualStudio.Text.Operations.Implementation
                 // Clipboard may throw exceptions, so enclose Clipboard calls in a try-catch block
                 try
                 {
+#if WINDOWS
                     return Clipboard.ContainsText() && !_textView.TextSnapshot.TextBuffer.IsReadOnly(_editorPrimitives.Caret.CurrentPosition);
+#else
+                    return false;
+#endif
                 }
                 catch (System.Runtime.InteropServices.ExternalException)
                 {
@@ -2668,22 +2676,26 @@ namespace Microsoft.VisualStudio.Text.Operations.Implementation
 
         public void ScrollColumnLeft()
         {
+#if WINDOWS
             IWpfTextView wpfTextView = _textView as IWpfTextView;
             if (wpfTextView != null)
             {
                 // A column is defined as the width of a space in the default font
                 _textView.ViewScroller.ScrollViewportHorizontallyByPixels(wpfTextView.FormattedLineSource.ColumnWidth * -1.0);
             }
+#endif
         }
 
         public void ScrollColumnRight()
         {
+#if WINDOWS
             IWpfTextView wpfTextView = _textView as IWpfTextView;
             if (wpfTextView != null)
             {
                 // A column is defined as the width of a space in the default font
                 _textView.ViewScroller.ScrollViewportHorizontallyByPixels(wpfTextView.FormattedLineSource.ColumnWidth);
             }
+#endif
         }
 
         public void ScrollLineBottom()
@@ -2719,6 +2731,7 @@ namespace Microsoft.VisualStudio.Text.Operations.Implementation
 
         public void ZoomIn()
         {
+#if WINDOWS
             IWpfTextView wpfTextView = _textView as IWpfTextView;
             if (wpfTextView != null && wpfTextView.Roles.Contains(PredefinedTextViewRoles.Zoomable))
             {
@@ -2728,10 +2741,12 @@ namespace Microsoft.VisualStudio.Text.Operations.Implementation
                     wpfTextView.Options.GlobalOptions.SetOptionValue(DefaultWpfViewOptions.ZoomLevelId, zoomLevel);
                 }
             }
+#endif
         }
 
         public void ZoomOut()
         {
+#if WINDOWS
             IWpfTextView wpfTextView = _textView as IWpfTextView;
             if (wpfTextView != null && wpfTextView.Roles.Contains(PredefinedTextViewRoles.Zoomable))
             {
@@ -2741,15 +2756,18 @@ namespace Microsoft.VisualStudio.Text.Operations.Implementation
                     wpfTextView.Options.GlobalOptions.SetOptionValue(DefaultWpfViewOptions.ZoomLevelId, zoomLevel);
                 }
             }
+#endif
         }
 
         public void ZoomTo(double zoomLevel)
         {
+#if WINDOWS
             IWpfTextView wpfTextView = _textView as IWpfTextView;
             if (wpfTextView != null && wpfTextView.Roles.Contains(PredefinedTextViewRoles.Zoomable))
             {
                 wpfTextView.Options.GlobalOptions.SetOptionValue(DefaultWpfViewOptions.ZoomLevelId, zoomLevel);
             }
+#endif
         }
 
         #endregion // IEditorOperations Members
@@ -3322,6 +3340,7 @@ namespace Microsoft.VisualStudio.Text.Operations.Implementation
             // Clipboard may throw exceptions, so enclose Clipboard calls in a try-catch block
             try
             {
+#if WINDOWS
                 DataObject dataObject = new DataObject();
 
                 //set plain text format
@@ -3352,7 +3371,9 @@ namespace Microsoft.VisualStudio.Text.Operations.Implementation
                 // which causes the OS to send out two almost simultaneous clipboard open/close notification pairs 
                 // which confuse applications that try to synchronize clipboard data between multiple machines such 
                 // as MagicMouse or remote desktop.
+
                 Clipboard.SetDataObject(dataObject, false);
+#endif
 
                 return true;
             }
@@ -3365,6 +3386,7 @@ namespace Microsoft.VisualStudio.Text.Operations.Implementation
 
         private string GenerateRtf(NormalizedSnapshotSpanCollection spans)
         {
+#if WINDOWS
             if (_factory.RtfBuilderService == null)
             {
                 return null;
@@ -3388,6 +3410,10 @@ namespace Microsoft.VisualStudio.Text.Operations.Implementation
             }
             else
                 return null;
+
+#else
+            return null;
+#endif
         }
 
         private string GenerateRtf(SnapshotSpan span)
