@@ -27,13 +27,10 @@
   
   <ItemGroup>
     <Compile Remove="Core\Def\**\*" />
-    <Compile Remove="Language\**" />
     <Compile Remove="Text\Def\Text*\**\*" />
     <EmbeddedResource Remove="Core\Def\**\*" />
-    <EmbeddedResource Remove="Language\**\*" />
     <EmbeddedResource Remove="Text\Def\Text*\**\*" />
     <None Remove="Core\Def\**\*" />
-    <None Remove="Language\**\*" />
     <None Remove="Text\Def\Text*\**\*" />
   </ItemGroup>
 
