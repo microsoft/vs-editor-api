@@ -24,7 +24,73 @@
     <PackageProjectUrl>https://github.com/Microsoft/vs-editor-api</PackageProjectUrl>
     <RepositoryUrl>https://github.com/Microsoft/vs-editor-api</RepositoryUrl>
   </PropertyGroup>
-  
+
+  <ItemGroup>
+    <Compile Update="Core\Impl\ContentType\Strings.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>Strings.resx</DependentUpon>
+    </Compile>
+    <Compile Update="Text\Impl\TextModel\Strings.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>Strings.resx</DependentUpon>
+    </Compile>
+    <Compile Update="Text\Impl\TextBufferUndoManager\Strings.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>Strings.resx</DependentUpon>
+    </Compile>
+    <Compile Update="Text\Impl\ClassificationType\Strings.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>Strings.resx</DependentUpon>
+    </Compile>
+    <Compile Update="Text\Impl\EditorPrimitives\Strings.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>Strings.resx</DependentUpon>
+    </Compile>
+    <Compile Update="Text\Impl\EditorOperations\Strings.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>Strings.resx</DependentUpon>
+    </Compile>
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Update="Core\Impl\ContentType\Strings.resx">
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>Strings.Designer.cs</LastGenOutput>
+      <CustomToolNamespace>Microsoft.VisualStudio.Utilities.Implementation</CustomToolNamespace>
+    </EmbeddedResource>
+    <EmbeddedResource Update="Text\Impl\TextModel\Strings.resx">
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>Strings.Designer.cs</LastGenOutput>
+      <CustomToolNamespace>Microsoft.VisualStudio.Text.Implementation</CustomToolNamespace>
+    </EmbeddedResource>
+    <EmbeddedResource Update="Text\Impl\ClassificationType\Strings.resx">
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>Strings.Designer.cs</LastGenOutput>
+      <CustomToolNamespace>Microsoft.VisualStudio.Text.Classification.Implementation.LookUp</CustomToolNamespace>
+    </EmbeddedResource>
+    <EmbeddedResource Update="Text\Impl\TextBufferUndoManager\Strings.resx">
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>Strings.Designer.cs</LastGenOutput>
+      <CustomToolNamespace>Microsoft.VisualStudio.Text.BufferUndoManager.Implementation</CustomToolNamespace>
+    </EmbeddedResource>
+    <EmbeddedResource Update="Text\Impl\EditorPrimitives\Strings.resx">
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>Strings.Designer.cs</LastGenOutput>
+      <CustomToolNamespace>Microsoft.VisualStudio.Text.EditorPrimitives.Implementation</CustomToolNamespace>
+    </EmbeddedResource>
+    <EmbeddedResource Update="Text\Impl\EditorOperations\Strings.resx">
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>Strings.Designer.cs</LastGenOutput>
+      <CustomToolNamespace>Microsoft.VisualStudio.Text.Operations.Implementation</CustomToolNamespace>
+    </EmbeddedResource>
+  </ItemGroup>
+
   <ItemGroup>
     <Compile Remove="Core\Def\**\*" />
     <Compile Remove="Text\Def\Text*\**\*" />

@@ -19,7 +19,7 @@ namespace Microsoft.VisualStudio.Utilities.Implementation {
     // class via a tool like ResGen or Visual Studio.
     // To add or remove a member, edit your .ResX file then rerun ResGen
     // with the /str option, or rebuild your VS project.
-    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("System.Resources.Tools.StronglyTypedResourceBuilder", "4.0.0.0")]
+    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("System.Resources.Tools.StronglyTypedResourceBuilder", "15.0.0.0")]
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
     [global::System.Runtime.CompilerServices.CompilerGeneratedAttribute()]
     internal class Strings {
@@ -39,7 +39,7 @@ namespace Microsoft.VisualStudio.Utilities.Implementation {
         internal static global::System.Resources.ResourceManager ResourceManager {
             get {
                 if (object.ReferenceEquals(resourceMan, null)) {
-                    global::System.Resources.ResourceManager temp = new global::System.Resources.ResourceManager("Microsoft.VisualStudio.CoreUtilityImplementation.ContentType.Strings", typeof(Strings).Assembly);
+                    global::System.Resources.ResourceManager temp = new global::System.Resources.ResourceManager("Microsoft.VisualStudio.Text.Implementation.Core.Impl.ContentType.Strings", typeof(Strings).Assembly);
                     resourceMan = temp;
                 }
                 return resourceMan;
@@ -115,7 +115,7 @@ namespace Microsoft.VisualStudio.Utilities.Implementation {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to The content type {0} cannot be used as base for content type {1} because it would create a derivation cycle..
+        ///   Looks up a localized string similar to The content type {0} leads to a cycle in its base types..
         /// </summary>
         internal static string ContentTypeRegistry_CausesCycles {
             get {
