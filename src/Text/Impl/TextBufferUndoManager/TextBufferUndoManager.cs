@@ -192,6 +192,7 @@ namespace Microsoft.VisualStudio.Text.BufferUndoManager.Implementation
 
         public void Dispose()
         {
+            UnregisterUndoHistory();
             _textBuffer.Changed -= TextBufferChanged;
             _textBuffer.PostChanged -= TextBufferPostChanged;
             _textBuffer.Changing -= TextBufferChanging;
