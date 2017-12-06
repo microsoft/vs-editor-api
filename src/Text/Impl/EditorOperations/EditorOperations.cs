@@ -113,6 +113,11 @@ namespace Microsoft.VisualStudio.Text.Operations.Implementation
             _editorOptions = factory.EditorOptionsProvider.GetOptions(textView);
 
             _factory.TextDocumentFactoryService.TryGetTextDocument(_textView.TextDataModel.DocumentBuffer, out _textDocument);
+
+            _textView.Closed += delegate {
+                _factory.UndoHistoryRegistry.RemoveHistory(_undoHistory);
+                _factory.TextBufferUndoManagerProvider.RemoveTextBufferUndoManager(_textView.TextBuffer);
+            };
         }
 
 
