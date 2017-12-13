@@ -23,7 +23,7 @@
     </dependencies>
   </metadata>
   <files>
-    <file src="bin\Release\Microsoft.VisualStudio.Text.Implementation\Microsoft.VisualStudio.Text.Implementation.dll" target="lib\net46" />
-    <file src="bin\Release\Microsoft.VisualStudio.Text.Implementation\Microsoft.VisualStudio.Text.Implementation.pdb" target="lib\net46" />
+    <file src="..\bin\Release\Microsoft.VisualStudio.Text.Implementation\Microsoft.VisualStudio.Text.Implementation.dll" target="lib\net46" />
+    <file src="..\bin\Release\Microsoft.VisualStudio.Text.Implementation\Microsoft.VisualStudio.Text.Implementation.pdb" target="lib\net46" />
   </files>
 </package>
