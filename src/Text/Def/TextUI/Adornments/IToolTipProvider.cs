@@ -4,11 +4,13 @@
 //
 namespace Microsoft.VisualStudio.Text.Adornments
 {
+    using System;
     using Microsoft.VisualStudio.Text;
 
     /// <summary>
     /// Creates and displays tooltips, using an arbitrary object as content.
     /// </summary>
+    [Obsolete("Use " + nameof(IToolTipService) + " instead")]
     public interface IToolTipProvider
     {
         /// <summary>

@@ -35,5 +35,16 @@ namespace Microsoft.VisualStudio.Text.Operations
         /// </para>
         /// </remarks>
         bool TrimTrailingWhiteSpace();
+
+        /// <summary>
+        /// Duplicates the current selection, or the whole line (if there is no selection), without changing the clipboard.
+        /// </summary>
+        /// <returns>
+        /// <c>true</c> if the edit succeeded, otherwise <c>false</c>.
+        /// </returns>
+        /// <remarks>
+        /// Multiple selection cases like block selection will treat each selection independently.
+        /// </remarks>
+        bool DuplicateSelection();
     }
 }

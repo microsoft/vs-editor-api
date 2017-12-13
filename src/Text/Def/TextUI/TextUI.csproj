@@ -22,19 +22,4 @@
     <None Include="Diagrams\BasePrimitives.cd" />
     <None Include="Diagrams\Editor.cd" />
   </ItemGroup>
-  <ItemGroup>
-    <EmbeddedResource Update="Strings.resx">
-      <Generator>ResXFileCodeGenerator</Generator>
-      <LastGenOutput>Strings.Designer.cs</LastGenOutput>
-      <LogicalName>Microsoft.VisualStudio.Text.Editor.Strings.resources</LogicalName>
-      <ManifestResourceName>Microsoft.VisualStudio.Text.Editor.Strings.resources</ManifestResourceName>
-    </EmbeddedResource>
-  </ItemGroup>
-  <ItemGroup>
-    <Compile Update="Strings.Designer.cs">
-      <DesignTime>True</DesignTime>
-      <AutoGen>True</AutoGen>
-      <DependentUpon>Strings.resx</DependentUpon>
-    </Compile>
-  </ItemGroup>
 </Project>

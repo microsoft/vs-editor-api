@@ -40,9 +40,8 @@ namespace Microsoft.VisualStudio.Text.Implementation
                 _uncompressedContents.SetTarget(contents);
             }
 
-            this.Manager.UpdateMRU(this);
+            this.Manager.UpdateMRU(this, contents);
             return contents;
-
         }
     }
 }

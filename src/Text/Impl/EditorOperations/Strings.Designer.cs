@@ -223,6 +223,15 @@ namespace Microsoft.VisualStudio.Text.Operations.Implementation {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Duplicate Selection.
+        /// </summary>
+        internal static string DuplicateSelection {
+            get {
+                return ResourceManager.GetString("DuplicateSelection", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Increase line indent.
         /// </summary>
         internal static string IncreaseLineIndent {

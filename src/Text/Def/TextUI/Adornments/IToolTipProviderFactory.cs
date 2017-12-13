@@ -4,6 +4,7 @@
 //
 namespace Microsoft.VisualStudio.Text.Adornments
 {
+    using System;
     using Microsoft.VisualStudio.Text.Editor;
 
     /// <summary>
@@ -13,6 +14,7 @@ namespace Microsoft.VisualStudio.Text.Adornments
     /// <remarks>This is a MEF component part, and should be exported with the following attribute:
     /// [Export(typeof(IToolTipProviderFactory))]
     /// </remarks>
+    [Obsolete("Use " + nameof(IToolTipService) + " instead")]
     public interface IToolTipProviderFactory
     {
         /// <summary>

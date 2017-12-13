@@ -891,7 +891,6 @@ namespace Microsoft.VisualStudio.Text.Operations
         /// Returns an empty string if the provided <paramref name="point"/> is not in virtual space.
         /// </remarks>
         string GetWhitespaceForVirtualSpace(VirtualSnapshotPoint point);
-
         #endregion
 
         #region Properties

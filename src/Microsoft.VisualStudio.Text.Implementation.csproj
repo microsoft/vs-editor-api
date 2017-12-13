@@ -5,16 +5,16 @@
     <SignAssembly>true</SignAssembly>
     <AssemblyOriginatorKeyFile>key.snk</AssemblyOriginatorKeyFile>
     <DelaySign>false</DelaySign>
-    <Version>15.0.6-pre</Version>
+    <Version>15.0.7-pre</Version>
     <AssemblyVersion>15.0.0.0</AssemblyVersion>
-    <NuGetVersionEditor>15.6.162-preview</NuGetVersionEditor>
+    <NuGetVersionEditor>15.6.241-preview</NuGetVersionEditor>
   </PropertyGroup>
 
   <PropertyGroup>
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
     <PackageId>Microsoft.VisualStudio.Text.Implementation</PackageId>
-    <Authors>vsideeng@microsoft.com</Authors>
-    <Owners>vsideeng@microsoft.com</Owners>
+    <Authors>Microsoft</Authors>
+    <Owners>Microsoft</Owners>
     <Company>Microsoft</Company>
     <Copyright>© Microsoft Corporation. All rights reserved.</Copyright>
     <LicenseUrl>https://aka.ms/pexunj</LicenseUrl>

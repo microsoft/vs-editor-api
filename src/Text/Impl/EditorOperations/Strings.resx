@@ -258,4 +258,7 @@
   <data name="TrimTrailingWhitespace" xml:space="preserve">
     <value>Trim trailing whitespace</value>
   </data>
+  <data name="DuplicateSelection" xml:space="preserve">
+    <value>Duplicate Selection</value>
+  </data>
 </root>

@@ -4583,6 +4583,83 @@ namespace Microsoft.VisualStudio.Text.Operations.Implementation
                 return !edit.Canceled;
             }
         }
+
+        private void DuplicateLine(SnapshotPoint triggerPoint, ITextEdit edit, bool insertBelow = false)
+        {
+            var line = triggerPoint.GetContainingLine();
+            string textToInsert = line.GetText();
+            int whereToInsert;
+
+            if (insertBelow)
+            {
+                whereToInsert = line.End;
+                edit.Insert(whereToInsert, TextBufferOperationHelpers.GetNewLineCharacterToInsert(line, _editorOptions));
+                edit.Insert(whereToInsert, textToInsert);
+            }
+            else
+            {
+                whereToInsert = line.Start;
+                edit.Insert(whereToInsert, textToInsert);
+                edit.Insert(whereToInsert, TextBufferOperationHelpers.GetNewLineCharacterToInsert(line, _editorOptions));
+            }
+        }
+
+        public bool DuplicateSelection()
+        {
+            Func<bool> func = () =>
+            {
+                using (ITextEdit edit = _textView.TextBuffer.CreateEdit())
+                {
+                    if (_textView.Selection.IsEmpty)
+                    {
+                        DuplicateLine(_textView.Caret.Position.BufferPosition, edit);
+                    }
+                    else
+                    {
+                        var virtualSelectedSpans = _textView.Selection.VirtualSelectedSpans;
+
+                        // This is used only in the case of zero width block selection in order to maintain the block selection after
+                        // our edit. On the first span we want to insert the copied text after the current row so that the top of the block
+                        // selection doesn't move. An all others, we want to insert above so the bottom of the block selection does move.
+                        bool insertBelow = virtualSelectedSpans.Count > 1;
+                        foreach (var virtualSpan in virtualSelectedSpans)
+                        {
+                            if (virtualSpan.Length > 0)
+                            {
+                                if (!virtualSpan.IsInVirtualSpace)
+                                {
+                                    edit.Insert(virtualSpan.Start.Position, virtualSpan.GetText());
+                                }
+                                else
+                                {
+                                    // Is this all in virtual space, if so, do nothing
+                                    if (!virtualSpan.Start.IsInVirtualSpace)
+                                    {
+                                        // Ok, we need to pad with whitespace as well as duplicate. Append the amount of virtual space as spaces after the inserted text
+                                        // since we're inserting before the caret.
+                                        edit.Insert(virtualSpan.Start.Position, virtualSpan.GetText());
+
+                                        int whiteSpaceSize = virtualSpan.Length - virtualSpan.SnapshotSpan.Length;
+                                        string insertedSpace = GetWhiteSpaceForPositionAndVirtualSpace(virtualSpan.SnapshotSpan.End, whiteSpaceSize, useBufferPrimitives: true);
+                                        edit.Insert(virtualSpan.Start.Position, insertedSpace);
+                                    }
+                                }
+                            }
+                            else
+                            {
+                                // This must be a zero-width block selection, treat like several instances of no-selection and just duplicate the lines.
+                                DuplicateLine(virtualSpan.Start.Position, edit, insertBelow);
+                                insertBelow = false;
+                            }
+                        }
+                    }
+
+                    edit.Apply();
+                    return !(edit.HasFailedChanges || edit.Canceled);
+                }
+            };
+            return ExecuteAction(Strings.DuplicateSelection, func, ensureVisible: true);
+        }
     }
 
     /// <summary>
