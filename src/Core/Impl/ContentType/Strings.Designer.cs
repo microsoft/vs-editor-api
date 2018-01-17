@@ -115,7 +115,7 @@ namespace Microsoft.VisualStudio.Utilities.Implementation {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to The content type {0} leads to a cycle in its base types..
+        ///   Looks up a localized string similar to The content type {0} cannot be used as base for content type {1} because it would create a derivation cycle..
         /// </summary>
         internal static string ContentTypeRegistry_CausesCycles {
             get {
