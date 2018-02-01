@@ -7,7 +7,7 @@
     <DelaySign>false</DelaySign>
     <Version>15.0.9-pre</Version>
     <AssemblyVersion>15.0.0.0</AssemblyVersion>
-    <NuGetVersionEditor>15.6.241-preview</NuGetVersionEditor>
+    <NuGetVersionEditor>15.6.253-preview</NuGetVersionEditor>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -56,6 +56,11 @@
       <DesignTime>True</DesignTime>
       <DependentUpon>Strings.resx</DependentUpon>
     </Compile>
+    <Compile Update="Text\Impl\Commanding\CommandingStrings.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>CommandingStrings.resx</DependentUpon>
+    </Compile>
   </ItemGroup>
 
   <ItemGroup>
@@ -89,6 +94,11 @@
       <LastGenOutput>Strings.Designer.cs</LastGenOutput>
       <CustomToolNamespace>Microsoft.VisualStudio.Text.Operations.Implementation</CustomToolNamespace>
     </EmbeddedResource>
+    <EmbeddedResource Update="Text\Impl\Commanding\CommandingStrings.resx">
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>CommandingStrings.Designer.cs</LastGenOutput>
+      <CustomToolNamespace>Microsoft.VisualStudio.Text.Commanding.Implementation</CustomToolNamespace>
+    </EmbeddedResource>
   </ItemGroup>
 
   <ItemGroup>
@@ -102,6 +112,7 @@
 
   <ItemGroup>
     <PackageReference Include="System.Collections.Immutable" Version="1.3.1" />
+    <PackageReference Include="System.ValueTuple" Version="4.3.0" />
     <PackageReference Include="Microsoft.VisualStudio.CoreUtility" Version="$(NuGetVersionEditor)" />
     <PackageReference Include="Microsoft.VisualStudio.Language.StandardClassification" Version="$(NuGetVersionEditor)" />
     <PackageReference Include="Microsoft.VisualStudio.Text.Data" Version="$(NuGetVersionEditor)" />
