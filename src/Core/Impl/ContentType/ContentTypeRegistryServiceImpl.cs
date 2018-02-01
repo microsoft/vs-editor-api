@@ -30,9 +30,10 @@ namespace Microsoft.VisualStudio.Utilities.Implementation
 
     [Export(typeof(IFileExtensionRegistryService))]
     [Export(typeof(IFileExtensionRegistryService2))]
+    [Export(typeof(IFilePathRegistryService))]
     [Export(typeof(IContentTypeRegistryService))]
     [Export(typeof(IContentTypeRegistryService2))]
-    internal sealed partial class ContentTypeRegistryImpl : IContentTypeRegistryService2, IFileExtensionRegistryService, IFileExtensionRegistryService2
+    internal sealed partial class ContentTypeRegistryImpl : IContentTypeRegistryService2, IFileExtensionRegistryService, IFileExtensionRegistryService2, IFilePathRegistryService
     {
         [ImportMany]
         internal List<Lazy<ContentTypeDefinition, IContentTypeDefinitionMetadata>> ContentTypeDefinitions { get; set; }
@@ -42,6 +43,29 @@ namespace Microsoft.VisualStudio.Utilities.Implementation
 
         [ImportMany]
         internal List<Lazy<FileExtensionToContentTypeDefinition, IFileToContentTypeMetadata>> FileToContentTypeProductions { get; set; }
+
+        [ImportMany]
+        private List<Lazy<IFilePathToContentTypeProvider, IFilePathToContentTypeMetadata>> UnorderedFilePathToContentTypeProductions { get; set; }
+
+        private IList<Lazy<IFilePathToContentTypeProvider, IFilePathToContentTypeMetadata>> _orderedFilePathToContentTypeProductions;
+        internal IList<Lazy<IFilePathToContentTypeProvider, IFilePathToContentTypeMetadata>> OrderedFilePathToContentTypeProductions
+        {
+            get
+            {
+                if (_orderedFilePathToContentTypeProductions == null)
+                {
+                    if (UnorderedFilePathToContentTypeProductions != null)
+                    {
+                        _orderedFilePathToContentTypeProductions = Orderer.Order(UnorderedFilePathToContentTypeProductions);
+                    }
+                    else
+                    {
+                        _orderedFilePathToContentTypeProductions = new List<Lazy<IFilePathToContentTypeProvider, IFilePathToContentTypeMetadata>>();
+                    }
+                }
+                return _orderedFilePathToContentTypeProductions;
+            }
+        }
 
         private MapCollection maps;
 
@@ -660,6 +684,34 @@ namespace Microsoft.VisualStudio.Utilities.Implementation
                 // Two people tried to remove content types simultaneously.
                 oldMaps = results;
             }
+        }
+        #endregion
+
+        #region IFilePathRegistryService Members
+        public IContentType GetContentTypeForPath(string filePath)
+        {
+            if (filePath == null)
+            {
+                throw new ArgumentNullException(nameof(filePath));
+            }
+
+            string fileName = Path.GetFileName(filePath);
+            string extension = Path.GetExtension(filePath);
+            var providers = OrderedFilePathToContentTypeProductions.Where(md =>
+                (md.Metadata.FileExtension == null || md.Metadata.FileExtension.Equals(extension, StringComparison.OrdinalIgnoreCase)) &&
+                (md.Metadata.FileName == null || md.Metadata.FileName.Equals(fileName, StringComparison.OrdinalIgnoreCase)));
+
+            IContentType contentType = null;
+            foreach(var curProvider in providers)
+            {
+                if (curProvider.Value.TryGetContentTypeForFilePath(filePath, out IContentType curContentType))
+                {
+                    contentType = curContentType;
+                    break;
+                }
+            }
+
+            return contentType ?? ContentTypeRegistryImpl.UnknownContentTypeImpl;
         }
         #endregion
 
