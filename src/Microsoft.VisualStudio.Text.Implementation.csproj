@@ -5,9 +5,10 @@
     <SignAssembly>true</SignAssembly>
     <AssemblyOriginatorKeyFile>key.snk</AssemblyOriginatorKeyFile>
     <DelaySign>false</DelaySign>
-    <Version>15.0.10-pre</Version>
+    <Version>15.0.11-pre</Version>
     <AssemblyVersion>15.0.0.0</AssemblyVersion>
     <NuGetVersionEditor>15.8.173-preview-g3a2638b5fc</NuGetVersionEditor>
+    <NuGetVersionLanguage>15.6.289-preview-g5a23388e08</NuGetVersionLanguage>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -37,6 +38,11 @@
       <DependentUpon>Strings.resx</DependentUpon>
     </Compile>
     <Compile Update="Text\Impl\TextBufferUndoManager\Strings.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>Strings.resx</DependentUpon>
+    </Compile>
+    <Compile Update="Text\Impl\BraceCompletion\Strings.Designer.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
       <DependentUpon>Strings.resx</DependentUpon>
@@ -73,6 +79,11 @@
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>Strings.Designer.cs</LastGenOutput>
       <CustomToolNamespace>Microsoft.VisualStudio.Text.Implementation</CustomToolNamespace>
+    </EmbeddedResource>
+    <EmbeddedResource Update="Text\Impl\BraceCompletion\Strings.resx">
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>Strings.Designer.cs</LastGenOutput>
+      <CustomToolNamespace>Microsoft.VisualStudio.Text.BraceCompletion.Implementation</CustomToolNamespace>
     </EmbeddedResource>
     <EmbeddedResource Update="Text\Impl\ClassificationType\Strings.resx">
       <Generator>ResXFileCodeGenerator</Generator>
@@ -114,6 +125,7 @@
     <PackageReference Include="System.Collections.Immutable" Version="$(SystemCollectionsImmutableVersion)" />
     <PackageReference Include="System.ValueTuple" Version="4.3.0" />
     <PackageReference Include="Microsoft.VisualStudio.CoreUtility" Version="$(NuGetVersionEditor)" />
+    <PackageReference Include="Microsoft.VisualStudio.Language" Version="$(NuGetVersionLanguage)" />
     <PackageReference Include="Microsoft.VisualStudio.Language.StandardClassification" Version="$(NuGetVersionEditor)" />
     <PackageReference Include="Microsoft.VisualStudio.Text.Data" Version="$(NuGetVersionEditor)" />
     <PackageReference Include="Microsoft.VisualStudio.Text.Logic" Version="$(NuGetVersionEditor)" />
