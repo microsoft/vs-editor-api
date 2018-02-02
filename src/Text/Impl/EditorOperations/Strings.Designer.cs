@@ -232,6 +232,24 @@ namespace Microsoft.VisualStudio.Text.Operations.Implementation {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Duplicate Selection Command Handler.
+        /// </summary>
+        internal static string DuplicateSelectionCommandHandlerName {
+            get {
+                return ResourceManager.GetString("DuplicateSelectionCommandHandlerName", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Expand/Contract Selection Command Handler.
+        /// </summary>
+        internal static string ExpandContractSelectionCommandHandlerName {
+            get {
+                return ResourceManager.GetString("ExpandContractSelectionCommandHandlerName", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Increase line indent.
         /// </summary>
         internal static string IncreaseLineIndent {
