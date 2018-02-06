@@ -5,7 +5,7 @@
     <SignAssembly>true</SignAssembly>
     <AssemblyOriginatorKeyFile>key.snk</AssemblyOriginatorKeyFile>
     <DelaySign>false</DelaySign>
-    <Version>15.0.11-pre</Version>
+    <Version>15.0.12-pre</Version>
     <AssemblyVersion>15.0.0.0</AssemblyVersion>
     <NuGetVersionEditor>15.8.173-preview-g3a2638b5fc</NuGetVersionEditor>
     <NuGetVersionLanguage>15.6.289-preview-g5a23388e08</NuGetVersionLanguage>
@@ -24,6 +24,7 @@
     <PackageLicenseUrl>https://github.com/Microsoft/vs-editor-api/blob/367d01a0b186f034178c5d5338c436e203eff8b4/LICENSE</PackageLicenseUrl>
     <PackageProjectUrl>https://github.com/Microsoft/vs-editor-api</PackageProjectUrl>
     <RepositoryUrl>https://github.com/Microsoft/vs-editor-api</RepositoryUrl>
+    <AllowedOutputExtensionsInPackageBuildOutputFolder>$(AllowedOutputExtensionsInPackageBuildOutputFolder);.pdb</AllowedOutputExtensionsInPackageBuildOutputFolder>
   </PropertyGroup>
 
   <ItemGroup>
