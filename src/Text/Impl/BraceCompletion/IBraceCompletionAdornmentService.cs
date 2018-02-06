@@ -9,7 +9,7 @@ namespace Microsoft.VisualStudio.Text.BraceCompletion.Implementation
 {
     using System;
 
-    internal interface IBraceCompletionAdornmentService
+    public interface IBraceCompletionAdornmentService
     {
         /// <summary>
         /// Gets or sets the tracking point used by the brace completion adornment

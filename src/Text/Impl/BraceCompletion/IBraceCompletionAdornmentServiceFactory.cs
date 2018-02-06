@@ -9,7 +9,7 @@ namespace Microsoft.VisualStudio.Text.BraceCompletion.Implementation
 {
     using Microsoft.VisualStudio.Text.Editor;
 
-    internal interface IBraceCompletionAdornmentServiceFactory
+    public interface IBraceCompletionAdornmentServiceFactory
     {
         /// <summary>
         /// Creates an IBraceCompletionAdornmentService for the given text view.
