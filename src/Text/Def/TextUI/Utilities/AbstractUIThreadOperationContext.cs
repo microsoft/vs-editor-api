@@ -13,7 +13,7 @@ namespace Microsoft.VisualStudio.Utilities
         private List<IUIThreadOperationScope> _scopes;
         private bool _allowCancellation;
         private PropertyCollection _properties;
-        private readonly string _contextDescription;
+        private readonly string _defaultDescription;
         private int _completedItems;
         private int _totalItems;
 
@@ -22,11 +22,11 @@ namespace Microsoft.VisualStudio.Utilities
         /// </summary>
         /// <param name="allowCancellation">Initial value of the <see cref="IUIThreadOperationContext.AllowCancellation"/>
         /// property, which can change as new scopes are added to the context.</param>
-        /// <param name="description">Initial value of the <see cref="IUIThreadOperationContext.Description"/>
+        /// <param name="defaultDescription">Default value of the <see cref="IUIThreadOperationContext.Description"/>
         /// property, which can change as new scopes are added to the context.</param>
-        public AbstractUIThreadOperationContext(bool allowCancellation, string description)
+        public AbstractUIThreadOperationContext(bool allowCancellation, string defaultDescription)
         {
-            _contextDescription = description ?? throw new ArgumentNullException(nameof(description));
+            _defaultDescription = defaultDescription ?? throw new ArgumentNullException(nameof(defaultDescription));
             _allowCancellation = allowCancellation;
         }
 
@@ -64,7 +64,7 @@ namespace Microsoft.VisualStudio.Utilities
         }
 
         /// <summary>
-        /// Gets user readable operation description, composed of initial context description and
+        /// Gets user readable operation description, composed of initial context description or
         /// descriptions of all currently added scopes.
         /// </summary>
         public virtual string Description
@@ -73,11 +73,17 @@ namespace Microsoft.VisualStudio.Utilities
             {
                 if (_scopes == null || _scopes.Count == 0)
                 {
-                    return _contextDescription;
+                    return _defaultDescription;
                 }
 
-                // Combine context description with descriptions of all current scopes
-                return _contextDescription + Environment.NewLine + string.Join(Environment.NewLine, _scopes.Select((s) => s.Description));
+                // Most common case
+                if (_scopes.Count == 1)
+                {
+                    return _scopes[0].Description;
+                }
+
+                // Combine descriptions of all current scopes
+                return string.Join(Environment.NewLine, _scopes.Select((s) => s.Description));
             }
         }
 

@@ -25,6 +25,7 @@ namespace Microsoft.VisualStudio.UI.Text.Commanding.Implementation
         private readonly static IReadOnlyList<ICommandHandlerAndMetadata> EmptyHandlerList = new List<ICommandHandlerAndMetadata>(0);
         private readonly static Action EmptyAction = delegate { };
         private readonly static Func<CommandState> UnavalableCommandFunc = new Func<CommandState>(() => CommandState.Unavailable);
+        private readonly static string WaitForCommandExecutionString = CommandingStrings.WaitForCommandExecution;
 
         /// This dictionary acts as a cache so we can avoid having to look through the full list of
         /// handlers every time we need handlers of a specific type, for a given content type.
@@ -128,7 +129,7 @@ namespace Microsoft.VisualStudio.UI.Text.Commanding.Implementation
                         commandExecutionContext = CreateCommandExecutionContext();
                     }
 
-                    handlerChain = () => handler.ExecuteCommand(args, nextHandler, commandExecutionContext);
+                    handlerChain = () => _guardedOperations.CallExtensionPoint(handler, () => handler.ExecuteCommand(args, nextHandler, commandExecutionContext));
                 }
 
                 ExecuteCommandHandlerChain(commandExecutionContext, handlerChain, nextCommandHandler);
@@ -153,7 +154,7 @@ namespace Microsoft.VisualStudio.UI.Text.Commanding.Implementation
             }
             finally
             {
-                commandExecutionContext?.WaitContext?.Dispose();
+                commandExecutionContext?.OperationContext?.Dispose();
             }
         }
 
@@ -181,8 +182,8 @@ namespace Microsoft.VisualStudio.UI.Text.Commanding.Implementation
         private CommandExecutionContext CreateCommandExecutionContext()
         {
             CommandExecutionContext commandExecutionContext;
-            var uiThreadOperationContext = _uiThreadOperationExecutor.BeginExecute(CommandingStrings.ExecutingCommand,
-                CommandingStrings.WaitForCommandExecution, allowCancel: true, showProgress: true);
+            var uiThreadOperationContext = _uiThreadOperationExecutor.BeginExecute(title: null, // We want same caption as the main window
+                defaultDescription: WaitForCommandExecutionString, allowCancellation: true, showProgress: true);
             commandExecutionContext = new CommandExecutionContext(uiThreadOperationContext);
             return commandExecutionContext;
         }

@@ -413,7 +413,9 @@ namespace Microsoft.VisualStudio.Text.Outlining
                     {
                         // TODO: Notify providers somehow.
                         //       Or rewrite so that such things are legal.
+#if false
                         Debug.WriteLine("IGNORING TAG " + spans[0] + " due to span conflict");
+#endif
                     }
                     else
                     {
@@ -422,7 +424,9 @@ namespace Microsoft.VisualStudio.Text.Outlining
                 }
                 else
                 {
+#if false
                     Debug.WriteLine("IGNORING TAG " + tagSpan.Span.GetSpans(editBuffer) + " because it was split or shortened by projection");
+#endif
                 }
             }
 
@@ -493,9 +497,9 @@ namespace Microsoft.VisualStudio.Text.Outlining
             return merged;
         }
 
-        #endregion
+#endregion
 
-        #region Getting collapsibles
+#region Getting collapsibles
 
         public IEnumerable<ICollapsed> GetCollapsedRegions(SnapshotSpan span)
         {
@@ -635,17 +639,17 @@ namespace Microsoft.VisualStudio.Text.Outlining
                    !collapsedRegionTree.IsPointContainedInANode(regionSpan.End);
         }
 
-        #endregion
+#endregion
 
-        #region IAccurateOutliningManager methods
+#region IAccurateOutliningManager methods
         public IEnumerable<ICollapsed> CollapseAll(SnapshotSpan span, Predicate<ICollapsible> match, CancellationToken cancel)
         {
             return this.InternalCollapseAll(span, match, cancel: cancel);
         }
 
-        #endregion
+#endregion
 
-        #region IDisposable
+#region IDisposable
 
         public void Dispose()
         {
@@ -705,10 +709,10 @@ namespace Microsoft.VisualStudio.Text.Outlining
             }
         }
 
-        #endregion
+#endregion
     }
 
-    #region Sorter for sorted lists of collapsibles
+#region Sorter for sorted lists of collapsibles
     class CollapsibleSorter : IComparer<ICollapsible>
     {
         private ITextBuffer SourceBuffer { get; set; }
@@ -737,5 +741,5 @@ namespace Microsoft.VisualStudio.Text.Outlining
                 return -left.Length.CompareTo(right.Length);
         }
     }
-    #endregion
+#endregion
 }

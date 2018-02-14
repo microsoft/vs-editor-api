@@ -372,7 +372,7 @@ namespace Microsoft.VisualStudio.Text.Utilities
         {
             try
             {
-                BeforeCallingEventHandler(call);
+                BeforeCallingExtensionPoint(errorSource ?? call);
                 call();
             }
             catch (Exception e)
@@ -381,7 +381,7 @@ namespace Microsoft.VisualStudio.Text.Utilities
             }
             finally
             {
-                AfterCallingEventHandler(call);
+                AfterCallingExtensionPoint(errorSource ?? call);
             }
         }
 
@@ -389,7 +389,7 @@ namespace Microsoft.VisualStudio.Text.Utilities
         {
             try
             {
-                BeforeCallingEventHandler(call);
+                BeforeCallingExtensionPoint(errorSource ?? call);
                 return call();
             }
             catch (Exception e)
@@ -400,8 +400,8 @@ namespace Microsoft.VisualStudio.Text.Utilities
             }
             finally
             {
-                AfterCallingEventHandler(call);
-            }            
+                AfterCallingExtensionPoint(errorSource ?? call);
+            }
         }
 
         public void CallExtensionPoint(Action call)
@@ -522,6 +522,26 @@ namespace Microsoft.VisualStudio.Text.Utilities
             }
         }
 
+        private void AfterCallingExtensionPoint(object extensionPoint)
+        {
+            if (PerfTrackers.Count == 0)
+            {
+                return;
+            }
+
+            foreach (var perfTracker in PerfTrackers)
+            {
+                try
+                {
+                    perfTracker.AfterCallingExtension(extensionPoint);
+                }
+                catch (Exception e)
+                {
+                    HandleException(perfTracker, e);
+                }
+            }
+        }
+
         private void BeforeCallingEventHandler(Delegate handler)
         {
             if (PerfTrackers.Count == 0)
@@ -534,6 +554,26 @@ namespace Microsoft.VisualStudio.Text.Utilities
                 try
                 {
                     perfTracker.BeforeCallingEventHandler(handler);
+                }
+                catch (Exception e)
+                {
+                    HandleException(perfTracker, e);
+                }
+            }
+        }
+
+        private void BeforeCallingExtensionPoint(object extensionPoint)
+        {
+            if (PerfTrackers.Count == 0)
+            {
+                return;
+            }
+
+            foreach (var perfTracker in PerfTrackers)
+            {
+                try
+                {
+                    perfTracker.BeforeCallingExtension(extensionPoint);
                 }
                 catch (Exception e)
                 {

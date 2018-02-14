@@ -1,20 +1,16 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
+using System.ComponentModel.Composition;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.VisualStudio.Language.Intellisense;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
-using System.Collections.Immutable;
+using Microsoft.VisualStudio.Text.Operations;
+using Microsoft.VisualStudio.Text.Utilities;
 using Microsoft.VisualStudio.Threading;
 using Microsoft.VisualStudio.Utilities;
-using Microsoft.VisualStudio.Text.Utilities;
-
-#if NET46
-using System.ComponentModel.Composition;
-#else
-using System.Composition;
-#endif
 
 namespace Microsoft.VisualStudio.Language.Intellisense.Implementation
 {
@@ -27,27 +23,32 @@ namespace Microsoft.VisualStudio.Language.Intellisense.Implementation
         [Import(AllowDefault = true)]
         internal ILoggingServiceInternal Logger { get; set; }
 
+        // This may be used to GetExtentOfWord, but it doesn't fully work yet, so we're not using it.
         [Import(AllowDefault = true)]
         internal ITextDocumentFactoryService TextDocumentFactoryService { get; set; }
 
         [Import]
-        private IGuardedOperations GuardedOperation { get; set; }
+        internal IGuardedOperations GuardedOperations { get; set; }
 
         [Import]
         private IContentTypeRegistryService ContentTypeRegistryService { get; set; }
 
-        [ImportMany]
-        private IEnumerable<Lazy<ICompletionUIProvider, IOrderableContentTypeMetadata>> UnorderedUiFactories { get; set; }
+        [Import]
+        internal ITextStructureNavigatorSelectorService TextStructureNavigatorSelectorService { get; set; }
 
+        [ImportMany]
+        private IEnumerable<Lazy<ICompletionPresenterProvider, IOrderableContentTypeMetadata>> UnorderedPresenterProviders { get; set; }
+
+        // TODO: use the provider pattern
         [ImportMany]
         private IEnumerable<Lazy<IAsyncCompletionItemSource, IOrderableContentTypeMetadata>> UnorderedCompletionItemSources { get; set; }
 
         [ImportMany]
         private IEnumerable<Lazy<IAsyncCompletionService, IOrderableContentTypeMetadata>> UnorderedCompletionServices { get; set; }
 
-        private IList<Lazy<ICompletionUIProvider, IOrderableContentTypeMetadata>> _orderedUiFactories;
-        internal IList<Lazy<ICompletionUIProvider, IOrderableContentTypeMetadata>> OrderedUiFactories
-            => _orderedUiFactories ?? (_orderedUiFactories = Orderer.Order(UnorderedUiFactories));
+        private IList<Lazy<ICompletionPresenterProvider, IOrderableContentTypeMetadata>> _orderedPresenterProviders;
+        internal IList<Lazy<ICompletionPresenterProvider, IOrderableContentTypeMetadata>> OrderedPresenterProviders
+            => _orderedPresenterProviders ?? (_orderedPresenterProviders = Orderer.Order(UnorderedPresenterProviders));
 
         private IList<Lazy<IAsyncCompletionItemSource, IOrderableContentTypeMetadata>> _orderedCompletionItemSources;
         internal IList<Lazy<IAsyncCompletionItemSource, IOrderableContentTypeMetadata>> OrderedCompletionItemSources
@@ -57,56 +58,24 @@ namespace Microsoft.VisualStudio.Language.Intellisense.Implementation
         internal IList<Lazy<IAsyncCompletionService, IOrderableContentTypeMetadata>> OrderedCompletionServices
             => _orderedCompletionServices ?? (_orderedCompletionServices = Orderer.Order(UnorderedCompletionServices));
 
-        private ImmutableDictionary<IContentType, ImmutableArray<string>> _commitCharacters = ImmutableDictionary<IContentType, ImmutableArray<string>>.Empty;
+        private ImmutableDictionary<IContentType, ImmutableSortedSet<char>> _commitCharacters = ImmutableDictionary<IContentType, ImmutableSortedSet<char>>.Empty;
         private ImmutableDictionary<IContentType, ImmutableArray<IAsyncCompletionItemSource>> _cachedCompletionItemSources = ImmutableDictionary<IContentType, ImmutableArray<IAsyncCompletionItemSource>>.Empty;
         private ImmutableDictionary<IContentType, IAsyncCompletionService> _cachedCompletionServices = ImmutableDictionary<IContentType, IAsyncCompletionService>.Empty;
-        private ImmutableDictionary<IContentType, ICompletionUIProvider> _cachedUiFactories = ImmutableDictionary<IContentType, ICompletionUIProvider>.Empty;
-        bool firstRun = true; // used only for diagnostics
+        private ImmutableDictionary<IContentType, ICompletionPresenterProvider> _cachedUiFactories = ImmutableDictionary<IContentType, ICompletionPresenterProvider>.Empty;
+        private bool firstRun = true; // used only for diagnostics
         private bool _firstInvocationReported; // used for "time to code"
 
-        void IAsyncCompletionBroker.Dismiss(ITextView view)
+        internal void DismissSession(IAsyncCompletionSession session)
         {
-            var session = GetSession(view);
-            if (session == null)
-            {
-                return;
-            }
-            view.Properties.RemoveProperty(typeof(IAsyncCompletionSession));
-            session.DismissAndHide();
+            session.TextView.Properties.RemoveProperty(typeof(IAsyncCompletionSession));
         }
 
-        void IAsyncCompletionBroker.Commit(ITextView view, string edit)
-        {
-            var session = GetSession(view);
-            if (session == null)
-            {
-                return;
-            }
-
-            session.Commit(edit);
-            ((IAsyncCompletionBroker)this).Dismiss(view);
-        }
-
-        void IAsyncCompletionBroker.OpenOrUpdate(ITextView view, ITrackingSpan trackedEdit, CompletionTrigger trigger, SnapshotPoint triggerLocation)
-        {
-            var session = GetSession(view);
-            if (session == null)
-            {
-                // Either the session was dismissed, or Begin was not called yet.
-                // what would be a good way to tell the two apart?
-                // throw new InvalidOperationException("No completion session available for this view. Call Begin first.");
-                return;
-            }
-            session.OpenOrUpdate(view, trackedEdit, trigger, triggerLocation);
-        }
-
-        void IAsyncCompletionBroker.TriggerCompletion(ITextView view, SnapshotPoint triggerLocation)
+        IAsyncCompletionSession IAsyncCompletionBroker.TriggerCompletion(ITextView view, SnapshotPoint triggerLocation)
         {
             var session = GetSession(view);
             if (session != null)
             {
-                // Session already exists.
-                return;
+                return session;
             }
 
             // TODO: Handle the race condition: two consecutive OpenAsync. Both create completion
@@ -116,7 +85,7 @@ namespace Microsoft.VisualStudio.Language.Intellisense.Implementation
             if (!sourcesWithLocations.Any())
             {
                 // There is no completion source available for this buffer
-                return;
+                return null;
             }
 
             var buffers = CompletionUtilities.GetBuffersForTriggerPoint(view, triggerLocation).ToImmutableArray();
@@ -126,17 +95,17 @@ namespace Microsoft.VisualStudio.Language.Intellisense.Implementation
 
             if (service == null)
             {
-                // There is no modern completion service available for this buffer
-                return;
+                // This should never happen because we provide a default and IsCompletionFeatureAvailable would have returned false 
+                throw new InvalidOperationException("Default completion service was not found. Completion will be unavailable.");
             }
 
             var uiFactory = buffers
-                .Select(b => GetUiFactory(b.ContentType))
-                .FirstOrDefault(s => s != null);
+                .Select(n => GetUiFactory(n.ContentType))
+                .FirstOrDefault(n => n != null);
 
             if (firstRun)
             {
-                System.Diagnostics.Debug.Assert(uiFactory != null, $"No instance of {nameof(ICompletionUIProvider)} is loaded. The prototype completion will work without the UI.");
+                System.Diagnostics.Debug.Assert(uiFactory != null, $"No instance of {nameof(ICompletionPresenterProvider)} is loaded. Completion will work without the UI.");
                 firstRun = false;
             }
             session = new AsyncCompletionSession(JtContext.Factory, uiFactory, sourcesWithLocations, service, this, view);
@@ -144,7 +113,9 @@ namespace Microsoft.VisualStudio.Language.Intellisense.Implementation
             view.Closed += TextView_Closed;
 
             // Additionally, emulate the legacy completion telemetry
-            emulateLegacyCompletionTelemetry(buffers.FirstOrDefault()?.ContentType, view);
+            EmulateLegacyCompletionTelemetry(buffers.FirstOrDefault()?.ContentType, view);
+
+            return session;
         }
 
         private ImmutableArray<IAsyncCompletionItemSource> GetCompletionItemSources(IContentType contentType)
@@ -154,14 +125,15 @@ namespace Microsoft.VisualStudio.Language.Intellisense.Implementation
                 return cachedSources;
             }
 
-            ImmutableArray<IAsyncCompletionItemSource> result = ImmutableArray<IAsyncCompletionItemSource>.Empty;
+            var builder = ImmutableArray.CreateBuilder<IAsyncCompletionItemSource>();
             foreach (var item in OrderedCompletionItemSources)
             {
                 if (item.Metadata.ContentTypes.Any(n => contentType.IsOfType(n)))
                 {
-                    result = result.Add(item.Value);
+                    builder.Add(item.Value);
                 }
             }
+            var result = builder.ToImmutable();
             _cachedCompletionItemSources = _cachedCompletionItemSources.Add(contentType, result);
             return result;
         }
@@ -173,7 +145,7 @@ namespace Microsoft.VisualStudio.Language.Intellisense.Implementation
                 return service;
             }
 
-            IAsyncCompletionService bestService = GuardedOperation.InvokeBestMatchingFactory(
+            IAsyncCompletionService bestService = GuardedOperations.InvokeBestMatchingFactory(
                 providerHandles: OrderedCompletionServices,
                 getter: n => n,
                 dataContentType: contentType,
@@ -184,15 +156,15 @@ namespace Microsoft.VisualStudio.Language.Intellisense.Implementation
             return bestService;
         }
 
-        private ICompletionUIProvider GetUiFactory(IContentType contentType)
+        private ICompletionPresenterProvider GetUiFactory(IContentType contentType)
         {
             if (_cachedUiFactories.TryGetValue(contentType, out var factory))
             {
                 return factory;
             }
 
-            ICompletionUIProvider bestFactory = GuardedOperation.InvokeBestMatchingFactory(
-                providerHandles: OrderedUiFactories,
+            ICompletionPresenterProvider bestFactory = GuardedOperations.InvokeBestMatchingFactory(
+                providerHandles: OrderedPresenterProviders,
                 getter: n => n,
                 dataContentType: contentType,
                 contentTypeRegistryService: ContentTypeRegistryService,
@@ -202,23 +174,36 @@ namespace Microsoft.VisualStudio.Language.Intellisense.Implementation
             return bestFactory;
         }
 
+        internal bool TryGetKnownCommitCharacters(IContentType contentType, out ImmutableSortedSet<char> commitChars)
+        {
+            if (_commitCharacters.TryGetValue(contentType, out commitChars))
+            {
+                return commitChars.Any();
+            }
+            var allCommitChars = new List<char>();
+            foreach (var source in GetCompletionItemSources(contentType))
+            {
+                GuardedOperations.CallExtensionPoint(
+                    errorSource: source,
+                    call: () => allCommitChars.AddRange(source.GetPotentialCommitCharacters())
+                );
+            }
+            commitChars = ImmutableSortedSet.CreateRange(allCommitChars);
+            _commitCharacters = _commitCharacters.Add(contentType, commitChars);
+            return commitChars.Any();
+        }
+
         private void TextView_Closed(object sender, EventArgs e)
         {
-            ((IAsyncCompletionBroker)this).Dismiss((ITextView)sender);
-            try
+            GetSession((ITextView)sender).Dismiss();
+            // TODO: unlink this
+            Task.Run(async () =>
             {
-                Task.Run(async () =>
-                {
-                    await Task.WhenAll(OrderedCompletionItemSources
-                        .Where(n => n.IsValueCreated)
-                        .Select(n => n.Value)
-                        .Select(n => n.HandleViewClosedAsync((ITextView)sender)));
-                });
-            }
-            catch
-            {
-
-            }
+                await Task.WhenAll(OrderedCompletionItemSources
+                    .Where(n => n.IsValueCreated)
+                    .Select(n => n.Value)
+                    .Select(n => GuardedOperations.CallExtensionPointAsync(n, () => n.HandleViewClosedAsync((ITextView)sender))));
+            });
         }
 
         bool IAsyncCompletionBroker.IsCompletionActive(ITextView view)
@@ -226,69 +211,30 @@ namespace Microsoft.VisualStudio.Language.Intellisense.Implementation
             return view.Properties.ContainsProperty(typeof(IAsyncCompletionSession));
         }
 
-        bool IAsyncCompletionBroker.ShouldCommitCompletion(ITextView view, string edit, SnapshotPoint triggerLocation)
+        bool IAsyncCompletionBroker.ShouldTriggerCompletion(ITextView textView, char typeChar, SnapshotPoint triggerLocation)
         {
-            if (!((IAsyncCompletionBroker)this).IsCompletionActive(view))
-            {
-                return false;
-            }
-
-            foreach (var contentType in CompletionUtilities.GetBuffersForTriggerPoint(view, triggerLocation).Select(b => b.ContentType))
-            {
-                if (TryGetKnownCommitCharacters(contentType, out var commitChars))
-                {
-                    if (commitChars.Contains(edit[0].ToString()))
-                    {
-                        if (GetSession(view).ShouldCommit(view, edit, triggerLocation))
-                            return true;
-                    }
-                }
-            }
-            return false;
+            var sourcesWithLocations = CompletionUtilities.GetCompletionSourcesWithMappedLocations(textView, triggerLocation, GetCompletionItemSources);
+            return sourcesWithLocations.Any(p => GuardedOperations.CallExtensionPoint(
+                errorSource: p.Key,
+                call: () => p.Key.ShouldTriggerCompletion(typeChar, p.Value),
+                valueOnThrow: false));
         }
 
-        private bool TryGetKnownCommitCharacters(IContentType contentType, out ImmutableArray<string> commitChars)
+        public IAsyncCompletionSession GetSession(ITextView textView)
         {
-            if (_commitCharacters.TryGetValue(contentType, out commitChars))
+            if (textView.Properties.TryGetProperty(typeof(IAsyncCompletionSession), out IAsyncCompletionSession session))
             {
-                return commitChars.Any();
-            }
-            var commitCharsBuilder = ImmutableArray.CreateBuilder<string>();
-            foreach (var source in GetCompletionItemSources(contentType))
-            {
-                commitCharsBuilder.AddRange(source.GetPotentialCommitCharacters());
-            }
-            commitChars = commitCharsBuilder.Distinct().ToImmutableArray();
-            _commitCharacters = _commitCharacters.Add(contentType, commitChars);
-            return commitChars.Any();
-        }
-
-        bool IAsyncCompletionBroker.ShouldTriggerCompletion(ITextView view, string edit, SnapshotPoint triggerLocation)
-        {
-            var sourcesWithLocations = CompletionUtilities.GetCompletionSourcesWithMappedLocations(view, triggerLocation, GetCompletionItemSources);
-            return sourcesWithLocations.Any(p => p.Key.ShouldTriggerCompletion(edit, p.Value));
-        }
-
-        private IAsyncCompletionSession GetSession(ITextView view)
-        {
-            if (view.Properties.TryGetProperty(typeof(IAsyncCompletionSession), out IAsyncCompletionSession property))
-            {
-                return property;
+                return session;
             }
             return null;
         }
-
-        void IAsyncCompletionBroker.SelectUp(ITextView view) => GetSession(view)?.SelectUp();
-        void IAsyncCompletionBroker.SelectDown(ITextView view) => GetSession(view)?.SelectDown();
-        void IAsyncCompletionBroker.SelectPageUp(ITextView view) => GetSession(view)?.SelectPageUp();
-        void IAsyncCompletionBroker.SelectPageDown(ITextView view) => GetSession(view)?.SelectPageDown();
 
         // Helper methods for telemetry
         internal string GetItemSourceName(IAsyncCompletionItemSource source) => OrderedCompletionItemSources.FirstOrDefault(n => n.Value == source)?.Metadata.Name ?? string.Empty;
         internal string GetCompletionServiceName(IAsyncCompletionService service) => OrderedCompletionServices.FirstOrDefault(n => n.Value == service)?.Metadata.Name ?? string.Empty;
 
-        // Partiy with legacy telemetry
-        private void emulateLegacyCompletionTelemetry(IContentType contentType, ITextView view)
+        // Parity with legacy telemetry
+        private void EmulateLegacyCompletionTelemetry(IContentType contentType, ITextView textView)
         {
             if (Logger == null || _firstInvocationReported)
                 return;
@@ -307,13 +253,30 @@ namespace Microsoft.VisualStudio.Language.Intellisense.Implementation
                 }
                 return null;
             }
-            var fileExtension = GetFileExtension(view.TextBuffer) ?? "Unknown";
+            var fileExtension = GetFileExtension(textView.TextBuffer) ?? "Unknown";
             var reportedContentType = contentType?.ToString() ?? "Unknown";
 
             _firstInvocationReported = true;
             Logger.PostEvent(TelemetryEventType.Operation, "VS/Editor/IntellisenseFirstRun/Opened", TelemetryResult.Success,
                 ("VS.Editor.IntellisenseFirstRun.Opened.ContentType", reportedContentType),
                 ("VS.Editor.IntellisenseFirstRun.Opened.FileExtension", fileExtension));
+        }
+
+        const string IsCompletionAvailableProperty = "IsCompletionAvailable";
+        bool IAsyncCompletionBroker.IsCompletionSupported(ITextView view)
+        {
+            bool featureIsAvailable;
+            if (view.Properties.TryGetProperty(IsCompletionAvailableProperty, out featureIsAvailable))
+            {
+                return featureIsAvailable;
+            }
+
+            featureIsAvailable = UnorderedCompletionItemSources
+                    .Any(n => n.Metadata.ContentTypes.Any(ct => view.TextBuffer.ContentType.IsOfType(ct)));
+            featureIsAvailable &= UnorderedCompletionServices
+                    .Any(n => n.Metadata.ContentTypes.Any(ct => view.TextBuffer.ContentType.IsOfType(ct)));
+            view.Properties.AddProperty(IsCompletionAvailableProperty, featureIsAvailable);
+            return featureIsAvailable;
         }
     }
 }

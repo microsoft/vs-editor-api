@@ -8,8 +8,10 @@ using System.Threading.Tasks;
 using Microsoft.VisualStudio.Language.Intellisense;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
+using Microsoft.VisualStudio.Text.Operations;
 using Microsoft.VisualStudio.Text.Utilities;
 using Microsoft.VisualStudio.Threading;
+using Microsoft.VisualStudio.Utilities;
 
 namespace Microsoft.VisualStudio.Language.Intellisense.Implementation
 {
@@ -21,16 +23,18 @@ namespace Microsoft.VisualStudio.Language.Intellisense.Implementation
     {
         // Available data and services
         // TODO: consider storing MappingPoint instead of SnapshotPoint
-        private readonly IDictionary<IAsyncCompletionItemSource, SnapshotPoint> _completionProviders;
+        private readonly IDictionary<IAsyncCompletionItemSource, SnapshotPoint> _completionSources;
         private readonly IAsyncCompletionService _completionService;
         private readonly JoinableTaskFactory _jtf;
-        private readonly ICompletionUIProvider _uiFactory;
-        private readonly IAsyncCompletionBroker _broker;
+        private readonly ICompletionPresenterProvider _uiFactory;
+        private readonly AsyncCompletionBroker _broker;
         private readonly ITextView _view;
         private readonly TelemetryData _telemetryData;
+        private readonly ITextStructureNavigator _textStructureNavigator;
+        private readonly IGuardedOperations _guardedOperations;
 
         // Presentation:
-        ICompletionUI _gui; // Must be accessed from GUI thread
+        ICompletionPresenter _gui; // Must be accessed from GUI thread
         const int FirstIndex = 0;
         readonly int PageStepSize;
 
@@ -44,122 +48,236 @@ namespace Microsoft.VisualStudio.Language.Intellisense.Implementation
         // When set, we won't send dismissed telemetry
         private bool _committed;
 
-        public AsyncCompletionSession(JoinableTaskFactory jtf, ICompletionUIProvider uiFactory, IDictionary<IAsyncCompletionItemSource, SnapshotPoint> providers, IAsyncCompletionService service, AsyncCompletionBroker broker, ITextView view)
+        public event EventHandler<CompletionItemEventArgs> ItemCommitted;
+        public event EventHandler Dismissed;
+        public event EventHandler<CompletionItemsWithHighlightEventArgs> ItemsUpdated;
+
+        public ITextView TextView => _view;
+
+        public AsyncCompletionSession(JoinableTaskFactory jtf, ICompletionPresenterProvider uiFactory,
+            IDictionary<IAsyncCompletionItemSource, SnapshotPoint> completionSources,
+            IAsyncCompletionService completionService, AsyncCompletionBroker broker, ITextView view)
         {
             _jtf = jtf;
             _uiFactory = uiFactory;
             _broker = broker;
-            _completionProviders = providers;
-            _completionService = service;
+            _completionSources = completionSources;
+            _completionService = completionService;
             _view = view;
+            _textStructureNavigator = broker.TextStructureNavigatorSelectorService?.GetTextStructureNavigator(view.TextBuffer);
+            _guardedOperations = broker.GuardedOperations;
             _telemetryData = new TelemetryData(broker);
             PageStepSize = uiFactory?.ResultsPerPage ?? 1;
             _view.Caret.PositionChanged += OnCaretPositionChanged;
         }
 
-        public void Commit(string edit)
+        bool IAsyncCompletionSession.CommitIfUnique(CancellationToken token)
+        {
+            // Note that this will deadlock if OpenOrUpdate wasn't called ahead of time.
+            var lastModel = _computation.WaitAndGetResult();
+            if (lastModel.UniqueItem != null)
+            {
+                Commit(default(char), lastModel.UniqueItem, token);
+                return true;
+            }
+            else if (lastModel.PresentedItems.Length == 1)
+            {
+                Commit(default(char), lastModel.PresentedItems[0].CompletionItem, token);
+                return true;
+            }
+            else
+            {
+                // Show the UI, because waitAndGetResult canceled showing the UI.
+                UpdateUiInner(lastModel); // We are on the UI thread, so we may call UpdateUiInner
+                return false;
+            }
+        }
+
+        void IAsyncCompletionSession.Commit(CancellationToken token, char typedChar)
         {
             var lastModel = _computation.WaitAndGetResult();
 
-            if (lastModel.UseSuggestionMode && !String.IsNullOrEmpty(edit))
+            if (lastModel.SelectSuggestionMode && !typedChar.Equals(default(char)))
                 return; // In suggestion mode, allow only explicit commits (click, tab, e.g. not tied to a text change)
-            else if (lastModel.SelectSuggestionMode && lastModel.SuggestionIsEmpty)
+            else if (lastModel.SelectSuggestionMode && string.IsNullOrWhiteSpace(lastModel.SuggestionModeItem?.InsertText))
                 return; // In suggestion mode, don't commit empty suggestion (suggestion item temporarily shows description of suggestion mode)
-            else if (lastModel.SelectSuggestionMode && !lastModel.SuggestionIsEmpty)
-                Commit(edit, lastModel.SuggestionModeItem.CompletionItem);
+            else if (lastModel.SelectSuggestionMode)
+                Commit(typedChar, lastModel.SuggestionModeItem, token);
             else if (!lastModel.PresentedItems.Any())
                 return; // There is nothing to commit
             else
-                Commit(edit, lastModel.PresentedItems.ElementAt(lastModel.SelectedIndex).CompletionItem);
+                Commit(typedChar, lastModel.PresentedItems[lastModel.SelectedIndex].CompletionItem, token);
         }
 
-        public void Commit(string edit, CompletionItem itemToCommit)
+        private void Commit(char typedChar, CompletionItem itemToCommit, CancellationToken token)
         {
             var lastModel = _computation.WaitAndGetResult();
 
-            // TODO: ensure we are on the UI thread
+            if (!_jtf.Context.IsOnMainThread)
+                throw new InvalidOperationException($"{nameof(IAsyncCompletionSession)}.{nameof(IAsyncCompletionSession.Commit)} must be callled from UI thread.");
 
             _telemetryData.UiStopwatch.Restart();
-            if (itemToCommit.CustomCommit)
+            if (itemToCommit.UseCustomCommit)
             {
                 // Pass appropriate buffer to the item's provider
-                var buffer = _completionProviders[itemToCommit.Source].Snapshot.TextBuffer;
-                itemToCommit.Source.CustomCommit(_view, buffer, itemToCommit, lastModel.ApplicableSpan, edit);
+                var buffer = _completionSources[itemToCommit.Source].Snapshot.TextBuffer;
+                _guardedOperations.CallExtensionPoint(
+                    errorSource: itemToCommit.Source,
+                    call: () => itemToCommit.Source.CustomCommit(_view, buffer, itemToCommit, lastModel.ApplicableSpan, typedChar, token));
             }
             else
             {
-                var buffer = _view.TextBuffer;
-                var bufferEdit = buffer.CreateEdit();
-                bufferEdit.Replace(lastModel.ApplicableSpan.GetSpan(buffer.CurrentSnapshot), itemToCommit.InsertText + edit);
-                bufferEdit.Apply();
+                InsertIntoBuffer(_view, lastModel, itemToCommit.InsertText, typedChar);
             }
             _telemetryData.UiStopwatch.Stop();
-            _telemetryData.RecordCommitAndSend(_telemetryData.UiStopwatch.ElapsedMilliseconds, itemToCommit, edit);
+            _telemetryData.RecordCommitAndSend(_telemetryData.UiStopwatch.ElapsedMilliseconds, itemToCommit, typedChar);
             _committed = true;
+            ItemCommitted?.Invoke(this, new CompletionItemEventArgs(itemToCommit));
+            ((IAsyncCompletionSession)this).Dismiss();
         }
 
-        void IAsyncCompletionSession.DismissAndHide()
+        private void InsertIntoBuffer(ITextView view, CompletionModel model, string insertText, char typeChar)
         {
-            // TODO: protect from race conditions when we get two Dismiss requests
+            var buffer = view.TextBuffer;
+            var bufferEdit = buffer.CreateEdit();
+            var textToInsert = typeChar.Equals(default(char)) ? insertText : insertText + typeChar;
+            bufferEdit.Replace(model.ApplicableSpan.GetSpan(buffer.CurrentSnapshot), textToInsert);
+            bufferEdit.Apply();
+        }
+
+        void IAsyncCompletionSession.Dismiss()
+        {
+            if (_isDismissed)
+                return;
+
             _isDismissed = true;
+            _broker.DismissSession(this);
+            Dismissed?.Invoke(this, EventArgs.Empty);
             _view.Caret.PositionChanged -= OnCaretPositionChanged;
             _computationCancellation.Cancel();
+            _computation = null;
 
             if (!_committed)
                 _telemetryData.RecordDismissedAndSend();
 
-            if (_gui == null)
-                return; // nothing to hide
-
-            // TODO: ensure we are on the UI thread
-            _gui.FiltersChanged -= OnFiltersChanged;
-            _gui.CompletionItemCommitted -= OnItemCommitted;
-            _gui.Hide();
-            _gui.Dispose();
+            if (_gui != null)
+            {
+                _guardedOperations.CallExtensionPoint(
+                    errorSource: _gui,
+                    call: async () =>
+                    {
+                        await _jtf.SwitchToMainThreadAsync();
+                        _gui.FiltersChanged -= OnFiltersChanged;
+                        _gui.CommitRequested -= OnCommitRequested;
+                        _gui.CompletionItemSelected -= OnItemSelected;
+                        _gui.CompletionClosed -= OnGuiClosed;
+                        _gui.Close();
+                    });
+                _gui = null;
+            }
         }
 
-        public void OpenOrUpdate(ITextView view, ITrackingSpan trackedEdit, CompletionTrigger trigger, SnapshotPoint triggerLocation)
+        void IAsyncCompletionSession.OpenOrUpdate(ITextView textView, CompletionTrigger trigger, SnapshotPoint triggerLocation)
         {
             if (_computation == null)
             {
                 _computation = new ModelComputation<CompletionModel>(PrioritizedTaskScheduler.AboveNormalInstance, _computationCancellation.Token);
-                _computation.Enqueue((model, token) => GetInitialModel(view, trackedEdit, trigger, triggerLocation, token));
+                _computation.Enqueue((model, token) => GetInitialModel(textView, trigger, triggerLocation, token));
             }
 
             var taskId = Interlocked.Increment(ref _lastFilteringTaskId);
-            _computation.Enqueue((model, token) => UpdateSnapshot(model, trigger, triggerLocation, token, taskId), UpdateUI);
+            _computation.Enqueue((model, token) => UpdateSnapshot(model, trigger, FromCompletionTriggerReason(trigger.Reason), triggerLocation, token, taskId), UpdateUi);
         }
 
-        public void SelectDown()
+        internal void InvokeAndCommitIfUnique(ITextView view, CompletionTrigger trigger, SnapshotPoint triggerLocation, CancellationToken token)
         {
-            _computation.Enqueue((model, token) => UpdateSelectedItem(model, +1, token), UpdateUI);
+            ((IAsyncCompletionSession)this).OpenOrUpdate(view, trigger, triggerLocation);
+            if (((IAsyncCompletionSession)this).CommitIfUnique(token))
+            {
+                ((IAsyncCompletionSession)this).Dismiss();
+            }
         }
 
-        public void SelectPageDown()
+        private static CompletionFilterReason FromCompletionTriggerReason(CompletionTriggerReason reason)
         {
-            _computation.Enqueue((model, token) => UpdateSelectedItem(model, +PageStepSize, token), UpdateUI);
+            switch (reason)
+            {
+                case CompletionTriggerReason.Invoke:
+                case CompletionTriggerReason.InvokeAndCommitIfUnique:
+                    return CompletionFilterReason.Initial;
+                case CompletionTriggerReason.Insertion:
+                    return CompletionFilterReason.Insertion;
+                case CompletionTriggerReason.Deletion:
+                    return CompletionFilterReason.Deletion;
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(reason));
+            }
         }
 
-        public void SelectUp()
+        #region Internal methods accessed by the command handlers
+
+        internal void ToggleSuggestionMode()
         {
-            _computation.Enqueue((model, token) => UpdateSelectedItem(model, -1, token), UpdateUI);
+            _computation.Enqueue((model, token) => ToggleCompletionModeInner(model, token), UpdateUi);
         }
 
-        public void SelectPageUp()
+        internal void SelectDown()
         {
-            _computation.Enqueue((model, token) => UpdateSelectedItem(model, -PageStepSize, token), UpdateUI);
+            _computation.Enqueue((model, token) => UpdateSelectedItem(model, +1, token), UpdateUi);
         }
 
-        private void OnFiltersChanged(object sender, CompletionFilterChangedEventArgs e)
+        internal void SelectPageDown()
+        {
+            _computation.Enqueue((model, token) => UpdateSelectedItem(model, +PageStepSize, token), UpdateUi);
+        }
+
+        internal void SelectUp()
+        {
+            _computation.Enqueue((model, token) => UpdateSelectedItem(model, -1, token), UpdateUi);
+        }
+
+        internal void SelectPageUp()
+        {
+            _computation.Enqueue((model, token) => UpdateSelectedItem(model, -PageStepSize, token), UpdateUi);
+        }
+
+        #endregion
+
+        private void OnFiltersChanged(object sender, CompletionFilterChangedEventArgs args)
         {
             var taskId = Interlocked.Increment(ref _lastFilteringTaskId);
-            _computation.Enqueue((model, token) => UpdateFilters(model, e.Filters, token, taskId), UpdateUI);
+            _computation.Enqueue((model, token) => UpdateFilters(model, args.Filters, token, taskId), UpdateUi);
         }
 
-        private void OnItemCommitted(object sender, CompletionItemCommittedEventArgs e)
+        private void OnCommitRequested(object sender, CompletionItemEventArgs args)
         {
-            Commit(String.Empty, e.Item);
-            _broker.Dismiss(_view);
+            Commit(default(char), args.Item, default(CancellationToken));
+        }
+
+        private void OnItemSelected(object sender, CompletionItemSelectedEventArgs args)
+        {
+            _computation.Enqueue((model, token) => UpdateSelectedItem(model, args.SelectedItem, args.SuggestionModeSelected, token)); // Note: we do not dispatch the call to update UI afterwards.
+        }
+
+        private void OnGuiClosed(object sender, CompletionClosedEventArgs args)
+        {
+            ((IAsyncCompletionSession)this).Dismiss();
+        }
+
+        bool IAsyncCompletionSession.ShouldCommit(ITextView view, char typeChar, SnapshotPoint triggerLocation)
+        {
+            foreach (var contentType in CompletionUtilities.GetBuffersForTriggerPoint(view, triggerLocation).Select(b => b.ContentType))
+            {
+                if (_broker.TryGetKnownCommitCharacters(contentType, out var commitChars))
+                {
+                    if (commitChars.Contains(typeChar))
+                    {
+                        if (ShouldCommit(view, typeChar, triggerLocation))
+                            return true;
+                    }
+                }
+            }
+            return false;
         }
 
         /// <summary>
@@ -171,60 +289,83 @@ namespace Microsoft.VisualStudio.Language.Intellisense.Implementation
         {
             // http://source.roslyn.io/#Microsoft.CodeAnalysis.EditorFeatures/Implementation/IntelliSense/Completion/Controller_CaretPositionChanged.cs,40
             // enqueue a task to see if the caret is still within the broundary
-            _computation.Enqueue((model, token) => HandleCaretPositionChanged(model, e.NewPosition), UpdateUI);
+            _computation.Enqueue((model, token) => HandleCaretPositionChanged(model, e.NewPosition), UpdateUi);
         }
 
-        private async Task UpdateUI(CompletionModel model)
+        private async Task UpdateUi(CompletionModel model)
         {
             if (_uiFactory == null) return;
             await _jtf.SwitchToMainThreadAsync();
+            UpdateUiInner(model);
+            await TaskScheduler.Default;
+        }
 
+        private void UpdateUiInner(CompletionModel model)
+        {
             if (_isDismissed)
                 return;
 
             _telemetryData.UiStopwatch.Restart();
             if (_gui == null)
             {
-                _gui = _uiFactory.GetUI(_view);
-                _gui.Open(new CompletionPresentation(model.PresentedItems, model.Filters, model.ApplicableSpan, model.UseSoftSelection, model.UseSuggestionMode, model.SelectSuggestionMode, model.SelectedIndex, model.SuggestionModeItem));
-                _gui.FiltersChanged += OnFiltersChanged;
-                _gui.CompletionItemCommitted += OnItemCommitted;
+                _gui = _guardedOperations.CallExtensionPoint(errorSource: _uiFactory, call: () => _uiFactory.GetOrCreate(_view), valueOnThrow: null);
+                if (_gui != null)
+                {
+                    _guardedOperations.CallExtensionPoint(
+                        errorSource: _gui,
+                        call: () =>
+                        {
+                            _gui = _uiFactory.GetOrCreate(_view);
+                            _gui.Open(new CompletionPresentationViewModel(model.PresentedItems, model.Filters, model.ApplicableSpan, model.UseSoftSelection,
+                                model.DisplaySuggestionMode, model.SelectSuggestionMode, model.SelectedIndex, model.SuggestionModeItem, model.SuggestionModeDescription));
+                            _gui.FiltersChanged += OnFiltersChanged;
+                            _gui.CommitRequested += OnCommitRequested;
+                            _gui.CompletionItemSelected += OnItemSelected;
+                            _gui.CompletionClosed += OnGuiClosed;
+                        });
+                }
             }
             else
             {
-                _gui.Update(new CompletionPresentation(model.PresentedItems, model.Filters, model.ApplicableSpan, model.UseSoftSelection, model.UseSuggestionMode, model.SelectSuggestionMode, model.SelectedIndex, model.SuggestionModeItem));
+                _guardedOperations.CallExtensionPoint(
+                    errorSource: _gui,
+                    call: () => _gui.Update(new CompletionPresentationViewModel(model.PresentedItems, model.Filters, model.ApplicableSpan, model.UseSoftSelection,
+                        model.DisplaySuggestionMode, model.SelectSuggestionMode, model.SelectedIndex, model.SuggestionModeItem, model.SuggestionModeDescription)));
             }
             _telemetryData.UiStopwatch.Stop();
             _telemetryData.RecordRendering(_telemetryData.UiStopwatch.ElapsedMilliseconds);
-
-            await TaskScheduler.Default;
         }
 
         /// <summary>
         /// Creates a new model and populates it with initial data
         /// </summary>
-        private async Task<CompletionModel> GetInitialModel(ITextView view, ITrackingSpan trackedEdit, CompletionTrigger trigger, SnapshotPoint triggerLocation, CancellationToken token)
+        private async Task<CompletionModel> GetInitialModel(ITextView textView, CompletionTrigger trigger, SnapshotPoint triggerLocation, CancellationToken token)
         {
             _telemetryData.ComputationStopwatch.Restart();
             // Map the trigger location to respective view for each completion provider
-            var nestedResults = await Task.WhenAll(_completionProviders.Select(p => p.Key.GetCompletionContextAsync(trigger, p.Value)));
-            var originalCompletionItems = nestedResults.SelectMany(n => n.Items).ToImmutableArray();
+            var nestedResults = await Task.WhenAll(
+                _completionSources.Select(
+                    p => _guardedOperations.CallExtensionPointAsync<CompletionContext>(
+                        errorSource: p.Key,
+                        asyncCall: () => p.Key.GetCompletionContextAsync(trigger, p.Value, token),
+                        valueOnThrow: null
+                    )));
+            var initialCompletionItems = nestedResults.Where(n => n != null && !n.Items.IsDefaultOrEmpty).SelectMany(n => n.Items).ToImmutableArray();
 
-            var availableFilters = nestedResults
-                .SelectMany(n => n.Items)
+            var availableFilters = initialCompletionItems
                 .SelectMany(n => n.Filters)
                 .Distinct()
                 .Select(n => new CompletionFilterWithState(n, true))
                 .ToImmutableArray();
 
-            // Note: do not use the tracked edit from the editor. Exclusively rely on data from the completion providers
             var spans = nestedResults
                 .Select(n => n.ApplicableToSpan)
-                .Select(s => view.BufferGraph.CreateMappingSpan(s, SpanTrackingMode.EdgeNegative))
+                .Select(s => textView.BufferGraph.CreateMappingSpan(s, SpanTrackingMode.EdgeNegative))
                 .Select(s => new SnapshotSpan(
                     s.Start.GetPoint(triggerLocation.Snapshot, PositionAffinity.Predecessor).Value,
                     s.End.GetPoint(triggerLocation.Snapshot, PositionAffinity.Predecessor).Value));
 
+            //var extentFromStructureNavigator = _textStructureNavigator?.GetExtentOfWord(triggerLocation - 1).Span;
             var extent = new SnapshotSpan(
                 spans.Min(n => n.Start),
                 spans.Max(n => n.End));
@@ -232,32 +373,49 @@ namespace Microsoft.VisualStudio.Language.Intellisense.Implementation
 
             var useSoftSelection = nestedResults.Any(n => n.UseSoftSelection);
             var useSuggestionMode = nestedResults.Any(n => n.UseSuggestionMode);
-            var suggestionModeDescription = nestedResults.FirstOrDefault(n => !String.IsNullOrEmpty(n.SuggestionModeDescription)).SuggestionModeDescription ?? String.Empty;
+            var suggestionModeDescription = nestedResults.FirstOrDefault(n => !string.IsNullOrEmpty(n.SuggestionModeDescription))?.SuggestionModeDescription ?? string.Empty;
 
             _telemetryData.ComputationStopwatch.Stop();
-            _telemetryData.RecordInitialModel(_telemetryData.ComputationStopwatch.ElapsedMilliseconds, _completionProviders.Keys, originalCompletionItems.Length, _completionService);
+            _telemetryData.RecordInitialModel(_telemetryData.ComputationStopwatch.ElapsedMilliseconds, _completionSources.Keys, initialCompletionItems.Length, _completionService);
 
-            return new CompletionModel(originalCompletionItems, applicableSpan, triggerLocation.Snapshot, availableFilters, useSoftSelection, useSuggestionMode, suggestionModeDescription);
+            _telemetryData.ComputationStopwatch.Restart();
+            var sortedList = await _guardedOperations.CallExtensionPointAsync(
+                errorSource: _completionService,
+                asyncCall: () => _completionService.SortCompletionListAsync(initialCompletionItems, trigger.Reason, triggerLocation.Snapshot, applicableSpan, _view, token),
+                valueOnThrow: initialCompletionItems);
+            _telemetryData.ComputationStopwatch.Stop();
+            _telemetryData.RecordProcessing(_telemetryData.ComputationStopwatch.ElapsedMilliseconds, initialCompletionItems.Length);
+
+            return new CompletionModel(initialCompletionItems, sortedList, applicableSpan, trigger.Reason, triggerLocation.Snapshot,
+                availableFilters, useSoftSelection, useSuggestionMode, suggestionModeDescription, suggestionModeItem: null);
         }
 
         /// <summary>
         /// User has moved the caret. Ensure that the caret is still within the applicable span. If not, dismiss the session.
         /// </summary>
         /// <returns></returns>
-        private async Task<CompletionModel> HandleCaretPositionChanged(CompletionModel model, CaretPosition caretPosition)
+        private Task<CompletionModel> HandleCaretPositionChanged(CompletionModel model, CaretPosition caretPosition)
         {
             if (!(model.ApplicableSpan.GetSpan(caretPosition.VirtualBufferPosition.Position.Snapshot).IntersectsWith(new SnapshotSpan(caretPosition.VirtualBufferPosition.Position, 0))))
             {
-                await _jtf.SwitchToMainThreadAsync();
-                _broker.Dismiss(_view);
+                ((IAsyncCompletionSession)this).Dismiss();
             }
-            return model;
+            return Task.FromResult(model);
+        }
+
+        /// <summary>
+        /// User has moved the caret. Ensure that the caret is still within the applicable span. If not, dismiss the session.
+        /// </summary>
+        /// <returns></returns>
+        private Task<CompletionModel> ToggleCompletionModeInner(CompletionModel model, CancellationToken token)
+        {
+            return Task.FromResult(model.WithSuggestionModeActive(!model.DisplaySuggestionMode));
         }
 
         /// <summary>
         /// User has typed
         /// </summary>
-        private async Task<CompletionModel> UpdateSnapshot(CompletionModel model, CompletionTrigger trigger, SnapshotPoint triggerLocation, CancellationToken token, int thisId)
+        private async Task<CompletionModel> UpdateSnapshot(CompletionModel model, CompletionTrigger trigger, CompletionFilterReason filterReason, SnapshotPoint triggerLocation, CancellationToken token, int thisId)
         {
             // Filtering got preempted, so store the most recent snapshot for the next time we filter
             if (token.IsCancellationRequested || thisId != _lastFilteringTaskId)
@@ -267,68 +425,76 @@ namespace Microsoft.VisualStudio.Language.Intellisense.Implementation
             // TODO: dismiss if applicable span was reduced to zero AND moved again (e.g. first backspace keeps completion open, second backspace closes it)
             if (triggerLocation < model.ApplicableSpan.GetStartPoint(triggerLocation.Snapshot) || triggerLocation > model.ApplicableSpan.GetEndPoint(triggerLocation.Snapshot))
             {
-                await _jtf.SwitchToMainThreadAsync();
-                _broker.Dismiss(_view); // We need to dismiss through the broker, so that it updates its state.
+                ((IAsyncCompletionSession)this).Dismiss();
                 return model;
             }
 
             _telemetryData.ComputationStopwatch.Restart();
 
             var filteredCompletion = await _completionService.UpdateCompletionListAsync(
-                model.AllItems,
-                trigger,
+                model.InitialItems,
+                model.InitialTriggerReason,
+                filterReason,
                 triggerLocation.Snapshot,
                 model.ApplicableSpan,
-                model.Filters);
+                model.Filters,
+                _view,
+                token);
 
-            if (model.UseSuggestionMode)
-            {
-                var filterText = model.ApplicableSpan.GetText(triggerLocation.Snapshot);
-                CompletionItemWithHighlight suggestionModeItem;
-                if (String.IsNullOrWhiteSpace(filterText))
-                {
-                    suggestionModeItem = new CompletionItemWithHighlight(new CompletionItem(model.SuggestionModeDescription, null), ImmutableArray<Span>.Empty);
-                    model = model.WithEmptySuggestionItem(suggestionModeItem);
-                }
-                else
-                {
-                    suggestionModeItem = new CompletionItemWithHighlight(new CompletionItem(filterText, null), ImmutableArray.Create<Span>(new Span(0, filterText.Length)));
-                    model = model.WithSuggestionItem(suggestionModeItem);
-                }
-            }
+            // Prevent null references when service returns default(ImmutableArray)
+            ImmutableArray<CompletionItemWithHighlight> returnedItems = filteredCompletion.Items.IsDefault
+                ? ImmutableArray<CompletionItemWithHighlight>.Empty
+                : filteredCompletion.Items;
 
             _telemetryData.ComputationStopwatch.Stop();
-            _telemetryData.RecordProcessing(_telemetryData.ComputationStopwatch.ElapsedMilliseconds, filteredCompletion.Items.Count());
+            _telemetryData.RecordProcessing(_telemetryData.ComputationStopwatch.ElapsedMilliseconds, returnedItems.Length);
 
-            // TODO: if filtered completion has no items to display,
-            // reuse previous filtered completion, but with soft selection
-            return model.WithSnapshot(triggerLocation.Snapshot).WithPresentedItems(filteredCompletion.Items, filteredCompletion.SelectedItemIndex);
+            if (filteredCompletion.SelectionMode == CompletionItemSelection.SoftSelected)
+                model = model.WithSoftSelection(true);
+            else if (filteredCompletion.SelectionMode == CompletionItemSelection.Selected)
+                model = model.WithSoftSelection(false);
+
+            // Prepare the suggestionModeItem if we ever change the mode
+            var enteredText = model.ApplicableSpan.GetText(triggerLocation.Snapshot);
+            if (string.IsNullOrWhiteSpace(enteredText))
+                enteredText = "_"; // TODO: change CompletionItem to allow for empty display text and remove this code.
+            var suggestionModeItem = new CompletionItem(enteredText, SuggestionModeCompletionItemSource.Instance);
+
+            // TODO: guarded operations
+            ItemsUpdated?.Invoke(this, new CompletionItemsWithHighlightEventArgs(returnedItems));
+
+            // TODO: combine this chain into a single method:
+            return model.WithSnapshot(triggerLocation.Snapshot).WithUniqueItem(filteredCompletion.UniqueItem)
+                .WithSuggestionModeItem(suggestionModeItem).WithPresentedItems(returnedItems, filteredCompletion.SelectedItemIndex);
         }
 
         /// <summary>
-        /// User has changed a filter
+        /// Reacts to user toggling a filter
         /// </summary>
-        private async Task<CompletionModel> UpdateFilters(CompletionModel model, ImmutableArray<CompletionFilterWithState> filters, CancellationToken token, int thisId)
+        private async Task<CompletionModel> UpdateFilters(CompletionModel model, ImmutableArray<CompletionFilterWithState> newFilters, CancellationToken token, int thisId)
         {
             _telemetryData.RecordChangingFilters();
 
             // Filtering got preempted, so store the most updated filters for the next time we filter
             if (token.IsCancellationRequested || thisId != _lastFilteringTaskId)
-                return model.WithFilters(filters);
+                return model.WithFilters(newFilters);
 
             var filteredCompletion = await _completionService.UpdateCompletionListAsync(
-                model.AllItems,
-                new CompletionTrigger(CompletionTriggerReason.FilterChange),
+                model.InitialItems,
+                model.InitialTriggerReason,
+                CompletionFilterReason.FilterChange,
                 model.Snapshot,
                 model.ApplicableSpan,
-                filters);
+                newFilters,
+                _view,
+                token);
 
-            return model.WithFilters(filters).WithPresentedItems(filteredCompletion.Items, filteredCompletion.SelectedItemIndex);
+            return model.WithFilters(newFilters).WithPresentedItems(filteredCompletion.Items, filteredCompletion.SelectedItemIndex);
         }
 
 #pragma warning disable CS1998 // Async method lacks 'await' operators and will run synchronously
         /// <summary>
-        /// User is scrolling the list
+        /// Reacts to user scrolling the list
         /// </summary>
         private async Task<CompletionModel> UpdateSelectedItem(CompletionModel model, int offset, CancellationToken token)
 #pragma warning restore CS1998 // Async method lacks 'await' operators and will run synchronously
@@ -338,7 +504,7 @@ namespace Microsoft.VisualStudio.Language.Intellisense.Implementation
             if (!model.PresentedItems.Any())
             {
                 // No-op if there are no items
-                if (model.UseSuggestionMode)
+                if (model.DisplaySuggestionMode)
                 {
                     // Unless there is a suggestion mode item. Select it.
                     return model.WithSuggestionItemSelected();
@@ -353,7 +519,7 @@ namespace Microsoft.VisualStudio.Language.Intellisense.Implementation
             {
                 if (currentIndex == lastIndex)
                 {
-                    if (model.UseSuggestionMode)
+                    if (model.DisplaySuggestionMode)
                         return model.WithSuggestionItemSelected();
                     else
                         return model.WithSelectedIndex(FirstIndex);
@@ -371,13 +537,38 @@ namespace Microsoft.VisualStudio.Language.Intellisense.Implementation
                 else if (currentIndex == FirstIndex)
                 {
                     // The first item is selected. If there is a suggestion, select it.
-                    if (model.UseSuggestionMode)
+                    if (model.DisplaySuggestionMode)
                         return model.WithSuggestionItemSelected();
                     else
                         return model.WithSelectedIndex(lastIndex);
                 }
                 var newIndex = currentIndex + offset;
                 return model.WithSelectedIndex(Math.Max(newIndex, FirstIndex));
+            }
+        }
+
+#pragma warning disable CS1998 // Async method lacks 'await' operators and will run synchronously
+        /// <summary>
+        /// Reacts to user selecting a specific item in the list
+        /// </summary>
+        private async Task<CompletionModel> UpdateSelectedItem(CompletionModel model, CompletionItem selectedItem, bool suggestionModeSelected, CancellationToken token)
+#pragma warning restore CS1998 // Async method lacks 'await' operators and will run synchronously
+        {
+            if (suggestionModeSelected)
+            {
+                return model.WithSuggestionItemSelected();
+            }
+            else
+            {
+                for (int i = 0; i < model.PresentedItems.Length; i++)
+                {
+                    if (model.PresentedItems[i].CompletionItem == selectedItem)
+                    {
+                        return model.WithSelectedIndex(i);
+                    }
+                }
+                // This item is not in the model
+                return model;
             }
         }
 
@@ -388,19 +579,26 @@ namespace Microsoft.VisualStudio.Language.Intellisense.Implementation
         /// Ensures that we work only with sources applicable to current location
         /// and returns whether any source would like to commit completion
         /// </summary>
-        public bool ShouldCommit(ITextView view, string edit, SnapshotPoint triggerLocation)
+        public bool ShouldCommit(ITextView view, char typeChar, SnapshotPoint triggerLocation)
         {
             var mappingPoint = view.BufferGraph.CreateMappingPoint(triggerLocation, PointTrackingMode.Negative);
-            return _completionProviders
+            return _completionSources
                 .Select(p => (p, mappingPoint.GetPoint(p.Value.Snapshot.TextBuffer, PositionAffinity.Predecessor)))
                 .Where(n => n.Item2.HasValue)
-                .Any(n => n.Item1.Key.ShouldCommitCompletion(edit, n.Item2.Value));
-            // Remove previous line and uncomment the following lines to get the specific IAsyncCompletionItemSource that wanted to commit
-            /*
-            .Where(n => n.Item1.Key.ShouldCommitCompletion(edit, n.Item2.Value))
-            .Select(n => n.Item1.Key)
-            .FirstOrDefault();
-            */
+                .Any(n => _guardedOperations.CallExtensionPoint(
+                    errorSource: n.Item1.Key,
+                    call: () => n.Item1.Key.ShouldCommitCompletion(typeChar, n.Item2.Value),
+                    valueOnThrow: false));
+        }
+
+        public ImmutableArray<CompletionItem> GetVisibleItems(CancellationToken token)
+        {
+            throw new NotImplementedException();
+        }
+
+        public CompletionItem GetSelectedItem(CancellationToken token)
+        {
+            throw new NotImplementedException();
         }
 
         private class TelemetryData
@@ -473,7 +671,7 @@ namespace Microsoft.VisualStudio.Language.Intellisense.Implementation
             internal void RecordInitialModel(long processingTime, ICollection<IAsyncCompletionItemSource> sources, int initialItemCount, IAsyncCompletionService service)
             {
                 InitialItemCount = initialItemCount;
-                InitialItemSources = String.Join(" ", sources.Select(n => _broker.GetItemSourceName(n)));
+                InitialItemSources = string.Join(" ", sources.Select(n => _broker.GetItemSourceName(n)));
                 InitialModelDuration = processingTime;
                 CompletionService = _broker.GetCompletionServiceName(service); // Service does not participate in getting the initial model, but this is a good place to get this data
             }
@@ -505,7 +703,7 @@ namespace Microsoft.VisualStudio.Language.Intellisense.Implementation
                 UserEverSetFilters = true;
             }
 
-            internal void RecordCommitAndSend(long commitDuration, CompletionItem committedItem, string edit)
+            internal void RecordCommitAndSend(long commitDuration, CompletionItem committedItem, char typeChar)
             {
                 _logger?.PostEvent(TelemetryEventType.Operation,
                     TelemetryData.CommitEvent,
@@ -513,7 +711,7 @@ namespace Microsoft.VisualStudio.Language.Intellisense.Implementation
                     (InitialItemSourcesProperty, InitialItemSources ?? string.Empty),
                     (InitialItemCountProperty, InitialItemCount),
                     (InitialModelDurationProperty, InitialModelDuration),
-                    (CompletionServiceProperty, CompletionService),
+                    (CompletionServiceProperty, CompletionService ?? string.Empty),
                     (TotalProcessingDurationProperty, TotalProcessingDuration),
                     (TotalProcessingCountProperty, TotalProcessingCount),
                     (InitialRenderingDurationProperty, InitialRenderingDuration),
@@ -523,10 +721,10 @@ namespace Microsoft.VisualStudio.Language.Intellisense.Implementation
                     (UserEverSetFiltersProperty, UserEverSetFilters),
                     (UserLastScrolledProperty, UserLastScrolled),
                     (LastItemCountProperty, LastItemCount),
-                    (CustomCommitProperty, committedItem.CustomCommit),
-                    (CommittedItemSourceProperty, GetItemSourceName(committedItem.Source)),
+                    (CustomCommitProperty, committedItem.UseCustomCommit),
+                    (CommittedItemSourceProperty, GetItemSourceName(committedItem.Source) ?? string.Empty),
                     (CommitDurationProperty, commitDuration),
-                    (CommitTriggerProperty, edit ?? string.Empty)
+                    (CommitTriggerProperty, typeChar)
                 );
             }
 
@@ -538,7 +736,7 @@ namespace Microsoft.VisualStudio.Language.Intellisense.Implementation
                     (InitialItemSourcesProperty, InitialItemSources ?? string.Empty),
                     (InitialItemCountProperty, InitialItemCount),
                     (InitialModelDurationProperty, InitialModelDuration),
-                    (CompletionServiceProperty, CompletionService),
+                    (CompletionServiceProperty, CompletionService ?? string.Empty),
                     (LastItemCountProperty, LastItemCount),
                     (TotalProcessingDurationProperty, TotalProcessingDuration),
                     (TotalProcessingCountProperty, TotalProcessingCount),

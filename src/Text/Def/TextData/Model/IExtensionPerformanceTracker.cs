@@ -26,5 +26,15 @@ namespace Microsoft.VisualStudio.Text
         /// Invoked after calling to an extension event handler.
         /// </summary>
         void AfterCallingEventHandler(Delegate eventHandler);
+
+        /// <summary>
+        /// Invoked before calling to an extensibility point.
+        /// </summary>
+        void BeforeCallingExtension(object extension);
+
+        /// <summary>
+        /// Invoked after calling to an extensibility point.
+        /// </summary>
+        void AfterCallingExtension(object extension);
     }
 }

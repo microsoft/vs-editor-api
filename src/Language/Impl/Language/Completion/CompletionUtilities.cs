@@ -11,15 +11,14 @@ namespace Microsoft.VisualStudio.Language.Intellisense.Implementation
 {
     internal static class CompletionUtilities
     {
-
-        internal static IEnumerable<ITextBuffer> GetBuffersForTriggerPoint(ITextView view, SnapshotPoint point)
+        internal static IEnumerable<ITextBuffer> GetBuffersForTriggerPoint(ITextView textView, SnapshotPoint point)
         {
             // We are looking at the buffer to the left of the caret.
-            return view.BufferGraph.GetTextBuffers(n =>
-                view.BufferGraph.MapDownToBuffer(point, PointTrackingMode.Negative, n, PositionAffinity.Predecessor) != null);
+            return textView.BufferGraph.GetTextBuffers(n =>
+                textView.BufferGraph.MapDownToBuffer(point, PointTrackingMode.Negative, n, PositionAffinity.Predecessor) != null);
         }
 
-        internal static IDictionary<IAsyncCompletionItemSource, SnapshotPoint> GetCompletionSourcesWithMappedLocations(ITextView view, SnapshotPoint originalPoint, Func<IContentType, ImmutableArray<IAsyncCompletionItemSource>> getCompletionItemSources)
+        internal static IDictionary<IAsyncCompletionItemSource, SnapshotPoint> GetCompletionSourcesWithMappedLocations(ITextView textView, SnapshotPoint originalPoint, Func<IContentType, ImmutableArray<IAsyncCompletionItemSource>> getCompletionItemSources)
         {
             // This method is created based on EditorCommandHandlerService.GetOrderedBuffersAndCommandHandlers
 
@@ -50,7 +49,7 @@ namespace Microsoft.VisualStudio.Language.Intellisense.Implementation
             var sortedContentTypes = new SortedSet<IContentType>(ContentTypeComparer.Instance);
             var result = new Dictionary<IAsyncCompletionItemSource, SnapshotPoint>();
 
-            var mappedPoints = GetPointsOnAvailableBuffers(view, originalPoint);
+            var mappedPoints = GetPointsOnAvailableBuffers(textView, originalPoint);
             foreach (var mappedPoint in mappedPoints)
             {
                 AddContentTypeHierarchy(sortedContentTypes, mappedPoint.Snapshot.ContentType);
@@ -73,10 +72,10 @@ namespace Microsoft.VisualStudio.Language.Intellisense.Implementation
             return result;
         }
 
-        private static IEnumerable<SnapshotPoint> GetPointsOnAvailableBuffers(ITextView view, SnapshotPoint point)
+        private static IEnumerable<SnapshotPoint> GetPointsOnAvailableBuffers(ITextView textView, SnapshotPoint point)
         {
-            var mappingPoint = view.BufferGraph.CreateMappingPoint(point, PointTrackingMode.Negative);
-            var buffers = view.BufferGraph.GetTextBuffers(b => mappingPoint.GetPoint(b, PositionAffinity.Predecessor) != null);
+            var mappingPoint = textView.BufferGraph.CreateMappingPoint(point, PointTrackingMode.Negative);
+            var buffers = textView.BufferGraph.GetTextBuffers(b => mappingPoint.GetPoint(b, PositionAffinity.Predecessor) != null);
             var pointsInBuffers = buffers.Select(b => mappingPoint.GetPoint(b, PositionAffinity.Predecessor).Value);
             return pointsInBuffers;
         }

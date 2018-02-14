@@ -65,12 +65,14 @@ namespace Microsoft.VisualStudio.Utilities
         /// Executes the action synchronously and waits for it to complete.
         /// </summary>
         /// <param name="title">Operation's title.</param>
-        /// <param name="description">Initial operation's description.</param>
-        /// <param name="allowCancel">Whether to allow cancellability.</param>
+        /// <param name="defaultDescription">Default operation's description, which is displayed on the wait dialog unless
+        /// one or more <see cref="IUIThreadOperationScope"/>s with more specific descriptions were added to
+        /// the <see cref="IUIThreadOperationContext"/>.</param>
+        /// <param name="allowCancellation">Whether to allow cancellability.</param>
         /// <param name="showProgress">Whether to show progress indication.</param>
         /// <param name="action">An action to execute.</param>
         /// <returns>A status of action execution.</returns>
-        UIThreadOperationStatus Execute(string title, string description, bool allowCancel, bool showProgress,
+        UIThreadOperationStatus Execute(string title, string defaultDescription, bool allowCancellation, bool showProgress,
             Action<IUIThreadOperationContext> action);
 
         /// <summary>
@@ -78,12 +80,14 @@ namespace Microsoft.VisualStudio.Utilities
         /// cancellability and wait indication.
         /// </summary>
         /// <param name="title">Operation's title.</param>
-        /// <param name="description">Initial operation's description.</param>
-        /// <param name="allowCancel">Whether to allow cancellability.</param>
+        /// <param name="defaultDescription">Default operation's description, which is displayed on the wait dialog unless
+        /// one or more <see cref="IUIThreadOperationScope"/>s with more specific descriptions were added to
+        /// the <see cref="IUIThreadOperationContext"/>.</param>
+        /// <param name="allowCancellation">Whether to allow cancellability.</param>
         /// <param name="showProgress">Whether to show progress indication.</param>
         /// <returns><see cref="IUIThreadOperationContext"/> instance that provides access to shared two way
         /// cancellability and wait indication for the given operation. The operation is considered executed
         /// when this <see cref="IUIThreadOperationContext"/> instance is disposed.</returns>
-        IUIThreadOperationContext BeginExecute(string title, string description, bool allowCancel, bool showProgress);
+        IUIThreadOperationContext BeginExecute(string title, string defaultDescription, bool allowCancellation, bool showProgress);
     }
 }

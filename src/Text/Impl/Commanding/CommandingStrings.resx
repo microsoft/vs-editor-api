@@ -98,10 +98,7 @@
 	<resheader name="writer">
 		<value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=2.0.3500.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
 	</resheader>
-  <data name="ExecutingCommand" xml:space="preserve">
-    <value>Executing a command</value>
-  </data>
   <data name="WaitForCommandExecution" xml:space="preserve">
-    <value>Please wait for command execution to finish...</value>
+    <value>Please wait for an editor command to finish...</value>
   </data>
 </root>

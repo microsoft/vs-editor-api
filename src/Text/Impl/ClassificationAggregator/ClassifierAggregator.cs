@@ -97,11 +97,17 @@ namespace Microsoft.VisualStudio.Text.Classification.Implementation
         /// </returns>
         public IList<ClassificationSpan> GetClassificationSpans(SnapshotSpan span)
         {
+            if (_tagAggregator == null)
+                return new List<ClassificationSpan>(0);
+
             return this.InternalGetClassificationSpans(span, _tagAggregator.GetTags(span));
         }
 
         public IList<ClassificationSpan> GetAllClassificationSpans(SnapshotSpan span, CancellationToken cancel)
         {
+            if (_tagAggregator == null)
+                return new List<ClassificationSpan>(0);
+
             return this.InternalGetClassificationSpans(span, _tagAggregator.GetAllTags(span, cancel));
         }
         #endregion // Exposed Methods
