@@ -18,7 +18,7 @@ namespace Microsoft.VisualStudio.Language.Intellisense.Implementation
                 textView.BufferGraph.MapDownToBuffer(point, PointTrackingMode.Negative, n, PositionAffinity.Predecessor) != null);
         }
 
-        internal static IDictionary<IAsyncCompletionItemSource, SnapshotPoint> GetCompletionSourcesWithMappedLocations(ITextView textView, SnapshotPoint originalPoint, Func<IContentType, ImmutableArray<IAsyncCompletionItemSource>> getCompletionItemSources)
+        internal static IDictionary<IAsyncCompletionItemSource, SnapshotPoint> GetCompletionSourcesWithMappedLocations(ITextView textView, SnapshotPoint originalPoint, Func<IContentType, ImmutableArray<IAsyncCompletionItemSourceProvider>> completionItemSourceProviders)
         {
             // This method is created based on EditorCommandHandlerService.GetOrderedBuffersAndCommandHandlers
 
@@ -61,8 +61,9 @@ namespace Microsoft.VisualStudio.Language.Intellisense.Implementation
                 {
                     if (mappedPoint.Snapshot.ContentType.IsOfType(contentType.TypeName))
                     {
-                        foreach (var source in getCompletionItemSources(contentType))
+                        foreach (var sourceProvider in completionItemSourceProviders(contentType))
                         {
+                            var source = sourceProvider.GetOrCreate(textView);
                             if (!result.ContainsKey(source))
                                 result.Add(source, mappedPoint);
                         }

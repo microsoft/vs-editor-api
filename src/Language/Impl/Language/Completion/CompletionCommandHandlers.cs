@@ -1,12 +1,9 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.ComponentModel.Composition;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using Microsoft.VisualStudio.Commanding;
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Text.Editor.Commanding.Commands;
+using Microsoft.VisualStudio.Text.Operations;
 using Microsoft.VisualStudio.Text.Utilities;
 using Microsoft.VisualStudio.Utilities;
 
@@ -15,7 +12,7 @@ namespace Microsoft.VisualStudio.Language.Intellisense.Implementation
     /// <summary>
     /// Reacts to the down arrow command and attempts to scroll the completion list.
     /// </summary>
-    [Name(nameof(CompletionCommandHandlers))]
+    [Name("CompletionCommandHandlers")]
     [ContentType("any")]
     [Export(typeof(ICommandHandler))]
     internal sealed class CompletionCommandHandlers :
@@ -37,10 +34,16 @@ namespace Microsoft.VisualStudio.Language.Intellisense.Implementation
         IChainedCommandHandler<TypeCharCommandArgs>
     {
         [Import]
-        IAsyncCompletionBroker Broker { get; set; }
+        IAsyncCompletionBroker Broker;
 
         [Import]
-        IExperimentationServiceInternal ExperimentationService { get; set; }
+        IExperimentationServiceInternal ExperimentationService;
+
+        [Import]
+        ITextUndoHistoryRegistry UndoHistoryRegistry;
+
+        [Import]
+        IEditorOperationsFactoryService EditorOperationsFactoryService;
 
         string INamed.DisplayName => Strings.CompletionCommandHandlerName;
 
@@ -115,7 +118,7 @@ namespace Microsoft.VisualStudio.Language.Intellisense.Implementation
             var trigger = new CompletionTrigger(CompletionTriggerReason.Invoke);
             var location = args.TextView.Caret.Position.BufferPosition;
             var session = Broker.TriggerCompletion(args.TextView, location);
-            session.OpenOrUpdate(args.TextView, trigger, location);
+            session?.OpenOrUpdate(args.TextView, trigger, location);
             return true;
         }
 
@@ -126,9 +129,8 @@ namespace Microsoft.VisualStudio.Language.Intellisense.Implementation
         {
             var trigger = new CompletionTrigger(CompletionTriggerReason.InvokeAndCommitIfUnique);
             var location = args.TextView.Caret.Position.BufferPosition;
-            var session = Broker.TriggerCompletion(args.TextView, location);
-            session.OpenOrUpdate(args.TextView, trigger, location);
-            // TODO: figure out dismissing. who should dismiss? here, OpenOrUpdate dismisses. Else, commit dismisses.
+            var session = Broker.TriggerCompletion(args.TextView, location) as AsyncCompletionSession;
+            session?.InvokeAndCommitIfUnique(args.TextView, trigger, location, executionContext.OperationContext.UserCancellationToken);
             return true;
         }
 
@@ -150,7 +152,7 @@ namespace Microsoft.VisualStudio.Language.Intellisense.Implementation
             if (session != null)
             {
                 session.ToggleSuggestionMode();
-                return true; // TODO: See if the toobar button gets updated.
+                return true; // TODO: Investigate. If we return false, we get called again. No matter what we return, the button in the UI does not update. 
             }
             return false;
         }
@@ -239,6 +241,8 @@ namespace Microsoft.VisualStudio.Language.Intellisense.Implementation
 
         void IChainedCommandHandler<TypeCharCommandArgs>.ExecuteCommand(TypeCharCommandArgs args, Action nextCommandHandler, CommandExecutionContext executionContext)
         {
+            var initialTextSnapshot = args.TextView.TextSnapshot;
+
             // Execute other commands in the chain to see the change in the buffer.
             nextCommandHandler();
 
@@ -248,11 +252,23 @@ namespace Microsoft.VisualStudio.Language.Intellisense.Implementation
 
             var view = args.TextView;
             var location = view.Caret.Position.BufferPosition;
-            var sessionToCommit = Broker.GetSession(args.TextView);
+            var sessionToCommit = Broker.GetSession(args.TextView);// as AsyncCompletionSession; // TODO: finalize the API after prototyping
             if (sessionToCommit?.ShouldCommit(view, args.TypedChar, location) == true)
             {
-                sessionToCommit.Commit(executionContext.OperationContext.UserCancellationToken, args.TypedChar);
-                sessionToCommit.Dismiss(); // TODO: Currently the implementation needs UI thread
+                using (var undoTransaction = new CaretPreservingEditTransaction("Completion", view, UndoHistoryRegistry, EditorOperationsFactoryService))
+                {
+                    UndoUtilities.RollbackToBeforeTypeChar(initialTextSnapshot, args.SubjectBuffer);
+                    // Now the buffer doesn't have the commit character nor the matching brace, if any
+
+                    sessionToCommit.Commit(executionContext.OperationContext.UserCancellationToken, args.TypedChar);
+                    // Replay the key, so that we get brace completion.
+                    // TODO: Add a way to suppress this.
+                    if (true)
+                        nextCommandHandler();
+
+                    // Complete the transaction before stopping it.
+                    undoTransaction.Complete();
+                }
                 // Snapshot has changed when committing. Update it for when we try to trigger new session.
                 location = view.Caret.Position.BufferPosition;
             }
@@ -266,7 +282,7 @@ namespace Microsoft.VisualStudio.Language.Intellisense.Implementation
             else if (Broker.ShouldTriggerCompletion(view, args.TypedChar, location))
             {
                 var newSession = Broker.TriggerCompletion(view, location);
-                newSession.OpenOrUpdate(view, trigger, location);
+                newSession?.OpenOrUpdate(view, trigger, location);
             }
         }
 
@@ -279,8 +295,10 @@ namespace Microsoft.VisualStudio.Language.Intellisense.Implementation
             if (session != null)
             {
                 session.SelectDown();
+                System.Diagnostics.Debug.WriteLine("Completions's DownKey command handler returns true (handled)");
                 return true;
             }
+            System.Diagnostics.Debug.WriteLine("Completions's DownKey command handler returns false (unhandled)");
             return false;
         }
 
@@ -321,8 +339,10 @@ namespace Microsoft.VisualStudio.Language.Intellisense.Implementation
             if (session != null)
             {
                 session.SelectUp();
+                System.Diagnostics.Debug.WriteLine("Completions's UpKey command handler returns true (handled)");
                 return true;
             }
+            System.Diagnostics.Debug.WriteLine("Completions's UpKey command handler returns false (unhandled)");
             return false;
         }
     }

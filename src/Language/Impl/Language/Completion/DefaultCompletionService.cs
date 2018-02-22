@@ -13,13 +13,32 @@ using Microsoft.VisualStudio.Utilities;
 
 namespace Microsoft.VisualStudio.Language.Intellisense.Implementation
 {
-    [Export(typeof(IAsyncCompletionService))]
+    [Export(typeof(IAsyncCompletionServiceProvider))]
     [Name(KnownCompletionNames.DefaultCompletionService)]
     [ContentType("any")]
-    internal class DefaultCompletionService : IAsyncCompletionService
+    internal class DefaultCompletionServiceProvider : IAsyncCompletionServiceProvider
     {
         [Import]
         public IPatternMatcherFactory PatternMatcherFactory { get; set; }
+
+        DefaultCompletionService _instance;
+
+        IAsyncCompletionService IAsyncCompletionServiceProvider.GetOrCreate(ITextView textView)
+        {
+            if (_instance == null)
+                _instance = new DefaultCompletionService(PatternMatcherFactory);
+            return _instance;
+        }
+    }
+
+    internal class DefaultCompletionService : IAsyncCompletionService
+    {
+        readonly IPatternMatcherFactory _patternMatcherFactory;
+
+        internal DefaultCompletionService(IPatternMatcherFactory patternMatcherFactory)
+        {
+            _patternMatcherFactory = patternMatcherFactory;
+        }
 
         Task<FilteredCompletionModel> IAsyncCompletionService.UpdateCompletionListAsync(
             ImmutableArray<CompletionItem> sortedList, CompletionTriggerReason triggerReason, CompletionFilterReason filterReason,
@@ -42,7 +61,7 @@ namespace Microsoft.VisualStudio.Language.Intellisense.Implementation
 
             // Pattern matcher not only filters, but also provides a way to order the results by their match quality.
             // The relevant CompletionItem is match.Item1, its PatternMatch is match.Item2
-            var patternMatcher = PatternMatcherFactory.CreatePatternMatcher(
+            var patternMatcher = _patternMatcherFactory.CreatePatternMatcher(
                 filterText,
                 new PatternMatcherCreationOptions(System.Globalization.CultureInfo.CurrentCulture, PatternMatcherCreationFlags.IncludeMatchedSpans));
 
@@ -108,24 +127,36 @@ namespace Microsoft.VisualStudio.Language.Intellisense.Implementation
     }
 
 #if DEBUG && false
-    [Export(typeof(IAsyncCompletionItemSource))]
+    [Export(typeof(IAsyncCompletionItemSourceProvider))]
     [Name("Debug completion item source")]
     [Order(After = "default")]
     [ContentType("any")]
+    public class DebugCompletionItemSourceProvider : IAsyncCompletionItemSourceProvider
+    {
+        DebugCompletionItemSource _instance;
+
+        IAsyncCompletionItemSource IAsyncCompletionItemSourceProvider.GetOrCreate(ITextView textView)
+        {
+            if (_instance == null)
+                _instance = new DebugCompletionItemSource();
+            return _instance;
+        }
+    }
+
     public class DebugCompletionItemSource : IAsyncCompletionItemSource
     {
-        private static readonly ImageId Icon1 = new ImageId(new Guid("{ae27a6b0-e345-4288-96df-5eaf394ee369}"), 666);
+        private static readonly AccessibleImageId Icon1 = new AccessibleImageId(new Guid("{ae27a6b0-e345-4288-96df-5eaf394ee369}"), 666, "TODO: remove", "Icon description");
         private static readonly CompletionFilter Filter1 = new CompletionFilter("Diagnostic", "d", Icon1);
-        private static readonly ImageId Icon2 = new ImageId(new Guid("{ae27a6b0-e345-4288-96df-5eaf394ee369}"), 2852);
+        private static readonly AccessibleImageId Icon2 = new AccessibleImageId(new Guid("{ae27a6b0-e345-4288-96df-5eaf394ee369}"), 2852, "TODO: remove", "Icon description");
         private static readonly CompletionFilter Filter2 = new CompletionFilter("Snippets", "s", Icon2);
-        private static readonly ImageId Icon3 = new ImageId(new Guid("{ae27a6b0-e345-4288-96df-5eaf394ee369}"), 473);
+        private static readonly AccessibleImageId Icon3 = new AccessibleImageId(new Guid("{ae27a6b0-e345-4288-96df-5eaf394ee369}"), 473, "TODO: remove", "Icon description");
         private static readonly CompletionFilter Filter3 = new CompletionFilter("Class", "c", Icon3);
         private static readonly ImmutableArray<CompletionFilter> FilterCollection1 = ImmutableArray.Create(Filter1);
         private static readonly ImmutableArray<CompletionFilter> FilterCollection2 = ImmutableArray.Create(Filter2);
         private static readonly ImmutableArray<CompletionFilter> FilterCollection3 = ImmutableArray.Create(Filter3);
         private static readonly ImmutableArray<char> commitCharacters = ImmutableArray.Create(' ', ';', '\t', '.', '<', '(', '[');
 
-        void IAsyncCompletionItemSource.CustomCommit(Text.Editor.ITextView view, ITextBuffer buffer, CompletionItem item, ITrackingSpan applicableSpan, char typeChar)
+        void IAsyncCompletionItemSource.CustomCommit(ITextView view, ITextBuffer buffer, CompletionItem item, ITrackingSpan applicableSpan, char typeChar, CancellationToken token)
         {
             throw new System.NotImplementedException();
         }
@@ -146,8 +177,8 @@ namespace Microsoft.VisualStudio.Language.Intellisense.Implementation
             }
             return await Task.FromResult(new CompletionContext(
                 ImmutableArray.Create(
-                    new CompletionItem("SampleItem<>", this, Icon3, FilterCollection3, string.Empty, false, "SampleItem", "SampleItem<>", "SampleItem", ImmutableArray<AccessibleImage>.Empty),
-                    new CompletionItem("AnotherItem🐱‍👤", this, Icon3, FilterCollection3, string.Empty, false, "AnotherItem", "AnotherItem", "AnotherItem", ImmutableArray.Create(new AccessibleImage("cat", "ninja cat", Icon3))),
+                    new CompletionItem("SampleItem<>", this, Icon3, FilterCollection3, string.Empty, false, "SampleItem", "SampleItem<>", "SampleItem", ImmutableArray<AccessibleImageId>.Empty),
+                    new CompletionItem("AnotherItem🐱‍👤", this, Icon3, FilterCollection3, string.Empty, false, "AnotherItem", "AnotherItem", "AnotherItem", ImmutableArray.Create(Icon3)),
                     new CompletionItem("Sampling", this, Icon1, FilterCollection1),
                     new CompletionItem("Sampler", this, Icon1, FilterCollection1),
                     new CompletionItem("Sapling", this, Icon2, FilterCollection2, "Sapling is a young tree"),
@@ -184,13 +215,25 @@ namespace Microsoft.VisualStudio.Language.Intellisense.Implementation
         }
     }
 
-    [Export(typeof(IAsyncCompletionItemSource))]
+    [Export(typeof(IAsyncCompletionItemSourceProvider))]
     [Name("Debug HTML completion item source")]
     [Order(After = "default")]
     [ContentType("RazorCSharp")]
+    public class DebugHtmlCompletionItemSourceProvider : IAsyncCompletionItemSourceProvider
+    {
+        DebugHtmlCompletionItemSource _instance;
+
+        IAsyncCompletionItemSource IAsyncCompletionItemSourceProvider.GetOrCreate(ITextView textView)
+        {
+            if (_instance == null)
+                _instance = new DebugHtmlCompletionItemSource();
+            return _instance;
+        }
+    }
+
     public class DebugHtmlCompletionItemSource : IAsyncCompletionItemSource
     {
-        void IAsyncCompletionItemSource.CustomCommit(Text.Editor.ITextView view, ITextBuffer buffer, CompletionItem item, ITrackingSpan applicableSpan, char typeChar)
+        void IAsyncCompletionItemSource.CustomCommit(Text.Editor.ITextView view, ITextBuffer buffer, CompletionItem item, ITrackingSpan applicableSpan, char typeChar, CancellationToken token)
         {
             throw new System.NotImplementedException();
         }
