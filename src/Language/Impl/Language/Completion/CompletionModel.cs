@@ -347,7 +347,6 @@ namespace Microsoft.VisualStudio.Language.Intellisense.Implementation
         /// </summary>
         public void Enqueue(Func<TModel, CancellationToken, Task<TModel>> transformation, Func<TModel, Task> updateUI)
         {
-            System.Diagnostics.Debug.WriteLine($"Enqueue runs on thread {Thread.CurrentThread.ManagedThreadId}");
             // This method is based on Roslyn's ModelComputation.ChainTaskAndNotifyControllerWhenFinished
             var nextTask = _lastTask.ContinueWith(t => transformation(t.Result, _token), _computationTaskScheduler).Unwrap();
             _lastTask = nextTask;
@@ -378,7 +377,6 @@ namespace Microsoft.VisualStudio.Language.Intellisense.Implementation
 
         private void OnModelUpdated(TModel result)
         {
-            System.Diagnostics.Debug.WriteLine($"OnModelUpdated runs on thread {Thread.CurrentThread.ManagedThreadId}");
             RecentModel = result;
         }
 

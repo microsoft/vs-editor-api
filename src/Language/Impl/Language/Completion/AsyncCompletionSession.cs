@@ -389,6 +389,14 @@ namespace Microsoft.VisualStudio.Language.Intellisense.Implementation
             _telemetryData.ComputationStopwatch.Stop();
             _telemetryData.RecordInitialModel(_telemetryData.ComputationStopwatch.ElapsedMilliseconds, _completionSources.Keys, initialCompletionItems.Length, _completionService);
 
+#if DEBUG
+            Debug.WriteLine("Completion session got data.");
+            Debug.WriteLine("Sources: " + String.Join(", ", _completionSources.Select(n => n.Key.GetType())));
+            Debug.WriteLine("Service: " + _completionService.GetType());
+            Debug.WriteLine("Filters: " + String.Join(", ", availableFilters.Select(n => n.Filter.DisplayText)));
+            Debug.WriteLine("Spans: " + String.Join(", ", spans.Select(n => n.ToString())));
+#endif
+
             _telemetryData.ComputationStopwatch.Restart();
             var sortedList = await _guardedOperations.CallExtensionPointAsync(
                 errorSource: _completionService,
@@ -630,12 +638,17 @@ namespace Microsoft.VisualStudio.Language.Intellisense.Implementation
 
         public ImmutableArray<CompletionItem> GetVisibleItems(CancellationToken token)
         {
-            throw new NotImplementedException();
+            // TODO: Consider returning array of CompletionItemWithHighlight so that we don't do linq here
+            return _computation.RecentModel.PresentedItems.Select(n => n.CompletionItem).ToImmutableArray();
         }
 
         public CompletionItem GetSelectedItem(CancellationToken token)
         {
-            throw new NotImplementedException();
+            var model = _computation.RecentModel;
+            if (model.SelectSuggestionMode)
+                return model.SuggestionModeItem;
+            else
+                return model.PresentedItems[model.SelectedIndex].CompletionItem;
         }
 
         private class TelemetryData
