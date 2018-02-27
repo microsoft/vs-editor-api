@@ -53,6 +53,8 @@ namespace Microsoft.VisualStudio.Language.Intellisense.Implementation
 
         public ITextView TextView => _view;
 
+        public bool IsDismissed => _isDismissed;
+
         public AsyncCompletionSession(JoinableTaskFactory jtf, ICompletionPresenterProvider uiFactory,
             IDictionary<IAsyncCompletionItemSource, SnapshotPoint> completionSources,
             IAsyncCompletionService completionService, AsyncCompletionBroker broker, ITextView view)
@@ -493,9 +495,7 @@ namespace Microsoft.VisualStudio.Language.Intellisense.Implementation
 
             _guardedOperations.RaiseEvent(this, ItemsUpdated, new CompletionItemsWithHighlightEventArgs(returnedItems));
 
-            // TODO: combine this chain into a single method:
-            return model.WithSnapshot(triggerLocation.Snapshot).WithUniqueItem(filteredCompletion.UniqueItem)
-                .WithSuggestionModeItem(suggestionModeItem).WithPresentedItems(returnedItems, filteredCompletion.SelectedItemIndex);
+            return model.WithSnapshotAndItems(triggerLocation.Snapshot, returnedItems, filteredCompletion.SelectedItemIndex, filteredCompletion.UniqueItem, suggestionModeItem);
         }
 
         /// <summary>

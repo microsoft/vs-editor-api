@@ -313,6 +313,26 @@ namespace Microsoft.VisualStudio.Language.Intellisense.Implementation
                 uniqueItem: UniqueItem
             );
         }
+
+        internal CompletionModel WithSnapshotAndItems(ITextSnapshot snapshot, ImmutableArray<CompletionItemWithHighlight> presentedItems, int selectedIndex, CompletionItem uniqueItem, CompletionItem suggestionModeItem)
+        {
+            return new CompletionModel(
+                initialItems: InitialItems,
+                sortedItems: SortedItems,
+                applicableSpan: ApplicableSpan,
+                initialTriggerReason: InitialTriggerReason,
+                snapshot: snapshot, // Updated
+                filters: Filters,
+                presentedItems: presentedItems, // Updated
+                useSoftSelection: UseSoftSelection,
+                useSuggestionMode: DisplaySuggestionMode,
+                suggestionModeDescription: SuggestionModeDescription,
+                selectedIndex: selectedIndex, // Updated
+                selectSuggestionMode: SelectSuggestionMode,
+                suggestionModeItem: suggestionModeItem, // Updated
+                uniqueItem: uniqueItem // Updated
+            );
+        }
     }
 
     sealed class ModelComputation<TModel>

@@ -12,7 +12,7 @@ namespace Microsoft.VisualStudio.Language.Intellisense.Implementation
     /// <summary>
     /// Reacts to the down arrow command and attempts to scroll the completion list.
     /// </summary>
-    [Name("CompletionCommandHandlers")]
+    [Name(KnownCompletionNames.CompletionCommandHandlers)]
     [ContentType("any")]
     [Export(typeof(ICommandHandler))]
     internal sealed class CompletionCommandHandlers :

@@ -145,11 +145,11 @@ namespace Microsoft.VisualStudio.Language.Intellisense.Implementation
 
     public class DebugCompletionItemSource : IAsyncCompletionItemSource
     {
-        private static readonly AccessibleImageId Icon1 = new AccessibleImageId(new Guid("{ae27a6b0-e345-4288-96df-5eaf394ee369}"), 666, "TODO: remove", "Icon description");
+        private static readonly AccessibleImageId Icon1 = new AccessibleImageId(new Guid("{ae27a6b0-e345-4288-96df-5eaf394ee369}"), 666, "Icon description");
         private static readonly CompletionFilter Filter1 = new CompletionFilter("Diagnostic", "d", Icon1);
-        private static readonly AccessibleImageId Icon2 = new AccessibleImageId(new Guid("{ae27a6b0-e345-4288-96df-5eaf394ee369}"), 2852, "TODO: remove", "Icon description");
+        private static readonly AccessibleImageId Icon2 = new AccessibleImageId(new Guid("{ae27a6b0-e345-4288-96df-5eaf394ee369}"), 2852, "Icon description");
         private static readonly CompletionFilter Filter2 = new CompletionFilter("Snippets", "s", Icon2);
-        private static readonly AccessibleImageId Icon3 = new AccessibleImageId(new Guid("{ae27a6b0-e345-4288-96df-5eaf394ee369}"), 473, "TODO: remove", "Icon description");
+        private static readonly AccessibleImageId Icon3 = new AccessibleImageId(new Guid("{ae27a6b0-e345-4288-96df-5eaf394ee369}"), 473, "Icon description");
         private static readonly CompletionFilter Filter3 = new CompletionFilter("Class", "c", Icon3);
         private static readonly ImmutableArray<CompletionFilter> FilterCollection1 = ImmutableArray.Create(Filter1);
         private static readonly ImmutableArray<CompletionFilter> FilterCollection2 = ImmutableArray.Create(Filter2);
