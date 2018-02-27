@@ -23,8 +23,11 @@ namespace Microsoft.VisualStudio.Language.Intellisense.Implementation
                 return _treatmentFlightEnabled;
             }
 
+#if DEBUG
+            _treatmentFlightEnabled = true;
+#else
             _treatmentFlightEnabled = experimentationService.IsCachedFlightEnabled(TreatmentFlightName);
-            Debug.Assert(_treatmentFlightEnabled);
+#endif
             _initialized = true;
             return _treatmentFlightEnabled;
         }

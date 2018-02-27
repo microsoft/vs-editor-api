@@ -31,7 +31,7 @@ namespace Microsoft.VisualStudio.Language.Intellisense.Implementation
         internal ITextStructureNavigatorSelectorService TextStructureNavigatorSelectorService { get; set; }
 
         [Import]
-        private JoinableTaskContext JtContext;
+        private JoinableTaskContext JoinableTaskContext;
 
         [Import]
         private IContentTypeRegistryService ContentTypeRegistryService;
@@ -108,7 +108,7 @@ namespace Microsoft.VisualStudio.Language.Intellisense.Implementation
                 System.Diagnostics.Debug.Assert(uiFactory != null, $"No instance of {nameof(ICompletionPresenterProvider)} is loaded. Completion will work without the UI.");
                 firstRun = false;
             }
-            session = new AsyncCompletionSession(JtContext.Factory, uiFactory, sourcesWithLocations, service, this, view);
+            session = new AsyncCompletionSession(JoinableTaskContext.Factory, uiFactory, sourcesWithLocations, service, this, view);
             view.Properties.AddProperty(typeof(IAsyncCompletionSession), session);
             view.Closed += TextView_Closed;
 
