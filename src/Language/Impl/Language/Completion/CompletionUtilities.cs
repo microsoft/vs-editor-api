@@ -11,14 +11,33 @@ namespace Microsoft.VisualStudio.Language.Intellisense.Implementation
 {
     internal static class CompletionUtilities
     {
-        internal static IEnumerable<ITextBuffer> GetBuffersForTriggerPoint(ITextView textView, SnapshotPoint point)
+        /// <summary>
+        /// Maps given point to buffers that contain this point. Requires UI thread.
+        /// </summary>
+        /// <param name="textView"></param>
+        /// <param name="point"></param>
+        /// <returns></returns>
+        internal static IEnumerable<ITextBuffer> GetBuffersForPoint(ITextView textView, SnapshotPoint point)
         {
             // We are looking at the buffer to the left of the caret.
             return textView.BufferGraph.GetTextBuffers(n =>
                 textView.BufferGraph.MapDownToBuffer(point, PointTrackingMode.Negative, n, PositionAffinity.Predecessor) != null);
         }
 
-        internal static IDictionary<IAsyncCompletionItemSource, SnapshotPoint> GetCompletionSourcesWithMappedLocations(ITextView textView, SnapshotPoint originalPoint, Func<IContentType, ImmutableArray<IAsyncCompletionItemSourceProvider>> completionItemSourceProviders)
+        /// <summary>
+        /// Maps given span to buffers that contain this span. Requires UI thread.
+        /// </summary>
+        /// <param name="textView"></param>
+        /// <param name="point"></param>
+        /// <returns></returns>
+        internal static IEnumerable<ITextBuffer> GetBuffersForSpan(ITextView textView, SnapshotSpan span)
+        {
+            // We are looking at the buffer to the left of the caret.
+            return textView.BufferGraph.GetTextBuffers(n =>
+                textView.BufferGraph.MapDownToBuffer(span, SpanTrackingMode.EdgePositive, n) != null);
+        }
+
+        internal static IDictionary<IAsyncCompletionItemSource, SnapshotPoint> GetCompletionSourcesWithMappedPoints(ITextView textView, SnapshotPoint originalPoint, Func<IContentType, ImmutableArray<IAsyncCompletionItemSourceProvider>> completionItemSourceProviders)
         {
             // This method is created based on EditorCommandHandlerService.GetOrderedBuffersAndCommandHandlers
 
@@ -79,6 +98,45 @@ namespace Microsoft.VisualStudio.Language.Intellisense.Implementation
             var buffers = textView.BufferGraph.GetTextBuffers(b => mappingPoint.GetPoint(b, PositionAffinity.Predecessor) != null);
             var pointsInBuffers = buffers.Select(b => mappingPoint.GetPoint(b, PositionAffinity.Predecessor).Value);
             return pointsInBuffers;
+        }
+
+        internal static IDictionary<IAsyncCompletionItemSource, SnapshotSpan> GetCompletionSourcesWithMappedSpans(ITextView textView, SnapshotSpan originalSpan, Func<IContentType, ImmutableArray<IAsyncCompletionItemSourceProvider>> completionItemSourceProviders)
+        {
+            // See comment in GetCompletionSourcesWithMappedPoints for explanation
+
+            var sortedContentTypes = new SortedSet<IContentType>(ContentTypeComparer.Instance);
+            var result = new Dictionary<IAsyncCompletionItemSource, SnapshotSpan>();
+
+            var mappedSpans = GetSpansOnAvailableBuffers(textView, originalSpan);
+            foreach (var mappedSpan in mappedSpans)
+            {
+                AddContentTypeHierarchy(sortedContentTypes, mappedSpan.Snapshot.ContentType);
+            }
+
+            foreach (var contentType in sortedContentTypes)
+            {
+                foreach (var mappedSpan in mappedSpans)
+                {
+                    if (mappedSpan.Snapshot.ContentType.IsOfType(contentType.TypeName))
+                    {
+                        foreach (var sourceProvider in completionItemSourceProviders(contentType))
+                        {
+                            var source = sourceProvider.GetOrCreate(textView);
+                            if (!result.ContainsKey(source))
+                                result.Add(source, mappedSpan);
+                        }
+                    }
+                }
+            }
+            return result;
+        }
+
+        private static IEnumerable<SnapshotSpan> GetSpansOnAvailableBuffers(ITextView textView, SnapshotSpan span)
+        {
+            var mappingSpan = textView.BufferGraph.CreateMappingSpan(span, SpanTrackingMode.EdgePositive);
+            var buffers = textView.BufferGraph.GetTextBuffers(b => mappingSpan.GetSpans(b).Any());
+            var spansInBuffers = buffers.Select(b => mappingSpan.GetSpans(b).First()); // TODO: What if there is more than one span?
+            return spansInBuffers;
         }
 
         private static void AddContentTypeHierarchy(SortedSet<IContentType> sortedContentTypes, IContentType contentType)

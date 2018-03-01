@@ -154,27 +154,15 @@ namespace Microsoft.VisualStudio.Language.Intellisense.Implementation
         private static readonly ImmutableArray<CompletionFilter> FilterCollection1 = ImmutableArray.Create(Filter1);
         private static readonly ImmutableArray<CompletionFilter> FilterCollection2 = ImmutableArray.Create(Filter2);
         private static readonly ImmutableArray<CompletionFilter> FilterCollection3 = ImmutableArray.Create(Filter3);
-        private static readonly ImmutableArray<char> commitCharacters = ImmutableArray.Create(' ', ';', '\t', '.', '<', '(', '[');
+        private static readonly ImmutableArray<char> commitCharacters = ImmutableArray.Create(' ', ';', '.', '<', '(', '[');
 
-        void IAsyncCompletionItemSource.CustomCommit(ITextView view, ITextBuffer buffer, CompletionItem item, ITrackingSpan applicableSpan, char typeChar, CancellationToken token)
+        CustomCommitBehavior IAsyncCompletionItemSource.CustomCommit(ITextView view, ITextBuffer buffer, CompletionItem item, ITrackingSpan applicableSpan, char typeChar, CancellationToken token)
         {
-            throw new System.NotImplementedException();
+            return CustomCommitBehavior.None;
         }
 
-        async Task<CompletionContext> IAsyncCompletionItemSource.GetCompletionContextAsync(CompletionTrigger trigger, SnapshotPoint triggerLocation, CancellationToken token)
+        async Task<CompletionContext> IAsyncCompletionItemSource.GetCompletionContextAsync(CompletionTrigger trigger, SnapshotSpan triggerLocation, CancellationToken token)
         {
-            var charBeforeCaret = triggerLocation.Subtract(1).GetChar();
-            SnapshotSpan applicableSpan;
-            if (commitCharacters.Contains(charBeforeCaret))
-            {
-                // skip this character. the applicable span starts later
-                applicableSpan = new SnapshotSpan(triggerLocation, 0);
-            }
-            else
-            {
-                // include this character. the applicable span starts here
-                applicableSpan = new SnapshotSpan(triggerLocation - 1, 1);
-            }
             return await Task.FromResult(new CompletionContext(
                 ImmutableArray.Create(
                     new CompletionItem("SampleItem<>", this, Icon3, FilterCollection3, string.Empty, false, "SampleItem", "SampleItem<>", "SampleItem", ImmutableArray<AccessibleImageId>.Empty),
@@ -187,7 +175,7 @@ namespace Microsoft.VisualStudio.Language.Intellisense.Implementation
                     new CompletionItem("AnotherSampling", this, Icon2, FilterCollection2),
                     new CompletionItem("Simple", this, Icon3, FilterCollection3, "KISS"),
                     new CompletionItem("Simpler", this, Icon3, FilterCollection3, "KISS")
-                ), applicableSpan));//, true, true, "Suggestion mode description!"));
+                )));//, true, true, "Suggestion mode description!"));
         }
 
         async Task<object> IAsyncCompletionItemSource.GetDescriptionAsync(CompletionItem item, CancellationToken token)
@@ -197,21 +185,24 @@ namespace Microsoft.VisualStudio.Language.Intellisense.Implementation
 
         ImmutableArray<char> IAsyncCompletionItemSource.GetPotentialCommitCharacters() => commitCharacters;
 
-#pragma warning disable CS1998 // Async method lacks 'await' operators and will run synchronously
-        async Task IAsyncCompletionItemSource.HandleViewClosedAsync(Text.Editor.ITextView view)
-#pragma warning restore CS1998 // Async method lacks 'await' operators and will run synchronously
-        {
-            return;
-        }
-
         bool IAsyncCompletionItemSource.ShouldCommitCompletion(char typeChar, SnapshotPoint location)
         {
             return true;
         }
 
-        bool IAsyncCompletionItemSource.ShouldTriggerCompletion(char typeChar, SnapshotPoint location)
+        SnapshotSpan? IAsyncCompletionItemSource.ShouldTriggerCompletion(char typeChar, SnapshotPoint triggerLocation)
         {
-            return true;
+            var charBeforeCaret = triggerLocation.Subtract(1).GetChar();
+            if (commitCharacters.Contains(charBeforeCaret))
+            {
+                // skip the typed character. the applicable span starts at the caret
+                return new SnapshotSpan(triggerLocation, 0);
+            }
+            else
+            {
+                // include the typed character.
+                return new SnapshotSpan(triggerLocation - 1, 1);
+            }
         }
     }
 
@@ -233,14 +224,16 @@ namespace Microsoft.VisualStudio.Language.Intellisense.Implementation
 
     public class DebugHtmlCompletionItemSource : IAsyncCompletionItemSource
     {
-        void IAsyncCompletionItemSource.CustomCommit(Text.Editor.ITextView view, ITextBuffer buffer, CompletionItem item, ITrackingSpan applicableSpan, char typeChar, CancellationToken token)
+        private static readonly ImmutableArray<char> commitCharacters = ImmutableArray.Create(' ', '>', '=');
+
+        CustomCommitBehavior IAsyncCompletionItemSource.CustomCommit(Text.Editor.ITextView view, ITextBuffer buffer, CompletionItem item, ITrackingSpan applicableSpan, char typeChar, CancellationToken token)
         {
-            throw new System.NotImplementedException();
+            return CustomCommitBehavior.None;
         }
 
-        async Task<CompletionContext> IAsyncCompletionItemSource.GetCompletionContextAsync(CompletionTrigger trigger, SnapshotPoint triggerLocation, CancellationToken token)
+        async Task<CompletionContext> IAsyncCompletionItemSource.GetCompletionContextAsync(CompletionTrigger trigger, SnapshotSpan applicableSpan, CancellationToken token)
         {
-            return await Task.FromResult(new CompletionContext(ImmutableArray.Create(new CompletionItem("html", this), new CompletionItem("head", this), new CompletionItem("body", this), new CompletionItem("header", this)), new SnapshotSpan(triggerLocation, 0)));
+            return await Task.FromResult(new CompletionContext(ImmutableArray.Create(new CompletionItem("html", this), new CompletionItem("head", this), new CompletionItem("body", this), new CompletionItem("header", this))));
         }
 
         async Task<object> IAsyncCompletionItemSource.GetDescriptionAsync(CompletionItem item, CancellationToken token)
@@ -250,14 +243,7 @@ namespace Microsoft.VisualStudio.Language.Intellisense.Implementation
 
         ImmutableArray<char> IAsyncCompletionItemSource.GetPotentialCommitCharacters()
         {
-            return ImmutableArray.Create(' ', '>', '=', '\t');
-        }
-
-#pragma warning disable CS1998 // Async method lacks 'await' operators and will run synchronously
-        async Task IAsyncCompletionItemSource.HandleViewClosedAsync(Text.Editor.ITextView view)
-#pragma warning restore CS1998 // Async method lacks 'await' operators and will run synchronously
-        {
-            return;
+            return commitCharacters;
         }
 
         bool IAsyncCompletionItemSource.ShouldCommitCompletion(char typeChar, SnapshotPoint location)
@@ -265,9 +251,19 @@ namespace Microsoft.VisualStudio.Language.Intellisense.Implementation
             return true;
         }
 
-        bool IAsyncCompletionItemSource.ShouldTriggerCompletion(char typeChar, SnapshotPoint location)
+        SnapshotSpan? IAsyncCompletionItemSource.ShouldTriggerCompletion(char typeChar, SnapshotPoint triggerLocation)
         {
-            return true;
+            var charBeforeCaret = triggerLocation.Subtract(1).GetChar();
+            if (commitCharacters.Contains(charBeforeCaret))
+            {
+                // skip the typed character. the applicable span starts at the caret
+                return new SnapshotSpan(triggerLocation, 0);
+            }
+            else
+            {
+                // include the typed character.
+                return new SnapshotSpan(triggerLocation - 1, 1);
+            }
         }
     }
 #endif

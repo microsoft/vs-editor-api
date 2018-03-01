@@ -6,6 +6,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.VisualStudio.Language.Intellisense;
 using Microsoft.VisualStudio.Text;
+using Microsoft.VisualStudio.Utilities;
 
 namespace Microsoft.VisualStudio.Language.Intellisense.Implementation
 {
@@ -337,38 +338,45 @@ namespace Microsoft.VisualStudio.Language.Intellisense.Implementation
 
     sealed class ModelComputation<TModel>
     {
-        Task<TModel> _lastTask = Task.FromResult(default(TModel));
+        private Task<TModel> _lastTask = Task.FromResult(default(TModel));
         private Task _notifyUITask = Task.CompletedTask;
         private readonly TaskScheduler _computationTaskScheduler;
         private readonly CancellationToken _token;
+        private readonly IGuardedOperations _guardedOperations;
         private CancellationTokenSource _uiCancellation;
+        private readonly ICompletionComputationCallbackHandler<TModel> _callbacks;
         internal TModel RecentModel { get; private set; } = default(TModel);
 
-        public ModelComputation(TaskScheduler computationTaskScheduler, CancellationToken token)
+        public ModelComputation(TaskScheduler computationTaskScheduler, CancellationToken token, IGuardedOperations guardedOperations, ICompletionComputationCallbackHandler<TModel> callbacks)
         {
             _computationTaskScheduler = computationTaskScheduler;
             _token = token;
+            _guardedOperations = guardedOperations;
             _uiCancellation = new CancellationTokenSource();
+            _callbacks = callbacks;
         }
 
-        /// <summary>
-        /// Schedules work to be done on the background,
-        /// potentially preempted by another piece of work scheduled in the future.
-        /// </summary>
-        public void Enqueue(Func<TModel, CancellationToken, Task<TModel>> transformation)
+        private Task<TModel> SafelyInvoke(Func<TModel, CancellationToken, Task<TModel>> transformation, Task<TModel> previousTask, CancellationToken token)
         {
-            Enqueue(transformation, null);
+            var transformedTask = transformation(previousTask.Result, token);
+            if (transformedTask.IsFaulted)
+            {
+                _guardedOperations.HandleException(this, transformedTask.Exception);
+                _callbacks.Dismiss();
+                return previousTask;
+            }
+            return transformedTask;
         }
 
         /// <summary>
         /// Schedules work to be done on the background,
         /// potentially preempted by another piece of work scheduled in the future,
-        /// followed by a single piece of work that will execute once all background work is completed.
+        /// <paramref name="updateUi" /> indicates whether a single piece of work should occue once all background work is completed.
         /// </summary>
-        public void Enqueue(Func<TModel, CancellationToken, Task<TModel>> transformation, Func<TModel, Task> updateUI)
+        public void Enqueue(Func<TModel, CancellationToken, Task<TModel>> transformation, bool updateUi)
         {
             // This method is based on Roslyn's ModelComputation.ChainTaskAndNotifyControllerWhenFinished
-            var nextTask = _lastTask.ContinueWith(t => transformation(t.Result, _token), _computationTaskScheduler).Unwrap();
+            var nextTask = _lastTask.ContinueWith(t => SafelyInvoke(transformation, t, _token), _computationTaskScheduler).Unwrap();
             _lastTask = nextTask;
 
             // If the _notifyUITask is canceled, refresh it
@@ -385,9 +393,9 @@ namespace Microsoft.VisualStudio.Language.Intellisense.Implementation
                     if (existingTasks.All(t => t.Status == TaskStatus.RanToCompletion))
                     {
                         OnModelUpdated(nextTask.Result);
-                        if (updateUI != null && nextTask == _lastTask)
+                        if (updateUi && nextTask == _lastTask)
                         {
-                            await updateUI(nextTask.Result);
+                            await _callbacks.UpdateUi(nextTask.Result);
                         }
                     }
                 },

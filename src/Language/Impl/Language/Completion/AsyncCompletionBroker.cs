@@ -69,7 +69,7 @@ namespace Microsoft.VisualStudio.Language.Intellisense.Implementation
             session.TextView.Properties.RemoveProperty(typeof(IAsyncCompletionSession));
         }
 
-        IAsyncCompletionSession IAsyncCompletionBroker.TriggerCompletion(ITextView view, SnapshotPoint triggerLocation)
+        IAsyncCompletionSession IAsyncCompletionBroker.TriggerCompletion(ITextView view, SnapshotSpan applicableSpan)
         {
             var session = GetSession(view);
             if (session != null)
@@ -77,17 +77,16 @@ namespace Microsoft.VisualStudio.Language.Intellisense.Implementation
                 return session;
             }
 
-            // TODO: Handle the race condition: two consecutive OpenAsync. Both create completion
-            // not knowing of one another. The second invocation should use the if-block.
-
-            var sourcesWithLocations = CompletionUtilities.GetCompletionSourcesWithMappedLocations(view, triggerLocation, GetCompletionItemSourceProviders);
+            // TODO: Need to map applicableSpan to respective buffers
+            var sourcesWithLocations = CompletionUtilities.GetCompletionSourcesWithMappedSpans(view, applicableSpan, GetCompletionItemSourceProviders);
             if (!sourcesWithLocations.Any())
             {
                 // There is no completion source available for this buffer
                 return null;
             }
 
-            var buffers = CompletionUtilities.GetBuffersForTriggerPoint(view, triggerLocation).ToImmutableArray();
+            // TODO: use applicableSpan
+            var buffers = CompletionUtilities.GetBuffersForSpan(view, applicableSpan).ToImmutableArray();
             var service = buffers
                 .Select(b => GetCompletionService(b.ContentType))
                 .FirstOrDefault(s => s != null)
@@ -108,7 +107,9 @@ namespace Microsoft.VisualStudio.Language.Intellisense.Implementation
                 System.Diagnostics.Debug.Assert(uiFactory != null, $"No instance of {nameof(ICompletionPresenterProvider)} is loaded. Completion will work without the UI.");
                 firstRun = false;
             }
-            session = new AsyncCompletionSession(JoinableTaskContext.Factory, uiFactory, sourcesWithLocations, service, this, view);
+            var telemetry = GetOrCreateTelemetry(view);
+
+            session = new AsyncCompletionSession(applicableSpan, JoinableTaskContext.Factory, uiFactory, sourcesWithLocations, service, this, view, telemetry);
             view.Properties.AddProperty(typeof(IAsyncCompletionSession), session);
             view.Closed += TextView_Closed;
 
@@ -195,22 +196,44 @@ namespace Microsoft.VisualStudio.Language.Intellisense.Implementation
 
         private void TextView_Closed(object sender, EventArgs e)
         {
-            GetSession((ITextView)sender)?.Dismiss();
-            // TODO: confirm that it's indeed ok to not unsusbcribe
+            var view = (ITextView)sender;
+            view.Closed -= TextView_Closed;
+            GetSession(view)?.Dismiss();
+            try
+            {
+                SendTelemetry(view);
+            }
+            catch (Exception ex)
+            {
+                GuardedOperations.HandleException(this, ex);
+            }
         }
 
-        bool IAsyncCompletionBroker.IsCompletionActive(ITextView view)
+        bool IAsyncCompletionBroker.IsCompletionActive(ITextView textView)
         {
-            return view.Properties.ContainsProperty(typeof(IAsyncCompletionSession));
+            return textView.Properties.ContainsProperty(typeof(IAsyncCompletionSession));
         }
 
-        bool IAsyncCompletionBroker.ShouldTriggerCompletion(ITextView textView, char typeChar, SnapshotPoint triggerLocation)
+        SnapshotSpan? IAsyncCompletionBroker.ShouldTriggerCompletion(ITextView textView, char typeChar, SnapshotPoint triggerLocation)
         {
-            var sourcesWithLocations = CompletionUtilities.GetCompletionSourcesWithMappedLocations(textView, triggerLocation, GetCompletionItemSourceProviders);
-            return sourcesWithLocations.Any(p => GuardedOperations.CallExtensionPoint(
-                errorSource: p.Key,
-                call: () => p.Key.ShouldTriggerCompletion(typeChar, p.Value),
-                valueOnThrow: false));
+            // Get location mapped to buffer matching each source's content type metadata.
+            var sourcesWithLocations = CompletionUtilities.GetCompletionSourcesWithMappedPoints(textView, triggerLocation, GetCompletionItemSourceProviders);
+            foreach (var sourceAndLocation in sourcesWithLocations)
+            {
+                try
+                {
+                    var applicableSpan = sourceAndLocation.Key.ShouldTriggerCompletion(typeChar, sourceAndLocation.Value);
+                    if (applicableSpan.HasValue)
+                    {
+                        return applicableSpan; // TODO: This should be mapped to the top buffer.
+                    }
+                }
+                catch (Exception ex)
+                {
+                    GuardedOperations.HandleException(sourceAndLocation.Key, ex);
+                }
+            }
+            return null;
         }
 
         public IAsyncCompletionSession GetSession(ITextView textView)
@@ -222,9 +245,33 @@ namespace Microsoft.VisualStudio.Language.Intellisense.Implementation
             return null;
         }
 
-        // Helper methods for telemetry
+        // Helper methods for telemetry:
+        private CompletionTelemetryHost GetOrCreateTelemetry(ITextView textView)
+        {
+            if (textView.Properties.TryGetProperty(typeof(CompletionTelemetryHost), out CompletionTelemetryHost telemetry))
+            {
+                return telemetry;
+            }
+            else
+            {
+                var newTelemetry = new CompletionTelemetryHost(Logger, this);
+                textView.Properties.AddProperty(typeof(CompletionTelemetryHost), newTelemetry);
+                return newTelemetry;
+            }
+        }
+
+        private void SendTelemetry(ITextView textView)
+        {
+            if (textView.Properties.TryGetProperty(typeof(CompletionTelemetryHost), out CompletionTelemetryHost telemetry))
+            {
+                telemetry.Send();
+                textView.Properties.RemoveProperty(typeof(CompletionTelemetryHost));
+            }
+        }
+
         internal string GetItemSourceName(IAsyncCompletionItemSource source) => OrderedCompletionItemSourceProviders.FirstOrDefault(n => n.Value == source)?.Metadata.Name ?? string.Empty;
         internal string GetCompletionServiceName(IAsyncCompletionService service) => OrderedCompletionServiceProviders.FirstOrDefault(n => n.Value == service)?.Metadata.Name ?? string.Empty;
+        internal string GetCompletionPresenterProviderName(ICompletionPresenterProvider provider) => OrderedPresenterProviders.FirstOrDefault(n => n.Value == provider)?.Metadata.Name ?? string.Empty;
 
         // Parity with legacy telemetry
         private void EmulateLegacyCompletionTelemetry(IContentType contentType, ITextView textView)

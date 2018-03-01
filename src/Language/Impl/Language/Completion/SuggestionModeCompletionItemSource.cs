@@ -23,12 +23,12 @@ namespace Microsoft.VisualStudio.Language.Intellisense.Implementation
             }
         }
 
-        void IAsyncCompletionItemSource.CustomCommit(ITextView view, ITextBuffer buffer, CompletionItem item, ITrackingSpan applicableSpan, char typeChar, CancellationToken token)
+        CustomCommitBehavior IAsyncCompletionItemSource.CustomCommit(ITextView view, ITextBuffer buffer, CompletionItem item, ITrackingSpan applicableSpan, char typeChar, CancellationToken token)
         {
-            throw new NotImplementedException("Suggestion mode item does not have custom commit behavior");
+            return CustomCommitBehavior.None;
         }
 
-        Task<CompletionContext> IAsyncCompletionItemSource.GetCompletionContextAsync(CompletionTrigger trigger, SnapshotPoint triggerLocation, CancellationToken token)
+        Task<CompletionContext> IAsyncCompletionItemSource.GetCompletionContextAsync(CompletionTrigger trigger, SnapshotSpan applicableSpan, CancellationToken token)
         {
             throw new NotImplementedException("This item source is not meant to be registered. It is used only to provide tooltip.");
         }
@@ -43,19 +43,14 @@ namespace Microsoft.VisualStudio.Language.Intellisense.Implementation
             throw new NotImplementedException("This item source is not meant to be registered. It is used only to provide tooltip.");
         }
 
-        Task IAsyncCompletionItemSource.HandleViewClosedAsync(ITextView view)
-        {
-            throw new NotImplementedException("This item source is not meant to be registered. It is used only to provide tooltip.");
-        }
-
         bool IAsyncCompletionItemSource.ShouldCommitCompletion(char typeChar, SnapshotPoint location)
         {
             return false; // Typing should not commit the suggestion mode item.
         }
 
-        bool IAsyncCompletionItemSource.ShouldTriggerCompletion(char typeChar, SnapshotPoint location)
+        SnapshotSpan? IAsyncCompletionItemSource.ShouldTriggerCompletion(char typeChar, SnapshotPoint location)
         {
-            throw new NotImplementedException("This item source is not meant to be registered. It is used only to provide tooltip.");
+            return null;
         }
     }
 }

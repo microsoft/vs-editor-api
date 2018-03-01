@@ -117,9 +117,14 @@ namespace Microsoft.VisualStudio.Language.Intellisense.Implementation
         {
             var trigger = new CompletionTrigger(CompletionTriggerReason.Invoke);
             var location = args.TextView.Caret.Position.BufferPosition;
-            var session = Broker.TriggerCompletion(args.TextView, location);
-            session?.OpenOrUpdate(args.TextView, trigger, location);
-            return true;
+            var applicableSpan = Broker.ShouldTriggerCompletion(args.TextView, default(char), location);
+            if (applicableSpan.HasValue)
+            {
+                var session = Broker.TriggerCompletion(args.TextView, applicableSpan.Value);
+                session?.OpenOrUpdate(args.TextView, trigger, location);
+                return true;
+            }
+            return false;
         }
 
         CommandState ICommandHandler<CommitUniqueCompletionListItemCommandArgs>.GetCommandState(CommitUniqueCompletionListItemCommandArgs args)
@@ -129,9 +134,14 @@ namespace Microsoft.VisualStudio.Language.Intellisense.Implementation
         {
             var trigger = new CompletionTrigger(CompletionTriggerReason.InvokeAndCommitIfUnique);
             var location = args.TextView.Caret.Position.BufferPosition;
-            var session = Broker.TriggerCompletion(args.TextView, location) as AsyncCompletionSession;
-            session?.InvokeAndCommitIfUnique(args.TextView, trigger, location, executionContext.OperationContext.UserCancellationToken);
-            return true;
+            var applicableSpan = Broker.ShouldTriggerCompletion(args.TextView, default(char), location);
+            if (applicableSpan.HasValue)
+            {
+                var session = Broker.TriggerCompletion(args.TextView, applicableSpan.Value) as AsyncCompletionSession;
+                session?.InvokeAndCommitIfUnique(args.TextView, trigger, location, executionContext.OperationContext.UserCancellationToken);
+                return true;
+            }
+            return false;
         }
 
         CommandState ICommandHandler<InsertSnippetCommandArgs>.GetCommandState(InsertSnippetCommandArgs args)
@@ -215,7 +225,7 @@ namespace Microsoft.VisualStudio.Language.Intellisense.Implementation
             if (session != null)
             {
                 session.Commit(executionContext.OperationContext.UserCancellationToken);
-                session.Dismiss(); // TODO: Currently the implementation needs UI thread
+                session.Dismiss();
                 return true;
             }
             return false;
@@ -230,7 +240,7 @@ namespace Microsoft.VisualStudio.Language.Intellisense.Implementation
             if (session != null)
             {
                 session.Commit(executionContext.OperationContext.UserCancellationToken);
-                session.Dismiss(); // TODO: Currently the implementation needs UI thread
+                session.Dismiss();
                 return true;
             }
             return false;
@@ -252,7 +262,7 @@ namespace Microsoft.VisualStudio.Language.Intellisense.Implementation
 
             var view = args.TextView;
             var location = view.Caret.Position.BufferPosition;
-            var sessionToCommit = Broker.GetSession(args.TextView);// as AsyncCompletionSession; // TODO: finalize the API after prototyping
+            var sessionToCommit = Broker.GetSession(args.TextView);
             if (sessionToCommit?.ShouldCommit(view, args.TypedChar, location) == true)
             {
                 using (var undoTransaction = new CaretPreservingEditTransaction("Completion", view, UndoHistoryRegistry, EditorOperationsFactoryService))
@@ -260,11 +270,10 @@ namespace Microsoft.VisualStudio.Language.Intellisense.Implementation
                     UndoUtilities.RollbackToBeforeTypeChar(initialTextSnapshot, args.SubjectBuffer);
                     // Now the buffer doesn't have the commit character nor the matching brace, if any
 
-                    sessionToCommit.Commit(executionContext.OperationContext.UserCancellationToken, args.TypedChar);
-                    // Replay the key, so that we get brace completion.
-                    // TODO: Add a way to suppress this.
-                    if (true)
-                        nextCommandHandler();
+                    var customBehavior = sessionToCommit.Commit(executionContext.OperationContext.UserCancellationToken, args.TypedChar);
+
+                    if ((customBehavior & CustomCommitBehavior.SurpressFurtherCommandHandlers) == 0)
+                        nextCommandHandler(); // Replay the key, so that we get brace completion.
 
                     // Complete the transaction before stopping it.
                     undoTransaction.Complete();
@@ -279,10 +288,14 @@ namespace Microsoft.VisualStudio.Language.Intellisense.Implementation
             {
                 session.OpenOrUpdate(view, trigger, location);
             }
-            else if (Broker.ShouldTriggerCompletion(view, args.TypedChar, location))
+            else
             {
-                var newSession = Broker.TriggerCompletion(view, location);
-                newSession?.OpenOrUpdate(view, trigger, location);
+                var applicableSpan = Broker.ShouldTriggerCompletion(view, args.TypedChar, location);
+                if (applicableSpan.HasValue)
+                {
+                    var newSession = Broker.TriggerCompletion(view, applicableSpan.Value);
+                    newSession?.OpenOrUpdate(view, trigger, location);
+                }
             }
         }
 
