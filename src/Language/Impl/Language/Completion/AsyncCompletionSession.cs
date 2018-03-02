@@ -22,15 +22,15 @@ namespace Microsoft.VisualStudio.Language.Intellisense.Implementation
     internal class AsyncCompletionSession : IAsyncCompletionSession, ICompletionComputationCallbackHandler<CompletionModel>
     {
         // Available data and services
-        private readonly IDictionary<IAsyncCompletionItemSource, SnapshotSpan> _completionSources;
+        private readonly IDictionary<IAsyncCompletionItemSource, SnapshotPoint> _completionSources;
         private readonly IAsyncCompletionService _completionService;
         private readonly SnapshotSpan _initialApplicableSpan;
         private readonly JoinableTaskFactory _jtf;
         private readonly ICompletionPresenterProvider _presenterProvider;
         private readonly AsyncCompletionBroker _broker;
         private readonly ITextView _view;
-        private readonly ITextStructureNavigator _textStructureNavigator;
         private readonly IGuardedOperations _guardedOperations;
+        private readonly ImmutableArray<char> _potentialCommitChars;
 
         // Presentation:
         ICompletionPresenter _gui; // Must be accessed from GUI thread
@@ -67,18 +67,18 @@ namespace Microsoft.VisualStudio.Language.Intellisense.Implementation
 
         public bool IsDismissed => _isDismissed;
 
-        public AsyncCompletionSession(SnapshotSpan applicableSpan, JoinableTaskFactory jtf, ICompletionPresenterProvider presenterProvider,
-            IDictionary<IAsyncCompletionItemSource, SnapshotSpan> completionSources,
+        public AsyncCompletionSession(SnapshotSpan applicableSpan, ImmutableArray<char> potentialCommitChars, JoinableTaskFactory jtf,
+            ICompletionPresenterProvider presenterProvider, IDictionary<IAsyncCompletionItemSource, SnapshotPoint> completionSources,
             IAsyncCompletionService completionService, AsyncCompletionBroker broker, ITextView view, CompletionTelemetryHost telemetryHost)
         {
             _initialApplicableSpan = applicableSpan;
+            _potentialCommitChars = potentialCommitChars;
             _jtf = jtf;
             _presenterProvider = presenterProvider;
             _broker = broker;
             _completionSources = completionSources;
             _completionService = completionService;
             _view = view;
-            _textStructureNavigator = broker.TextStructureNavigatorSelectorService?.GetTextStructureNavigator(view.TextBuffer);
             _guardedOperations = broker.GuardedOperations;
             _telemetry = new CompletionSessionTelemetry(telemetryHost, completionService, presenterProvider);
             PageStepSize = presenterProvider?.ResultsPerPage ?? 1;
@@ -87,6 +87,9 @@ namespace Microsoft.VisualStudio.Language.Intellisense.Implementation
 
         bool IAsyncCompletionSession.CommitIfUnique(CancellationToken token)
         {
+            if (_isDismissed)
+                return false;
+
             // Note that this will deadlock if OpenOrUpdate wasn't called ahead of time.
             var lastModel = _computation.WaitAndGetResult();
             if (lastModel.UniqueItem != null)
@@ -133,7 +136,7 @@ namespace Microsoft.VisualStudio.Language.Intellisense.Implementation
                 // Commit the suggestion mode item
                 return Commit(typedChar, lastModel.SuggestionModeItem, token);
             }
-            else if (!lastModel.PresentedItems.Any())
+            else if (lastModel.PresentedItems.IsDefaultOrEmpty)
             {
                 // There is nothing to commit
                 Dismiss();
@@ -149,6 +152,9 @@ namespace Microsoft.VisualStudio.Language.Intellisense.Implementation
         private CustomCommitBehavior Commit(char typedChar, CompletionItem itemToCommit, CancellationToken token)
         {
             CustomCommitBehavior result = CustomCommitBehavior.None;
+            if (_isDismissed)
+                return result;
+
             var lastModel = _computation.WaitAndGetResult();
 
             if (!_jtf.Context.IsOnMainThread)
@@ -195,8 +201,8 @@ namespace Microsoft.VisualStudio.Language.Intellisense.Implementation
             _broker.DismissSession(this);
             _guardedOperations.RaiseEvent(this, Dismissed);
             _view.Caret.PositionChanged -= OnCaretPositionChanged;
-            _computationCancellation.Cancel();
             _computation = null;
+            _computationCancellation.Cancel();
 
             if (_gui != null)
             {
@@ -218,6 +224,9 @@ namespace Microsoft.VisualStudio.Language.Intellisense.Implementation
 
         void IAsyncCompletionSession.OpenOrUpdate(ITextView view, CompletionTrigger trigger, SnapshotPoint triggerLocation)
         {
+            if (_isDismissed)
+                return;
+
             if (_computation == null)
             {
                 _computation = new ModelComputation<CompletionModel>(PrioritizedTaskScheduler.AboveNormalInstance, _computationCancellation.Token, _guardedOperations, this);
@@ -230,6 +239,9 @@ namespace Microsoft.VisualStudio.Language.Intellisense.Implementation
 
         internal void InvokeAndCommitIfUnique(ITextView view, CompletionTrigger trigger, SnapshotPoint triggerLocation, CancellationToken token)
         {
+            if (_isDismissed)
+                return;
+
             ((IAsyncCompletionSession)this).OpenOrUpdate(view, trigger, triggerLocation);
             if (((IAsyncCompletionSession)this).CommitIfUnique(token))
             {
@@ -305,18 +317,17 @@ namespace Microsoft.VisualStudio.Language.Intellisense.Implementation
             Dismiss();
         }
 
+        /// <summary>
+        /// Determines whether the commit code path should be taken. Since this method is on a typing hot path,
+        /// we return quickly if the character is not found in the predefined list of potential commit characters.
+        /// </summary>
+        /// <remarks>This method runs on UI thread. ShouldCommit performs mapping which requires UI thread.</remarks>
         bool IAsyncCompletionSession.ShouldCommit(ITextView view, char typeChar, SnapshotPoint triggerLocation)
         {
-            foreach (var contentType in CompletionUtilities.GetBuffersForPoint(view, triggerLocation).Select(b => b.ContentType))
+            if (_potentialCommitChars.Contains(typeChar))
             {
-                if (_broker.TryGetKnownCommitCharacters(contentType, view, out var commitChars))
-                {
-                    if (commitChars.Contains(typeChar))
-                    {
-                        if (ShouldCommit(view, typeChar, triggerLocation))
-                            return true;
-                    }
-                }
+                if (ShouldCommit(view, typeChar, triggerLocation))
+                    return true;
             }
             return false;
         }
@@ -392,7 +403,7 @@ namespace Microsoft.VisualStudio.Language.Intellisense.Implementation
                 _completionSources.Select(
                     p => _guardedOperations.CallExtensionPointAsync<CompletionContext>(
                         errorSource: p.Key,
-                        asyncCall: () => p.Key.GetCompletionContextAsync(trigger, p.Value, token),
+                        asyncCall: () => p.Key.GetCompletionContextAsync(trigger, triggerLocation, _initialApplicableSpan, token),
                         valueOnThrow: null
                     )));
             var initialCompletionItems = nestedResults.Where(n => n != null && !n.Items.IsDefaultOrEmpty).SelectMany(n => n.Items).ToImmutableArray();
@@ -467,17 +478,29 @@ namespace Microsoft.VisualStudio.Language.Intellisense.Implementation
             // Always record keystrokes, even if filtering is preempted
             _telemetry.RecordKeystroke();
 
-            // Filtering got preempted, so store the most recent snapshot for the next time we filter
-            if (token.IsCancellationRequested || thisId != _lastFilteringTaskId)
-                return model.WithSnapshot(triggerLocation.Snapshot);
+            // Completion got cancelled
+            if (token.IsCancellationRequested || model == null)
+                return default(CompletionModel);
 
             // Dismiss if we are outside of the applicable span
-            // TODO: dismiss if applicable span was reduced to zero AND moved again (e.g. first backspace keeps completion open, second backspace closes it)
-            if (triggerLocation < model.ApplicableSpan.GetStartPoint(triggerLocation.Snapshot) || triggerLocation > model.ApplicableSpan.GetEndPoint(triggerLocation.Snapshot))
+            var currentlyApplicableSpan = model.ApplicableSpan.GetSpan(triggerLocation.Snapshot);
+            if (triggerLocation < currentlyApplicableSpan.Start
+                || triggerLocation > currentlyApplicableSpan.End)
             {
                 ((IAsyncCompletionSession)this).Dismiss();
                 return model;
             }
+            // Record the first time the span is empty. If it is empty the second time we're here, and user is deleting, then dismiss
+            if (currentlyApplicableSpan.IsEmpty && model.ApplicableSpanWasEmpty && trigger.Reason == CompletionTriggerReason.Deletion)
+            {
+                ((IAsyncCompletionSession)this).Dismiss();
+                return model;
+            }
+            model = model.WithApplicableSpanEmptyRecord(currentlyApplicableSpan.IsEmpty);
+
+            // Filtering got preempted, so store the most recent snapshot for the next time we filter
+            if (thisId != _lastFilteringTaskId)
+                return model.WithSnapshot(triggerLocation.Snapshot);
 
             ComputationStopwatch.Restart();
 
@@ -515,7 +538,7 @@ namespace Microsoft.VisualStudio.Language.Intellisense.Implementation
                 model = model.WithSoftSelection(false);
 
             // Prepare the suggestionModeItem if we ever change the mode
-            var enteredText = model.ApplicableSpan.GetText(triggerLocation.Snapshot);
+            var enteredText = currentlyApplicableSpan.GetText();
             var suggestionModeItem = new CompletionItem(enteredText, SuggestionModeCompletionItemSource.Instance);
 
             _guardedOperations.RaiseEvent(this, ItemsUpdated, new CompletionItemsWithHighlightEventArgs(returnedItems));
@@ -654,6 +677,9 @@ namespace Microsoft.VisualStudio.Language.Intellisense.Implementation
         /// </summary>
         public bool ShouldCommit(ITextView view, char typeChar, SnapshotPoint triggerLocation)
         {
+            if (!_jtf.Context.IsOnMainThread)
+                throw new InvalidOperationException($"This method must be callled on the UI thread.");
+
             var mappingPoint = view.BufferGraph.CreateMappingPoint(triggerLocation, PointTrackingMode.Negative);
             return _completionSources
                 .Select(p => (p, mappingPoint.GetPoint(p.Value.Snapshot.TextBuffer, PositionAffinity.Predecessor)))

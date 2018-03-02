@@ -1,6 +1,7 @@
 ﻿using System;
 using System.ComponentModel.Composition;
 using Microsoft.VisualStudio.Commanding;
+using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Text.Editor.Commanding.Commands;
 using Microsoft.VisualStudio.Text.Operations;
@@ -120,7 +121,7 @@ namespace Microsoft.VisualStudio.Language.Intellisense.Implementation
             var applicableSpan = Broker.ShouldTriggerCompletion(args.TextView, default(char), location);
             if (applicableSpan.HasValue)
             {
-                var session = Broker.TriggerCompletion(args.TextView, applicableSpan.Value);
+                var session = Broker.TriggerCompletion(args.TextView, location, applicableSpan.Value);
                 session?.OpenOrUpdate(args.TextView, trigger, location);
                 return true;
             }
@@ -137,7 +138,7 @@ namespace Microsoft.VisualStudio.Language.Intellisense.Implementation
             var applicableSpan = Broker.ShouldTriggerCompletion(args.TextView, default(char), location);
             if (applicableSpan.HasValue)
             {
-                var session = Broker.TriggerCompletion(args.TextView, applicableSpan.Value) as AsyncCompletionSession;
+                var session = Broker.TriggerCompletion(args.TextView, location, applicableSpan.Value) as AsyncCompletionSession;
                 session?.InvokeAndCommitIfUnique(args.TextView, trigger, location, executionContext.OperationContext.UserCancellationToken);
                 return true;
             }
@@ -252,19 +253,30 @@ namespace Microsoft.VisualStudio.Language.Intellisense.Implementation
         void IChainedCommandHandler<TypeCharCommandArgs>.ExecuteCommand(TypeCharCommandArgs args, Action nextCommandHandler, CommandExecutionContext executionContext)
         {
             var initialTextSnapshot = args.TextView.TextSnapshot;
-
-            // Execute other commands in the chain to see the change in the buffer.
-            nextCommandHandler();
-
-            // We are only inteterested in the top buffer. Currently, commanding implementation calls us multiple times, once per each buffer.
-            if (args.TextView.BufferGraph.TopBuffer != args.SubjectBuffer)
-                return;
-
             var view = args.TextView;
-            var location = view.Caret.Position.BufferPosition;
-            var sessionToCommit = Broker.GetSession(args.TextView);
-            if (sessionToCommit?.ShouldCommit(view, args.TypedChar, location) == true)
+
+            if (args.TextView.TextBuffer != args.SubjectBuffer)
             {
+                // We are only inteterested in the top buffer. Currently, commanding implementation calls us multiple times, once per each buffer.
+                // Allow other command handlers to act.
+                nextCommandHandler();
+                return;
+            }
+
+            var location = view.Caret.Position.BufferPosition;
+            // Call ShouldCommit before nextCommandHandler so that extenders
+            // get the same view of the buffer in both ShouldCommit and Commit
+            var sessionToCommit = Broker.GetSession(args.TextView);
+            var shouldCommit = sessionToCommit?.ShouldCommit(view, args.TypedChar, location);
+
+            if (shouldCommit == true)
+            {
+                // Execute other commands in the chain to see the change in the buffer.
+                nextCommandHandler();
+
+                // Buffer has changed, update the snapshot
+                location = view.Caret.Position.BufferPosition;
+
                 using (var undoTransaction = new CaretPreservingEditTransaction("Completion", view, UndoHistoryRegistry, EditorOperationsFactoryService))
                 {
                     UndoUtilities.RollbackToBeforeTypeChar(initialTextSnapshot, args.SubjectBuffer);
@@ -272,15 +284,20 @@ namespace Microsoft.VisualStudio.Language.Intellisense.Implementation
 
                     var customBehavior = sessionToCommit.Commit(executionContext.OperationContext.UserCancellationToken, args.TypedChar);
 
-                    if ((customBehavior & CustomCommitBehavior.SurpressFurtherCommandHandlers) == 0)
+                    if ((customBehavior & CustomCommitBehavior.SuppressFurtherCommandHandlers) == 0)
                         nextCommandHandler(); // Replay the key, so that we get brace completion.
 
                     // Complete the transaction before stopping it.
                     undoTransaction.Complete();
                 }
-                // Snapshot has changed when committing. Update it for when we try to trigger new session.
-                location = view.Caret.Position.BufferPosition;
             }
+            else
+            {
+                nextCommandHandler();
+            }
+
+            // Buffer might have changed. Update it for when we try to trigger new session.
+            location = view.Caret.Position.BufferPosition;
 
             var trigger = new CompletionTrigger(CompletionTriggerReason.Insertion, args.TypedChar);
             var session = Broker.GetSession(args.TextView);
@@ -293,7 +310,7 @@ namespace Microsoft.VisualStudio.Language.Intellisense.Implementation
                 var applicableSpan = Broker.ShouldTriggerCompletion(view, args.TypedChar, location);
                 if (applicableSpan.HasValue)
                 {
-                    var newSession = Broker.TriggerCompletion(view, applicableSpan.Value);
+                    var newSession = Broker.TriggerCompletion(view, location, applicableSpan.Value);
                     newSession?.OpenOrUpdate(view, trigger, location);
                 }
             }

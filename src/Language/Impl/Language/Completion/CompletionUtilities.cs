@@ -100,45 +100,6 @@ namespace Microsoft.VisualStudio.Language.Intellisense.Implementation
             return pointsInBuffers;
         }
 
-        internal static IDictionary<IAsyncCompletionItemSource, SnapshotSpan> GetCompletionSourcesWithMappedSpans(ITextView textView, SnapshotSpan originalSpan, Func<IContentType, ImmutableArray<IAsyncCompletionItemSourceProvider>> completionItemSourceProviders)
-        {
-            // See comment in GetCompletionSourcesWithMappedPoints for explanation
-
-            var sortedContentTypes = new SortedSet<IContentType>(ContentTypeComparer.Instance);
-            var result = new Dictionary<IAsyncCompletionItemSource, SnapshotSpan>();
-
-            var mappedSpans = GetSpansOnAvailableBuffers(textView, originalSpan);
-            foreach (var mappedSpan in mappedSpans)
-            {
-                AddContentTypeHierarchy(sortedContentTypes, mappedSpan.Snapshot.ContentType);
-            }
-
-            foreach (var contentType in sortedContentTypes)
-            {
-                foreach (var mappedSpan in mappedSpans)
-                {
-                    if (mappedSpan.Snapshot.ContentType.IsOfType(contentType.TypeName))
-                    {
-                        foreach (var sourceProvider in completionItemSourceProviders(contentType))
-                        {
-                            var source = sourceProvider.GetOrCreate(textView);
-                            if (!result.ContainsKey(source))
-                                result.Add(source, mappedSpan);
-                        }
-                    }
-                }
-            }
-            return result;
-        }
-
-        private static IEnumerable<SnapshotSpan> GetSpansOnAvailableBuffers(ITextView textView, SnapshotSpan span)
-        {
-            var mappingSpan = textView.BufferGraph.CreateMappingSpan(span, SpanTrackingMode.EdgePositive);
-            var buffers = textView.BufferGraph.GetTextBuffers(b => mappingSpan.GetSpans(b).Any());
-            var spansInBuffers = buffers.Select(b => mappingSpan.GetSpans(b).First()); // TODO: What if there is more than one span?
-            return spansInBuffers;
-        }
-
         private static void AddContentTypeHierarchy(SortedSet<IContentType> sortedContentTypes, IContentType contentType)
         {
             sortedContentTypes.Add(contentType);

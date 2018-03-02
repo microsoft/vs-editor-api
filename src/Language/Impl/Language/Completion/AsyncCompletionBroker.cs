@@ -28,9 +28,6 @@ namespace Microsoft.VisualStudio.Language.Intellisense.Implementation
         internal IGuardedOperations GuardedOperations { get; set; }
 
         [Import]
-        internal ITextStructureNavigatorSelectorService TextStructureNavigatorSelectorService { get; set; }
-
-        [Import]
         private JoinableTaskContext JoinableTaskContext;
 
         [Import]
@@ -69,7 +66,7 @@ namespace Microsoft.VisualStudio.Language.Intellisense.Implementation
             session.TextView.Properties.RemoveProperty(typeof(IAsyncCompletionSession));
         }
 
-        IAsyncCompletionSession IAsyncCompletionBroker.TriggerCompletion(ITextView view, SnapshotSpan applicableSpan)
+        IAsyncCompletionSession IAsyncCompletionBroker.TriggerCompletion(ITextView view, SnapshotPoint triggerLocation, SnapshotSpan applicableSpan)
         {
             var session = GetSession(view);
             if (session != null)
@@ -77,16 +74,23 @@ namespace Microsoft.VisualStudio.Language.Intellisense.Implementation
                 return session;
             }
 
-            // TODO: Need to map applicableSpan to respective buffers
-            var sourcesWithLocations = CompletionUtilities.GetCompletionSourcesWithMappedSpans(view, applicableSpan, GetCompletionItemSourceProviders);
+            var sourcesWithLocations = CompletionUtilities.GetCompletionSourcesWithMappedPoints(view, triggerLocation, GetCompletionItemSourceProviders);
             if (!sourcesWithLocations.Any())
             {
                 // There is no completion source available for this buffer
                 return null;
             }
 
-            // TODO: use applicableSpan
-            var buffers = CompletionUtilities.GetBuffersForSpan(view, applicableSpan).ToImmutableArray();
+            var potentialCommitCharsBuilder = ImmutableArray.CreateBuilder<char>();
+            foreach (var source in sourcesWithLocations.Keys)
+            {
+                // Unfortunately we can't use for loop here because IDictionary.Keys is ICollection which can't be accessed with an indexer
+                GuardedOperations.CallExtensionPoint(
+                    errorSource: source,
+                    call: () => potentialCommitCharsBuilder.AddRange(source.GetPotentialCommitCharacters()));
+            }
+
+            var buffers = CompletionUtilities.GetBuffersForPoint(view, triggerLocation).ToImmutableArray();
             var service = buffers
                 .Select(b => GetCompletionService(b.ContentType))
                 .FirstOrDefault(s => s != null)
@@ -109,7 +113,7 @@ namespace Microsoft.VisualStudio.Language.Intellisense.Implementation
             }
             var telemetry = GetOrCreateTelemetry(view);
 
-            session = new AsyncCompletionSession(applicableSpan, JoinableTaskContext.Factory, uiFactory, sourcesWithLocations, service, this, view, telemetry);
+            session = new AsyncCompletionSession(applicableSpan, potentialCommitCharsBuilder.ToImmutable(), JoinableTaskContext.Factory, uiFactory, sourcesWithLocations, service, this, view, telemetry);
             view.Properties.AddProperty(typeof(IAsyncCompletionSession), session);
             view.Closed += TextView_Closed;
 
@@ -269,9 +273,9 @@ namespace Microsoft.VisualStudio.Language.Intellisense.Implementation
             }
         }
 
-        internal string GetItemSourceName(IAsyncCompletionItemSource source) => OrderedCompletionItemSourceProviders.FirstOrDefault(n => n.Value == source)?.Metadata.Name ?? string.Empty;
-        internal string GetCompletionServiceName(IAsyncCompletionService service) => OrderedCompletionServiceProviders.FirstOrDefault(n => n.Value == service)?.Metadata.Name ?? string.Empty;
-        internal string GetCompletionPresenterProviderName(ICompletionPresenterProvider provider) => OrderedPresenterProviders.FirstOrDefault(n => n.Value == provider)?.Metadata.Name ?? string.Empty;
+        internal string GetItemSourceName(IAsyncCompletionItemSource source) => OrderedCompletionItemSourceProviders.FirstOrDefault(n => n.IsValueCreated && n.Value == source)?.Metadata.Name ?? string.Empty;
+        internal string GetCompletionServiceName(IAsyncCompletionService service) => OrderedCompletionServiceProviders.FirstOrDefault(n => n.IsValueCreated && n.Value == service)?.Metadata.Name ?? string.Empty;
+        internal string GetCompletionPresenterProviderName(ICompletionPresenterProvider provider) => OrderedPresenterProviders.FirstOrDefault(n => n.IsValueCreated && n.Value == provider)?.Metadata.Name ?? string.Empty;
 
         // Parity with legacy telemetry
         private void EmulateLegacyCompletionTelemetry(IContentType contentType, ITextView textView)

@@ -85,6 +85,12 @@ namespace Microsoft.VisualStudio.Language.Intellisense.Implementation
         public readonly CompletionItem UniqueItem;
 
         /// <summary>
+        /// When completion starts, its <see cref="ApplicableSpan"/> may be empty. Initially, don't dismiss.
+        /// Further, the span is empty if user removes characters. We would like to dismiss then.
+        /// </summary>
+        public readonly bool ApplicableSpanWasEmpty;
+
+        /// <summary>
         /// Constructor for the initial model
         /// </summary>
         public CompletionModel(ImmutableArray<CompletionItem> initialItems, ImmutableArray<CompletionItem> sortedItems,
@@ -104,6 +110,7 @@ namespace Microsoft.VisualStudio.Language.Intellisense.Implementation
             SuggestionModeDescription = suggestionModeDescription;
             SuggestionModeItem = suggestionModeItem;
             UniqueItem = null;
+            ApplicableSpanWasEmpty = false;
         }
 
         /// <summary>
@@ -111,7 +118,7 @@ namespace Microsoft.VisualStudio.Language.Intellisense.Implementation
         /// </summary>
         private CompletionModel(ImmutableArray<CompletionItem> initialItems, ImmutableArray<CompletionItem> sortedItems, ITrackingSpan applicableSpan, CompletionTriggerReason initialTriggerReason,
             ITextSnapshot snapshot, ImmutableArray<CompletionFilterWithState> filters, ImmutableArray<CompletionItemWithHighlight> presentedItems, bool useSoftSelection, bool useSuggestionMode,
-            string suggestionModeDescription, int selectedIndex, bool selectSuggestionMode, CompletionItem suggestionModeItem, CompletionItem uniqueItem)
+            string suggestionModeDescription, int selectedIndex, bool selectSuggestionMode, CompletionItem suggestionModeItem, CompletionItem uniqueItem, bool applicableSpanWasEmpty)
         {
             InitialItems = initialItems;
             SortedItems = sortedItems;
@@ -126,6 +133,7 @@ namespace Microsoft.VisualStudio.Language.Intellisense.Implementation
             SelectSuggestionMode = selectSuggestionMode;
             SuggestionModeDescription = suggestionModeDescription;
             SuggestionModeItem = suggestionModeItem;
+            ApplicableSpanWasEmpty = applicableSpanWasEmpty;
         }
 
         public CompletionModel WithPresentedItems(ImmutableArray<CompletionItemWithHighlight> newPresentedItems, int newSelectedIndex)
@@ -144,7 +152,8 @@ namespace Microsoft.VisualStudio.Language.Intellisense.Implementation
                 selectedIndex: newSelectedIndex, // Updated
                 selectSuggestionMode: SelectSuggestionMode,
                 suggestionModeItem: SuggestionModeItem,
-                uniqueItem: UniqueItem
+                uniqueItem: UniqueItem,
+                applicableSpanWasEmpty: ApplicableSpanWasEmpty
             );
         }
 
@@ -164,7 +173,8 @@ namespace Microsoft.VisualStudio.Language.Intellisense.Implementation
                 selectedIndex: SelectedIndex,
                 selectSuggestionMode: SelectSuggestionMode,
                 suggestionModeItem: SuggestionModeItem,
-                uniqueItem: UniqueItem
+                uniqueItem: UniqueItem,
+                applicableSpanWasEmpty: ApplicableSpanWasEmpty
             );
         }
 
@@ -184,7 +194,8 @@ namespace Microsoft.VisualStudio.Language.Intellisense.Implementation
                 selectedIndex: SelectedIndex,
                 selectSuggestionMode: SelectSuggestionMode,
                 suggestionModeItem: SuggestionModeItem,
-                uniqueItem: UniqueItem
+                uniqueItem: UniqueItem,
+                applicableSpanWasEmpty: ApplicableSpanWasEmpty
             );
         }
 
@@ -204,7 +215,8 @@ namespace Microsoft.VisualStudio.Language.Intellisense.Implementation
                 selectedIndex: newIndex, // Updated
                 selectSuggestionMode: false, // Explicit selection of regular item
                 suggestionModeItem: SuggestionModeItem,
-                uniqueItem: UniqueItem
+                uniqueItem: UniqueItem,
+                applicableSpanWasEmpty: ApplicableSpanWasEmpty
             );
         }
 
@@ -224,7 +236,8 @@ namespace Microsoft.VisualStudio.Language.Intellisense.Implementation
                 selectedIndex: -1, // Deselect regular item
                 selectSuggestionMode: true, // Explicit selection of suggestion item
                 suggestionModeItem: SuggestionModeItem,
-                uniqueItem: UniqueItem
+                uniqueItem: UniqueItem,
+                applicableSpanWasEmpty: ApplicableSpanWasEmpty
             );
         }
 
@@ -244,7 +257,8 @@ namespace Microsoft.VisualStudio.Language.Intellisense.Implementation
                 selectedIndex: SelectedIndex,
                 selectSuggestionMode: SelectSuggestionMode,
                 suggestionModeItem: SuggestionModeItem,
-                uniqueItem: UniqueItem
+                uniqueItem: UniqueItem,
+                applicableSpanWasEmpty: ApplicableSpanWasEmpty
             );
         }
 
@@ -267,7 +281,8 @@ namespace Microsoft.VisualStudio.Language.Intellisense.Implementation
                 selectedIndex: SelectedIndex,
                 selectSuggestionMode: SelectSuggestionMode,
                 suggestionModeItem: newSuggestionModeItem,
-                uniqueItem: UniqueItem
+                uniqueItem: UniqueItem,
+                applicableSpanWasEmpty: ApplicableSpanWasEmpty
             );
         }
 
@@ -291,7 +306,8 @@ namespace Microsoft.VisualStudio.Language.Intellisense.Implementation
                 selectedIndex: SelectedIndex,
                 selectSuggestionMode: SelectSuggestionMode,
                 suggestionModeItem: SuggestionModeItem,
-                uniqueItem: newUniqueItem
+                uniqueItem: newUniqueItem,
+                applicableSpanWasEmpty: ApplicableSpanWasEmpty
             );
         }
 
@@ -311,7 +327,8 @@ namespace Microsoft.VisualStudio.Language.Intellisense.Implementation
                 selectedIndex: SelectedIndex,
                 selectSuggestionMode: SelectSuggestionMode,
                 suggestionModeItem: SuggestionModeItem,
-                uniqueItem: UniqueItem
+                uniqueItem: UniqueItem,
+                applicableSpanWasEmpty: ApplicableSpanWasEmpty
             );
         }
 
@@ -331,7 +348,29 @@ namespace Microsoft.VisualStudio.Language.Intellisense.Implementation
                 selectedIndex: selectedIndex, // Updated
                 selectSuggestionMode: SelectSuggestionMode,
                 suggestionModeItem: suggestionModeItem, // Updated
-                uniqueItem: uniqueItem // Updated
+                uniqueItem: uniqueItem, // Updated
+                applicableSpanWasEmpty: ApplicableSpanWasEmpty
+            );
+        }
+
+        internal CompletionModel WithApplicableSpanEmptyRecord(bool applicableSpanIsEmpty)
+        {
+            return new CompletionModel(
+                initialItems: InitialItems,
+                sortedItems: SortedItems,
+                applicableSpan: ApplicableSpan,
+                initialTriggerReason: InitialTriggerReason,
+                snapshot: Snapshot,
+                filters: Filters,
+                presentedItems: PresentedItems,
+                useSoftSelection: UseSoftSelection,
+                useSuggestionMode: DisplaySuggestionMode,
+                suggestionModeDescription: SuggestionModeDescription,
+                selectedIndex: SelectedIndex,
+                selectSuggestionMode: SelectSuggestionMode,
+                suggestionModeItem: SuggestionModeItem,
+                uniqueItem: UniqueItem,
+                applicableSpanWasEmpty: applicableSpanIsEmpty // Updated
             );
         }
     }

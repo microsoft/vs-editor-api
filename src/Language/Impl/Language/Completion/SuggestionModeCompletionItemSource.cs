@@ -28,7 +28,7 @@ namespace Microsoft.VisualStudio.Language.Intellisense.Implementation
             return CustomCommitBehavior.None;
         }
 
-        Task<CompletionContext> IAsyncCompletionItemSource.GetCompletionContextAsync(CompletionTrigger trigger, SnapshotSpan applicableSpan, CancellationToken token)
+        Task<CompletionContext> IAsyncCompletionItemSource.GetCompletionContextAsync(CompletionTrigger trigger, SnapshotPoint triggerLocation, SnapshotSpan applicableSpan, CancellationToken token)
         {
             throw new NotImplementedException("This item source is not meant to be registered. It is used only to provide tooltip.");
         }

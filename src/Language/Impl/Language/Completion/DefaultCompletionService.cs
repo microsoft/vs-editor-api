@@ -161,7 +161,7 @@ namespace Microsoft.VisualStudio.Language.Intellisense.Implementation
             return CustomCommitBehavior.None;
         }
 
-        async Task<CompletionContext> IAsyncCompletionItemSource.GetCompletionContextAsync(CompletionTrigger trigger, SnapshotSpan triggerLocation, CancellationToken token)
+        async Task<CompletionContext> IAsyncCompletionItemSource.GetCompletionContextAsync(CompletionTrigger trigger, SnapshotPoint triggerLocation, SnapshotSpan triggerLocation, CancellationToken token)
         {
             return await Task.FromResult(new CompletionContext(
                 ImmutableArray.Create(
@@ -193,7 +193,7 @@ namespace Microsoft.VisualStudio.Language.Intellisense.Implementation
         SnapshotSpan? IAsyncCompletionItemSource.ShouldTriggerCompletion(char typeChar, SnapshotPoint triggerLocation)
         {
             var charBeforeCaret = triggerLocation.Subtract(1).GetChar();
-            if (commitCharacters.Contains(charBeforeCaret))
+            if (commitCharacters.Contains(charBeforeCaret) || triggerLocation.Position == 0)
             {
                 // skip the typed character. the applicable span starts at the caret
                 return new SnapshotSpan(triggerLocation, 0);
@@ -205,6 +205,9 @@ namespace Microsoft.VisualStudio.Language.Intellisense.Implementation
             }
         }
     }
+
+#endif
+#if DEBUG && true
 
     [Export(typeof(IAsyncCompletionItemSourceProvider))]
     [Name("Debug HTML completion item source")]
@@ -231,7 +234,7 @@ namespace Microsoft.VisualStudio.Language.Intellisense.Implementation
             return CustomCommitBehavior.None;
         }
 
-        async Task<CompletionContext> IAsyncCompletionItemSource.GetCompletionContextAsync(CompletionTrigger trigger, SnapshotSpan applicableSpan, CancellationToken token)
+        async Task<CompletionContext> IAsyncCompletionItemSource.GetCompletionContextAsync(CompletionTrigger trigger, SnapshotPoint triggerLocation, SnapshotSpan applicableSpan, CancellationToken token)
         {
             return await Task.FromResult(new CompletionContext(ImmutableArray.Create(new CompletionItem("html", this), new CompletionItem("head", this), new CompletionItem("body", this), new CompletionItem("header", this))));
         }
@@ -254,7 +257,7 @@ namespace Microsoft.VisualStudio.Language.Intellisense.Implementation
         SnapshotSpan? IAsyncCompletionItemSource.ShouldTriggerCompletion(char typeChar, SnapshotPoint triggerLocation)
         {
             var charBeforeCaret = triggerLocation.Subtract(1).GetChar();
-            if (commitCharacters.Contains(charBeforeCaret))
+            if (commitCharacters.Contains(charBeforeCaret) || triggerLocation.Position == 0)
             {
                 // skip the typed character. the applicable span starts at the caret
                 return new SnapshotSpan(triggerLocation, 0);
