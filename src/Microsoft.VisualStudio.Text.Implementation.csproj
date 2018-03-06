@@ -7,8 +7,8 @@
     <DelaySign>false</DelaySign>
     <Version>15.0.20-pre</Version>
     <AssemblyVersion>15.0.0.0</AssemblyVersion>
-    <NuGetVersionEditor>15.7.111-preview-g28b775fb96</NuGetVersionEditor>
-    <NuGetVersionLanguage>15.7.111-preview-g28b775fb96</NuGetVersionLanguage>
+    <NuGetVersionEditor>15.7.124-preview-ge536746498</NuGetVersionEditor>
+    <NuGetVersionLanguage>15.7.124-preview-ge536746498</NuGetVersionLanguage>
   </PropertyGroup>
 
   <PropertyGroup>
