@@ -56,73 +56,131 @@ namespace Microsoft.VisualStudio.Language.Intellisense.Implementation
 
         private ImmutableDictionary<IContentType, ImmutableSortedSet<char>> _commitCharacters = ImmutableDictionary<IContentType, ImmutableSortedSet<char>>.Empty;
         private ImmutableDictionary<IContentType, ImmutableArray<IAsyncCompletionItemSourceProvider>> _cachedCompletionItemSourceProviders = ImmutableDictionary<IContentType, ImmutableArray<IAsyncCompletionItemSourceProvider>>.Empty;
-        private ImmutableDictionary<IContentType, IAsyncCompletionServiceProvider> _cachedCompletionServiceProviders = ImmutableDictionary<IContentType, IAsyncCompletionServiceProvider>.Empty;
+        private ImmutableDictionary<IContentType, ImmutableArray<IAsyncCompletionServiceProvider>> _cachedCompletionServiceProviders = ImmutableDictionary<IContentType, ImmutableArray<IAsyncCompletionServiceProvider>>.Empty;
         private ImmutableDictionary<IContentType, ICompletionPresenterProvider> _cachedPresenterProviders = ImmutableDictionary<IContentType, ICompletionPresenterProvider>.Empty;
         private bool firstRun = true; // used only for diagnostics
         private bool _firstInvocationReported; // used for "time to code"
+
+        private StableContentTypeComparer _contentTypeComparer;
 
         internal void DismissSession(IAsyncCompletionSession session)
         {
             session.TextView.Properties.RemoveProperty(typeof(IAsyncCompletionSession));
         }
 
-        IAsyncCompletionSession IAsyncCompletionBroker.TriggerCompletion(ITextView view, SnapshotPoint triggerLocation, SnapshotSpan applicableSpan)
+        IAsyncCompletionSession IAsyncCompletionBroker.TriggerCompletion(ITextView textView, SnapshotPoint triggerLocation, char typedChar)
         {
-            var session = GetSession(view);
+            var session = GetSession(textView);
             if (session != null)
             {
                 return session;
             }
 
-            var sourcesWithLocations = CompletionUtilities.GetCompletionSourcesWithMappedPoints(view, triggerLocation, GetCompletionItemSourceProviders);
-            if (!sourcesWithLocations.Any())
+            var sourcesWithData = MetadataUtilities<IAsyncCompletionItemSourceProvider>.GetBuffersAndImports(textView, triggerLocation, GetCompletionItemSourceProviders);
+            foreach (var sourceWithData in sourcesWithData)
+            {
+                // TODO: pass the sources to TriggerCompletion
+                var sourceProvider = GuardedOperations.InstantiateExtension(this, sourceWithData.import); // TODO: consider caching this
+                var source = sourceProvider.GetOrCreate(textView);
+                var candidateSpan = GuardedOperations.CallExtensionPoint(
+                    errorSource: source,
+                    call: () => source.ShouldTriggerCompletion(typedChar, sourceWithData.point),
+                    valueOnThrow: null
+                );
+
+                if (candidateSpan.HasValue)
+                {
+                    var mappingSpan = textView.BufferGraph.CreateMappingSpan(candidateSpan.Value, SpanTrackingMode.EdgeInclusive);
+                    var applicableSpan = mappingSpan.GetSpans(textView.TextBuffer)[0];
+                    return TriggerCompletion(textView, triggerLocation, applicableSpan);
+                }
+            }
+            return null;
+        }
+
+        private IAsyncCompletionSession TriggerCompletion(ITextView textView, SnapshotPoint triggerLocation, SnapshotSpan applicableSpan)
+        {// TODO: If we are in virtual space, create real space. Look at CompletionTrigger.cs
+            var session = GetSession(textView);
+            if (session != null)
+            {
+                return session;
+            }
+
+            var sourcesWithData = MetadataUtilities<IAsyncCompletionItemSourceProvider>.GetBuffersAndImports(textView, triggerLocation, GetCompletionItemSourceProviders);
+            if (!sourcesWithData.Any())
             {
                 // There is no completion source available for this buffer
                 return null;
             }
 
+            //var sourcesWithLocations = new Dictionary<IAsyncCompletionItemSource, SnapshotPoint>();
             var potentialCommitCharsBuilder = ImmutableArray.CreateBuilder<char>();
-            foreach (var source in sourcesWithLocations.Keys)
+            var sourcesWithLocations = new Dictionary<IAsyncCompletionItemSource, SnapshotPoint>();
+            foreach (var sourceWithData in sourcesWithData)
             {
                 // Unfortunately we can't use for loop here because IDictionary.Keys is ICollection which can't be accessed with an indexer
+                var sourceProvider = GuardedOperations.InstantiateExtension(this, sourceWithData.import); // TODO: consider caching this
                 GuardedOperations.CallExtensionPoint(
-                    errorSource: source,
-                    call: () => potentialCommitCharsBuilder.AddRange(source.GetPotentialCommitCharacters()));
+                    errorSource: sourceProvider,
+                    call: () =>
+                    {
+                        var source = sourceProvider.GetOrCreate(textView);
+                        potentialCommitCharsBuilder.AddRange(source.GetPotentialCommitCharacters());
+                        sourcesWithLocations[source] = sourceWithData.point;
+                    });
             }
 
-            var buffers = CompletionUtilities.GetBuffersForPoint(view, triggerLocation).ToImmutableArray();
-            var service = buffers
-                .Select(b => GetCompletionService(b.ContentType))
-                .FirstOrDefault(s => s != null)
-                ?.GetOrCreate(view);
+            if (_contentTypeComparer == null)
+                _contentTypeComparer = new StableContentTypeComparer(ContentTypeRegistryService);
 
+            var servicesWithLocations = MetadataUtilities<IAsyncCompletionServiceProvider>.GetOrderedBuffersAndImports(textView, triggerLocation, GetServiceProviders, _contentTypeComparer);
+            var bestServiceWithData = servicesWithLocations.FirstOrDefault();
+            var serviceProvider = GuardedOperations.InstantiateExtension(this, bestServiceWithData.import); // TODO: consider caching this
+            var service = GuardedOperations.CallExtensionPoint(serviceProvider, () => serviceProvider.GetOrCreate(textView), null);
             if (service == null)
             {
                 // This should never happen because we provide a default and IsCompletionFeatureAvailable would have returned false 
-                throw new InvalidOperationException("Default completion service was not found. Completion will be unavailable.");
+                throw new InvalidOperationException("No completion services not found. Completion will be unavailable.");
             }
 
-            var uiFactory = buffers
-                .Select(n => GetUiFactory(n.ContentType))
-                .FirstOrDefault(n => n != null);
+            var presentationProvidersWithLocations = MetadataUtilities<ICompletionPresenterProvider>.GetOrderedBuffersAndImports(textView, triggerLocation, GetPresenters, _contentTypeComparer);
+            var bestPresentationProviderWithLocation = presentationProvidersWithLocations.FirstOrDefault();
+            var presenterProvider = GuardedOperations.InstantiateExtension(this, bestPresentationProviderWithLocation.import); // TODO: consider caching this
 
             if (firstRun)
             {
-                System.Diagnostics.Debug.Assert(uiFactory != null, $"No instance of {nameof(ICompletionPresenterProvider)} is loaded. Completion will work without the UI.");
+                System.Diagnostics.Debug.Assert(presenterProvider != null, $"No instance of {nameof(ICompletionPresenterProvider)} is loaded. Completion will work without the UI.");
                 firstRun = false;
             }
-            var telemetry = GetOrCreateTelemetry(view);
+            var telemetry = GetOrCreateTelemetry(textView);
 
-            session = new AsyncCompletionSession(applicableSpan, potentialCommitCharsBuilder.ToImmutable(), JoinableTaskContext.Factory, uiFactory, sourcesWithLocations, service, this, view, telemetry);
-            view.Properties.AddProperty(typeof(IAsyncCompletionSession), session);
-            view.Closed += TextView_Closed;
+            session = new AsyncCompletionSession(applicableSpan, potentialCommitCharsBuilder.ToImmutable(), JoinableTaskContext.Factory, presenterProvider, sourcesWithLocations, service, this, textView, telemetry);
+            textView.Properties.AddProperty(typeof(IAsyncCompletionSession), session);
+            textView.Closed += TextView_Closed;
 
             // Additionally, emulate the legacy completion telemetry
-            EmulateLegacyCompletionTelemetry(buffers.FirstOrDefault()?.ContentType, view);
+            EmulateLegacyCompletionTelemetry(bestServiceWithData.buffer?.ContentType, textView);
 
             return session;
         }
 
+        private IReadOnlyList<Lazy<IAsyncCompletionItemSourceProvider, IOrderableContentTypeMetadata>> GetCompletionItemSourceProviders(IContentType contentType, ITextViewRoleSet textViewRoles)
+        {
+            // TODO: Respect the text view roles
+            return OrderedCompletionItemSourceProviders.Where(n => n.Metadata.ContentTypes.Any(c => contentType.IsOfType(c))).ToList();
+        }
+        private IReadOnlyList<Lazy<IAsyncCompletionServiceProvider, IOrderableContentTypeMetadata>> GetServiceProviders(IContentType contentType, ITextViewRoleSet textViewRoles)
+        {
+            // TODO: Respect the text view roles
+            return OrderedCompletionServiceProviders.Where(n => n.Metadata.ContentTypes.Any(c => contentType.IsOfType(c))).OrderBy(n => n.Metadata.ContentTypes, _contentTypeComparer).ToList();
+        }
+        private IReadOnlyList<Lazy<ICompletionPresenterProvider, IOrderableContentTypeMetadata>> GetPresenters(IContentType contentType, ITextViewRoleSet textViewRoles)
+        {
+            // TODO: Respect the text view roles
+            return OrderedPresenterProviders.Where(n => n.Metadata.ContentTypes.Any(c => contentType.IsOfType(c))).OrderBy(n => n.Metadata.ContentTypes, _contentTypeComparer).ToList();
+        }
+
+        // TODO: Evaluate the methods below and clean them up. We should have one reliable way to get parts in correct order
         private ImmutableArray<IAsyncCompletionItemSourceProvider> GetCompletionItemSourceProviders(IContentType contentType)
         {
             if (_cachedCompletionItemSourceProviders.TryGetValue(contentType, out var cachedSourceProviders))
@@ -141,22 +199,22 @@ namespace Microsoft.VisualStudio.Language.Intellisense.Implementation
             return result;
         }
 
-        private IAsyncCompletionServiceProvider GetCompletionService(IContentType contentType)
+        private ImmutableArray<IAsyncCompletionServiceProvider> GetCompletionServiceProviders(IContentType contentType)
         {
             if (_cachedCompletionServiceProviders.TryGetValue(contentType, out var serviceProvider))
             {
                 return serviceProvider;
             }
 
-            IAsyncCompletionServiceProvider bestServiceProvider = GuardedOperations.InvokeBestMatchingFactory(
-                providerHandles: OrderedCompletionServiceProviders,
+            var providers = GuardedOperations.InvokeMatchingFactories(
+                lazyFactories: OrderedCompletionServiceProviders,
                 getter: n => n,
                 dataContentType: contentType,
-                contentTypeRegistryService: ContentTypeRegistryService,
                 errorSource: this);
 
-            _cachedCompletionServiceProviders = _cachedCompletionServiceProviders.Add(contentType, bestServiceProvider);
-            return bestServiceProvider;
+            var result = providers.ToImmutableArray();
+            _cachedCompletionServiceProviders = _cachedCompletionServiceProviders.Add(contentType, result);
+            return result;
         }
 
         private ICompletionPresenterProvider GetUiFactory(IContentType contentType)
@@ -216,28 +274,6 @@ namespace Microsoft.VisualStudio.Language.Intellisense.Implementation
         bool IAsyncCompletionBroker.IsCompletionActive(ITextView textView)
         {
             return textView.Properties.ContainsProperty(typeof(IAsyncCompletionSession));
-        }
-
-        SnapshotSpan? IAsyncCompletionBroker.ShouldTriggerCompletion(ITextView textView, char typeChar, SnapshotPoint triggerLocation)
-        {
-            // Get location mapped to buffer matching each source's content type metadata.
-            var sourcesWithLocations = CompletionUtilities.GetCompletionSourcesWithMappedPoints(textView, triggerLocation, GetCompletionItemSourceProviders);
-            foreach (var sourceAndLocation in sourcesWithLocations)
-            {
-                try
-                {
-                    var applicableSpan = sourceAndLocation.Key.ShouldTriggerCompletion(typeChar, sourceAndLocation.Value);
-                    if (applicableSpan.HasValue)
-                    {
-                        return applicableSpan; // TODO: This should be mapped to the top buffer.
-                    }
-                }
-                catch (Exception ex)
-                {
-                    GuardedOperations.HandleException(sourceAndLocation.Key, ex);
-                }
-            }
-            return null;
         }
 
         public IAsyncCompletionSession GetSession(ITextView textView)
@@ -307,19 +343,19 @@ namespace Microsoft.VisualStudio.Language.Intellisense.Implementation
         }
 
         const string IsCompletionAvailableProperty = "IsCompletionAvailable";
-        bool IAsyncCompletionBroker.IsCompletionSupported(ITextView view)
+        bool IAsyncCompletionBroker.IsCompletionSupported(ITextView textView)
         {
             bool featureIsAvailable;
-            if (view.Properties.TryGetProperty(IsCompletionAvailableProperty, out featureIsAvailable))
+            if (textView.Properties.TryGetProperty(IsCompletionAvailableProperty, out featureIsAvailable))
             {
                 return featureIsAvailable;
             }
 
             featureIsAvailable = UnorderedCompletionItemSourceProviders
-                    .Any(n => n.Metadata.ContentTypes.Any(ct => view.TextBuffer.ContentType.IsOfType(ct)));
+                    .Any(n => n.Metadata.ContentTypes.Any(ct => textView.TextBuffer.ContentType.IsOfType(ct)));
             featureIsAvailable &= UnorderedCompletionServiceProviders
-                    .Any(n => n.Metadata.ContentTypes.Any(ct => view.TextBuffer.ContentType.IsOfType(ct)));
-            view.Properties.AddProperty(IsCompletionAvailableProperty, featureIsAvailable);
+                    .Any(n => n.Metadata.ContentTypes.Any(ct => textView.TextBuffer.ContentType.IsOfType(ct)));
+            textView.Properties.AddProperty(IsCompletionAvailableProperty, featureIsAvailable);
             return featureIsAvailable;
         }
     }

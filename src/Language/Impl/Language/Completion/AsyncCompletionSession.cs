@@ -59,6 +59,10 @@ namespace Microsoft.VisualStudio.Language.Intellisense.Implementation
         // When set, UI will no longer be updated
         private bool _isDismissed;
 
+        // Facilitate experience when there are no items to display
+        private bool _selectionModeBeforeNoResultFallback;
+        private bool _inNoResultFallback;
+
         public event EventHandler<CompletionItemEventArgs> ItemCommitted;
         public event EventHandler Dismissed;
         public event EventHandler<CompletionItemsWithHighlightEventArgs> ItemsUpdated;
@@ -118,6 +122,9 @@ namespace Microsoft.VisualStudio.Language.Intellisense.Implementation
         /// and it is not default(char) when commit happens as a result of typing a commit character.</param>
         CustomCommitBehavior IAsyncCompletionSession.Commit(CancellationToken token, char typedChar)
         {
+            if (_isDismissed)
+                return CustomCommitBehavior.None;
+
             var lastModel = _computation.WaitAndGetResult();
 
             if (lastModel.UseSoftSelection && !typedChar.Equals(default(char)))
@@ -242,7 +249,12 @@ namespace Microsoft.VisualStudio.Language.Intellisense.Implementation
             if (_isDismissed)
                 return;
 
-            ((IAsyncCompletionSession)this).OpenOrUpdate(view, trigger, triggerLocation);
+            if (_computation == null)
+            {
+                // Do not recompute, since this may change the selection.
+                ((IAsyncCompletionSession)this).OpenOrUpdate(view, trigger, triggerLocation);
+            }
+
             if (((IAsyncCompletionSession)this).CommitIfUnique(token))
             {
                 ((IAsyncCompletionSession)this).Dismiss();
@@ -320,14 +332,25 @@ namespace Microsoft.VisualStudio.Language.Intellisense.Implementation
         /// <summary>
         /// Determines whether the commit code path should be taken. Since this method is on a typing hot path,
         /// we return quickly if the character is not found in the predefined list of potential commit characters.
+        /// Else, we create a mapping point from the top-buffer trigger location to each source's buffer
+        /// and return whether any source would like to commit completion.
         /// </summary>
-        /// <remarks>This method runs on UI thread. ShouldCommit performs mapping which requires UI thread.</remarks>
+        /// <remarks>This method must run on UI thread because of mapping the point across buffers.</remarks>
         bool IAsyncCompletionSession.ShouldCommit(ITextView view, char typeChar, SnapshotPoint triggerLocation)
         {
+            if (!_jtf.Context.IsOnMainThread)
+                throw new InvalidOperationException($"This method must be callled on the UI thread.");
+
             if (_potentialCommitChars.Contains(typeChar))
             {
-                if (ShouldCommit(view, typeChar, triggerLocation))
-                    return true;
+                var mappingPoint = view.BufferGraph.CreateMappingPoint(triggerLocation, PointTrackingMode.Negative);
+                return _completionSources
+                    .Select(p => (p, mappingPoint.GetPoint(p.Value.Snapshot.TextBuffer, PositionAffinity.Predecessor)))
+                    .Where(n => n.Item2.HasValue)
+                    .Any(n => _guardedOperations.CallExtensionPoint(
+                        errorSource: n.Item1.Key,
+                        call: () => n.Item1.Key.ShouldCommitCompletion(typeChar, n.Item2.Value),
+                        valueOnThrow: false));
             }
             return false;
         }
@@ -462,7 +485,7 @@ namespace Microsoft.VisualStudio.Language.Intellisense.Implementation
         }
 
         /// <summary>
-        /// User has moved the caret. Ensure that the caret is still within the applicable span. If not, dismiss the session.
+        /// TODO what is this?
         /// </summary>
         /// <returns></returns>
         private Task<CompletionModel> ToggleCompletionModeInner(CompletionModel model, CancellationToken token)
@@ -471,7 +494,7 @@ namespace Microsoft.VisualStudio.Language.Intellisense.Implementation
         }
 
         /// <summary>
-        /// User has typed
+        /// User has typed. Update the known snapshot, filter the items and update the model.
         /// </summary>
         private async Task<CompletionModel> UpdateSnapshot(CompletionModel model, CompletionTrigger trigger, CompletionFilterReason filterReason, SnapshotPoint triggerLocation, CancellationToken token, int thisId)
         {
@@ -524,10 +547,39 @@ namespace Microsoft.VisualStudio.Language.Intellisense.Implementation
                 return model;
             }
 
-            // Prevent null references when service returns default(ImmutableArray)
-            ImmutableArray<CompletionItemWithHighlight> returnedItems = filteredCompletion.Items.IsDefault
-                ? ImmutableArray<CompletionItemWithHighlight>.Empty
-                : filteredCompletion.Items;
+            // Special experience when there are no more selected items:
+            ImmutableArray<CompletionItemWithHighlight> returnedItems;
+            int selectedIndex = filteredCompletion.SelectedItemIndex;
+            if (filteredCompletion.Items.IsDefault)
+            {
+                // Prevent null references when service returns default(ImmutableArray)
+                returnedItems = ImmutableArray<CompletionItemWithHighlight>.Empty;
+            }
+            else if (filteredCompletion.Items.IsEmpty)
+            {
+                // If there are no results now, show previously visible results, but without highlighting
+                if (model.PresentedItems.IsDefaultOrEmpty)
+                {
+                    returnedItems = ImmutableArray<CompletionItemWithHighlight>.Empty;
+                }
+                else
+                {
+                    returnedItems = model.PresentedItems.Select(n => new CompletionItemWithHighlight(n.CompletionItem)).ToImmutableArray();
+                    _selectionModeBeforeNoResultFallback = model.UseSoftSelection;
+                    selectedIndex = model.SelectedIndex;
+                    _inNoResultFallback = true;
+                    model = model.WithSoftSelection(true);
+                }
+            }
+            else
+            {
+                if (_inNoResultFallback)
+                {
+                    model = model.WithSoftSelection(_selectionModeBeforeNoResultFallback);
+                    _inNoResultFallback = false;
+                }
+                returnedItems = filteredCompletion.Items;
+            }
 
             ComputationStopwatch.Stop();
             _telemetry.RecordProcessing(ComputationStopwatch.ElapsedMilliseconds, returnedItems.Length);
@@ -543,7 +595,7 @@ namespace Microsoft.VisualStudio.Language.Intellisense.Implementation
 
             _guardedOperations.RaiseEvent(this, ItemsUpdated, new CompletionItemsWithHighlightEventArgs(returnedItems));
 
-            return model.WithSnapshotAndItems(triggerLocation.Snapshot, returnedItems, filteredCompletion.SelectedItemIndex, filteredCompletion.UniqueItem, suggestionModeItem);
+            return model.WithSnapshotAndItems(triggerLocation.Snapshot, returnedItems, selectedIndex, filteredCompletion.UniqueItem, suggestionModeItem);
         }
 
         /// <summary>
@@ -666,28 +718,6 @@ namespace Microsoft.VisualStudio.Language.Intellisense.Implementation
                 // This item is not in the model
                 return model;
             }
-        }
-
-        /// <summary>
-        /// This method creates a mapping point from the top-buffer trigger location
-        /// then iterates through completion item sources pertinent to this session.
-        /// It maps triggerLocation to each source's buffer
-        /// Ensures that we work only with sources applicable to current location
-        /// and returns whether any source would like to commit completion
-        /// </summary>
-        public bool ShouldCommit(ITextView view, char typeChar, SnapshotPoint triggerLocation)
-        {
-            if (!_jtf.Context.IsOnMainThread)
-                throw new InvalidOperationException($"This method must be callled on the UI thread.");
-
-            var mappingPoint = view.BufferGraph.CreateMappingPoint(triggerLocation, PointTrackingMode.Negative);
-            return _completionSources
-                .Select(p => (p, mappingPoint.GetPoint(p.Value.Snapshot.TextBuffer, PositionAffinity.Predecessor)))
-                .Where(n => n.Item2.HasValue)
-                .Any(n => _guardedOperations.CallExtensionPoint(
-                    errorSource: n.Item1.Key,
-                    call: () => n.Item1.Key.ShouldCommitCompletion(typeChar, n.Item2.Value),
-                    valueOnThrow: false));
         }
 
         public ImmutableArray<CompletionItem> GetVisibleItems(CancellationToken token)

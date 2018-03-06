@@ -31,8 +31,10 @@ namespace Microsoft.VisualStudio.Language.Intellisense.Implementation
         ICommandHandler<WordDeleteToEndCommandArgs>,
         ICommandHandler<WordDeleteToStartCommandArgs>,
         ICommandHandler<ReturnKeyCommandArgs>,
+        ICommandHandler<RedoCommandArgs>,
         ICommandHandler<TabKeyCommandArgs>,
-        IChainedCommandHandler<TypeCharCommandArgs>
+        IChainedCommandHandler<TypeCharCommandArgs>,
+        ICommandHandler<UndoCommandArgs>
     {
         [Import]
         IAsyncCompletionBroker Broker;
@@ -118,11 +120,10 @@ namespace Microsoft.VisualStudio.Language.Intellisense.Implementation
         {
             var trigger = new CompletionTrigger(CompletionTriggerReason.Invoke);
             var location = args.TextView.Caret.Position.BufferPosition;
-            var applicableSpan = Broker.ShouldTriggerCompletion(args.TextView, default(char), location);
-            if (applicableSpan.HasValue)
+            var session = Broker.TriggerCompletion(args.TextView, location, default(char));
+            if (session != null)
             {
-                var session = Broker.TriggerCompletion(args.TextView, location, applicableSpan.Value);
-                session?.OpenOrUpdate(args.TextView, trigger, location);
+                session.OpenOrUpdate(args.TextView, trigger, location);
                 return true;
             }
             return false;
@@ -135,11 +136,11 @@ namespace Microsoft.VisualStudio.Language.Intellisense.Implementation
         {
             var trigger = new CompletionTrigger(CompletionTriggerReason.InvokeAndCommitIfUnique);
             var location = args.TextView.Caret.Position.BufferPosition;
-            var applicableSpan = Broker.ShouldTriggerCompletion(args.TextView, default(char), location);
-            if (applicableSpan.HasValue)
+            var session = Broker.TriggerCompletion(args.TextView, location, default(char));
+            if (session != null)
             {
-                var session = Broker.TriggerCompletion(args.TextView, location, applicableSpan.Value) as AsyncCompletionSession;
-                session?.InvokeAndCommitIfUnique(args.TextView, trigger, location, executionContext.OperationContext.UserCancellationToken);
+                var sessionInternal = session as AsyncCompletionSession;
+                sessionInternal?.InvokeAndCommitIfUnique(args.TextView, trigger, location, executionContext.OperationContext.UserCancellationToken);
                 return true;
             }
             return false;
@@ -207,6 +208,20 @@ namespace Microsoft.VisualStudio.Language.Intellisense.Implementation
             => AvailableIfCompletionIsUp(args.TextView);
 
         bool ICommandHandler<WordDeleteToStartCommandArgs>.ExecuteCommand(WordDeleteToStartCommandArgs args, CommandExecutionContext executionContext)
+        {
+            var session = Broker.GetSession(args.TextView);
+            if (session != null)
+            {
+                session.Dismiss();
+                return false; // return false so that the editor can handle this event
+            }
+            return false;
+        }
+
+        CommandState ICommandHandler<RedoCommandArgs>.GetCommandState(RedoCommandArgs args)
+            => AvailableIfCompletionIsUp(args.TextView);
+
+        bool ICommandHandler<RedoCommandArgs>.ExecuteCommand(RedoCommandArgs args, CommandExecutionContext executionContext)
         {
             var session = Broker.GetSession(args.TextView);
             if (session != null)
@@ -307,13 +322,26 @@ namespace Microsoft.VisualStudio.Language.Intellisense.Implementation
             }
             else
             {
-                var applicableSpan = Broker.ShouldTriggerCompletion(view, args.TypedChar, location);
-                if (applicableSpan.HasValue)
+                var newSession = Broker.TriggerCompletion(args.TextView, location, args.TypedChar);
+                if (newSession != null)
                 {
-                    var newSession = Broker.TriggerCompletion(view, location, applicableSpan.Value);
                     newSession?.OpenOrUpdate(view, trigger, location);
                 }
             }
+        }
+
+        CommandState ICommandHandler<UndoCommandArgs>.GetCommandState(UndoCommandArgs args)
+            => AvailableIfCompletionIsUp(args.TextView);
+
+        bool ICommandHandler<UndoCommandArgs>.ExecuteCommand(UndoCommandArgs args, CommandExecutionContext executionContext)
+        {
+            var session = Broker.GetSession(args.TextView);
+            if (session != null)
+            {
+                session.Dismiss();
+                return false; // return false so that the editor can handle this event
+            }
+            return false;
         }
 
         CommandState ICommandHandler<DownKeyCommandArgs>.GetCommandState(DownKeyCommandArgs args)
