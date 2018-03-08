@@ -23,9 +23,14 @@ namespace Microsoft.VisualStudio.Language.Intellisense.Implementation
             }
         }
 
-        CustomCommitBehavior IAsyncCompletionItemSource.CustomCommit(ITextView view, ITextBuffer buffer, CompletionItem item, ITrackingSpan applicableSpan, char typeChar, CancellationToken token)
+        CommitBehavior IAsyncCompletionItemSource.CustomCommit(ITextView view, ITextBuffer buffer, CompletionItem item, ITrackingSpan applicableSpan, char typeChar, CancellationToken token)
         {
-            return CustomCommitBehavior.None;
+            return CommitBehavior.None;
+        }
+
+        CommitBehavior IAsyncCompletionItemSource.GetDefaultCommitBehavior(ITextView view, ITextBuffer buffer, CompletionItem item, ITrackingSpan applicableSpan, char typeChar, CancellationToken token)
+        {
+            return CommitBehavior.None;
         }
 
         Task<CompletionContext> IAsyncCompletionItemSource.GetCompletionContextAsync(CompletionTrigger trigger, SnapshotPoint triggerLocation, SnapshotSpan applicableSpan, CancellationToken token)

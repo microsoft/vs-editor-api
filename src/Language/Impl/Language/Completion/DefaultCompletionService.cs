@@ -161,6 +161,11 @@ namespace Microsoft.VisualStudio.Language.Intellisense.Implementation
             return CustomCommitBehavior.None;
         }
 
+        CommitBehavior IAsyncCompletionItemSource.GetDefaultCommitBehavior(ITextView view, ITextBuffer buffer, CompletionItem item, ITrackingSpan applicableSpan, char typeChar, CancellationToken token)
+        {
+            return CommitBehavior.None;
+        }
+
         async Task<CompletionContext> IAsyncCompletionItemSource.GetCompletionContextAsync(CompletionTrigger trigger, SnapshotPoint triggerLocation, SnapshotSpan triggerLocation, CancellationToken token)
         {
             return await Task.FromResult(new CompletionContext(
@@ -229,9 +234,14 @@ namespace Microsoft.VisualStudio.Language.Intellisense.Implementation
     {
         private static readonly ImmutableArray<char> commitCharacters = ImmutableArray.Create(' ', '>', '=');
 
-        CustomCommitBehavior IAsyncCompletionItemSource.CustomCommit(Text.Editor.ITextView view, ITextBuffer buffer, CompletionItem item, ITrackingSpan applicableSpan, char typeChar, CancellationToken token)
+        CommitBehavior IAsyncCompletionItemSource.CustomCommit(Text.Editor.ITextView view, ITextBuffer buffer, CompletionItem item, ITrackingSpan applicableSpan, char typeChar, CancellationToken token)
         {
-            return CustomCommitBehavior.None;
+            return CommitBehavior.None;
+        }
+
+        CommitBehavior IAsyncCompletionItemSource.GetDefaultCommitBehavior(ITextView view, ITextBuffer buffer, CompletionItem item, ITrackingSpan applicableSpan, char typeChar, CancellationToken token)
+        {
+            return CommitBehavior.None;
         }
 
         async Task<CompletionContext> IAsyncCompletionItemSource.GetCompletionContextAsync(CompletionTrigger trigger, SnapshotPoint triggerLocation, SnapshotSpan applicableSpan, CancellationToken token)

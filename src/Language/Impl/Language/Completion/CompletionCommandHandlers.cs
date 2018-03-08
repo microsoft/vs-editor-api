@@ -56,10 +56,10 @@ namespace Microsoft.VisualStudio.Language.Intellisense.Implementation
         /// </summary>
         /// <param name="view"></param>
         /// <returns></returns>
-        private CommandState Available(ITextView view)
+        private CommandState Available(IContentType contentType)
         {
             return ModernCompletionFeature.GetFeatureState(ExperimentationService)
-                && Broker.IsCompletionSupported(view)
+                && Broker.IsCompletionSupported(contentType)
                 ? CommandState.Available
                 : CommandState.Unspecified;
         }
@@ -95,7 +95,7 @@ namespace Microsoft.VisualStudio.Language.Intellisense.Implementation
             {
                 var trigger = new CompletionTrigger(CompletionTriggerReason.Deletion);
                 var location = args.TextView.Caret.Position.BufferPosition;
-                session.OpenOrUpdate(args.TextView, trigger, location);
+                session.OpenOrUpdate(trigger, location);
             }
         }
 
@@ -114,40 +114,56 @@ namespace Microsoft.VisualStudio.Language.Intellisense.Implementation
         }
 
         CommandState ICommandHandler<InvokeCompletionListCommandArgs>.GetCommandState(InvokeCompletionListCommandArgs args)
-            => Available(args.TextView);
+            => Available(args.SubjectBuffer.ContentType);
 
         bool ICommandHandler<InvokeCompletionListCommandArgs>.ExecuteCommand(InvokeCompletionListCommandArgs args, CommandExecutionContext executionContext)
         {
+            // If the caret is buried in virtual space, we should realize this virtual space before triggering the session.
+            if (args.TextView.Caret.InVirtualSpace)
+            {
+                IEditorOperations editorOperations = EditorOperationsFactoryService.GetEditorOperations(args.TextView);
+                // We can realize virtual space by inserting nothing through the editor operations.
+                editorOperations?.InsertText("");
+            }
+
             var trigger = new CompletionTrigger(CompletionTriggerReason.Invoke);
             var location = args.TextView.Caret.Position.BufferPosition;
             var session = Broker.TriggerCompletion(args.TextView, location, default(char));
             if (session != null)
             {
-                session.OpenOrUpdate(args.TextView, trigger, location);
+                session.OpenOrUpdate(trigger, location);
                 return true;
             }
             return false;
         }
 
         CommandState ICommandHandler<CommitUniqueCompletionListItemCommandArgs>.GetCommandState(CommitUniqueCompletionListItemCommandArgs args)
-            => Available(args.TextView);
+            => Available(args.SubjectBuffer.ContentType);
 
         bool ICommandHandler<CommitUniqueCompletionListItemCommandArgs>.ExecuteCommand(CommitUniqueCompletionListItemCommandArgs args, CommandExecutionContext executionContext)
         {
+            // If the caret is buried in virtual space, we should realize this virtual space before triggering the session.
+            if (args.TextView.Caret.InVirtualSpace)
+            {
+                IEditorOperations editorOperations = EditorOperationsFactoryService.GetEditorOperations(args.TextView);
+                // We can realize virtual space by inserting nothing through the editor operations.
+                editorOperations?.InsertText("");
+            }
+
             var trigger = new CompletionTrigger(CompletionTriggerReason.InvokeAndCommitIfUnique);
             var location = args.TextView.Caret.Position.BufferPosition;
             var session = Broker.TriggerCompletion(args.TextView, location, default(char));
             if (session != null)
             {
                 var sessionInternal = session as AsyncCompletionSession;
-                sessionInternal?.InvokeAndCommitIfUnique(args.TextView, trigger, location, executionContext.OperationContext.UserCancellationToken);
+                sessionInternal?.InvokeAndCommitIfUnique(trigger, location, executionContext.OperationContext.UserCancellationToken);
                 return true;
             }
             return false;
         }
 
         CommandState ICommandHandler<InsertSnippetCommandArgs>.GetCommandState(InsertSnippetCommandArgs args)
-            => Available(args.TextView);
+            => Available(args.SubjectBuffer.ContentType);
 
         bool ICommandHandler<InsertSnippetCommandArgs>.ExecuteCommand(InsertSnippetCommandArgs args, CommandExecutionContext executionContext)
         {
@@ -156,7 +172,7 @@ namespace Microsoft.VisualStudio.Language.Intellisense.Implementation
         }
 
         CommandState ICommandHandler<ToggleCompletionModeCommandArgs>.GetCommandState(ToggleCompletionModeCommandArgs args)
-            => Available(args.TextView);
+            => Available(args.SubjectBuffer.ContentType);
 
         bool ICommandHandler<ToggleCompletionModeCommandArgs>.ExecuteCommand(ToggleCompletionModeCommandArgs args, CommandExecutionContext executionContext)
         {
@@ -186,7 +202,7 @@ namespace Microsoft.VisualStudio.Language.Intellisense.Implementation
             {
                 var trigger = new CompletionTrigger(CompletionTriggerReason.Deletion);
                 var location = args.TextView.Caret.Position.BufferPosition;
-                session.OpenOrUpdate(args.TextView, trigger, location);
+                session.OpenOrUpdate(trigger, location);
             }
         }
 
@@ -263,35 +279,50 @@ namespace Microsoft.VisualStudio.Language.Intellisense.Implementation
         }
 
         CommandState IChainedCommandHandler<TypeCharCommandArgs>.GetCommandState(TypeCharCommandArgs args, Func<CommandState> nextCommandHandler)
-            => Available(args.TextView);
+            => Available(args.SubjectBuffer.ContentType);
 
         void IChainedCommandHandler<TypeCharCommandArgs>.ExecuteCommand(TypeCharCommandArgs args, Action nextCommandHandler, CommandExecutionContext executionContext)
         {
             var initialTextSnapshot = args.TextView.TextSnapshot;
             var view = args.TextView;
+            var location = view.Caret.Position.BufferPosition;
+
+            // Note regarding undo: When completion and brace completion happen together, completion should be first on the undo stack.
+            // Effectively, we want to first undo the completion, leaving brace completion intact. Second undo should undo brace completion.
+            // To achieve this, we create a transaction in which we commit and reapply brace completion (via nextCommandHandler).
+            // Please read "Note regarding undo" comments in this method that explain the implementation choices.
+            // Hopefully an upcoming upgrade of the undo mechanism will allow us to undo out of order and vastly simplify this method.
+
+            // Note regarding undo: In a corner case of typing closing brace over existing closing brace,
+            // Roslyn brace completion does not perform an edit. It moves the caret outside of session's applicable span,
+            // which dismisses the session. Put the session in a state where it will not dismiss when caret leaves the applicable span.
+            /*
+            // Unfortunately, preserving this session means that ultimately replaying the key will insert second brace instead of overtyping.
+            // Actually, even obtaining session before nextCommandHandler messes this up. I don't understand this yet and for now I will keep this code commented out. Completing over closing brace is now a known bug.
+            if (sessionToCommit != null && args.TextView.TextBuffer == args.SubjectBuffer)
+            {
+                ((AsyncCompletionSession)sessionToCommit).IgnoreCaretMovement(ignore: true);
+            }
+            */
+            // Execute other commands in the chain to see the change in the buffer. This includes brace completion.
+            // Note regarding undo: This will be undone second
+            nextCommandHandler();
 
             if (args.TextView.TextBuffer != args.SubjectBuffer)
             {
                 // We are only inteterested in the top buffer. Currently, commanding implementation calls us multiple times, once per each buffer.
-                // Allow other command handlers to act.
-                nextCommandHandler();
                 return;
             }
 
-            var location = view.Caret.Position.BufferPosition;
-            // Call ShouldCommit before nextCommandHandler so that extenders
+            // Pass location from before calling nextCommandHandler so that extenders
             // get the same view of the buffer in both ShouldCommit and Commit
             var sessionToCommit = Broker.GetSession(args.TextView);
-            var shouldCommit = sessionToCommit?.ShouldCommit(view, args.TypedChar, location);
-
-            if (shouldCommit == true)
+            if (sessionToCommit?.ShouldCommit(args.TypedChar, location) == true)
             {
-                // Execute other commands in the chain to see the change in the buffer.
-                nextCommandHandler();
-
                 // Buffer has changed, update the snapshot
                 location = view.Caret.Position.BufferPosition;
 
+                // Note regarding undo: this transaction will be undone first
                 using (var undoTransaction = new CaretPreservingEditTransaction("Completion", view, UndoHistoryRegistry, EditorOperationsFactoryService))
                 {
                     UndoUtilities.RollbackToBeforeTypeChar(initialTextSnapshot, args.SubjectBuffer);
@@ -299,18 +330,19 @@ namespace Microsoft.VisualStudio.Language.Intellisense.Implementation
 
                     var customBehavior = sessionToCommit.Commit(executionContext.OperationContext.UserCancellationToken, args.TypedChar);
 
-                    if ((customBehavior & CustomCommitBehavior.SuppressFurtherCommandHandlers) == 0)
+                    if ((customBehavior & CommitBehavior.SuppressFurtherCommandHandlers) == 0)
                         nextCommandHandler(); // Replay the key, so that we get brace completion.
 
                     // Complete the transaction before stopping it.
                     undoTransaction.Complete();
                 }
             }
-            else
+            /*
+            if (sessionToCommit != null)
             {
-                nextCommandHandler();
+                ((AsyncCompletionSession)sessionToCommit).IgnoreCaretMovement(ignore: false);
             }
-
+            */
             // Buffer might have changed. Update it for when we try to trigger new session.
             location = view.Caret.Position.BufferPosition;
 
@@ -318,14 +350,14 @@ namespace Microsoft.VisualStudio.Language.Intellisense.Implementation
             var session = Broker.GetSession(args.TextView);
             if (session != null)
             {
-                session.OpenOrUpdate(view, trigger, location);
+                session.OpenOrUpdate(trigger, location);
             }
             else
             {
                 var newSession = Broker.TriggerCompletion(args.TextView, location, args.TypedChar);
                 if (newSession != null)
                 {
-                    newSession?.OpenOrUpdate(view, trigger, location);
+                    newSession?.OpenOrUpdate(trigger, location);
                 }
             }
         }
