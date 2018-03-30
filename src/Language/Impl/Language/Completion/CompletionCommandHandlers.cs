@@ -14,7 +14,7 @@ namespace Microsoft.VisualStudio.Language.Intellisense.Implementation
     /// Reacts to the down arrow command and attempts to scroll the completion list.
     /// </summary>
     [Name(KnownCompletionNames.CompletionCommandHandlers)]
-    [ContentType("any")]
+    [ContentType("text")]
     [Export(typeof(ICommandHandler))]
     internal sealed class CompletionCommandHandlers :
         ICommandHandler<DownKeyCommandArgs>,
@@ -85,10 +85,6 @@ namespace Microsoft.VisualStudio.Language.Intellisense.Implementation
         {
             // Execute other commands in the chain to see the change in the buffer.
             nextCommandHandler();
-
-            // We are only inteterested in the top buffer. Currently, commanding implementation calls us multiple times, once per each buffer.
-            if (args.TextView.BufferGraph.TopBuffer != args.SubjectBuffer)
-                return;
 
             var session = Broker.GetSession(args.TextView);
             if (session != null)
@@ -193,10 +189,6 @@ namespace Microsoft.VisualStudio.Language.Intellisense.Implementation
             // Execute other commands in the chain to see the change in the buffer.
             nextCommandHandler();
 
-            // We are only inteterested in the top buffer. Currently, commanding implementation calls us multiple times, once per each buffer.
-            if (args.TextView.BufferGraph.TopBuffer != args.SubjectBuffer)
-                return;
-
             var session = Broker.GetSession(args.TextView);
             if (session != null)
             {
@@ -256,9 +248,12 @@ namespace Microsoft.VisualStudio.Language.Intellisense.Implementation
             var session = Broker.GetSession(args.TextView);
             if (session != null)
             {
-                session.Commit(executionContext.OperationContext.UserCancellationToken);
+                var commitBehavior = session.Commit(executionContext.OperationContext.UserCancellationToken, '\n');
                 session.Dismiss();
-                return true;
+
+                // Mark this command as handled (return true), unless extender set the RaiseFurtherCommandHandlers flag.
+                if ((commitBehavior & CommitBehavior.RaiseFurtherCommandHandlers) == 0)
+                    return true;
             }
             return false;
         }
@@ -271,9 +266,12 @@ namespace Microsoft.VisualStudio.Language.Intellisense.Implementation
             var session = Broker.GetSession(args.TextView);
             if (session != null)
             {
-                session.Commit(executionContext.OperationContext.UserCancellationToken);
+                var commitBehavior = session.Commit(executionContext.OperationContext.UserCancellationToken, '\t');
                 session.Dismiss();
-                return true;
+
+                // Mark this command as handled (return true), unless extender set the RaiseFurtherCommandHandlers flag.
+                if ((commitBehavior & CommitBehavior.RaiseFurtherCommandHandlers) == 0)
+                    return true;
             }
             return false;
         }
@@ -308,12 +306,6 @@ namespace Microsoft.VisualStudio.Language.Intellisense.Implementation
             // Note regarding undo: This will be undone second
             nextCommandHandler();
 
-            if (args.TextView.TextBuffer != args.SubjectBuffer)
-            {
-                // We are only inteterested in the top buffer. Currently, commanding implementation calls us multiple times, once per each buffer.
-                return;
-            }
-
             // Pass location from before calling nextCommandHandler so that extenders
             // get the same view of the buffer in both ShouldCommit and Commit
             var sessionToCommit = Broker.GetSession(args.TextView);
@@ -328,9 +320,9 @@ namespace Microsoft.VisualStudio.Language.Intellisense.Implementation
                     UndoUtilities.RollbackToBeforeTypeChar(initialTextSnapshot, args.SubjectBuffer);
                     // Now the buffer doesn't have the commit character nor the matching brace, if any
 
-                    var customBehavior = sessionToCommit.Commit(executionContext.OperationContext.UserCancellationToken, args.TypedChar);
+                    var commitBehavior = sessionToCommit.Commit(executionContext.OperationContext.UserCancellationToken, args.TypedChar);
 
-                    if ((customBehavior & CommitBehavior.SuppressFurtherCommandHandlers) == 0)
+                    if ((commitBehavior & CommitBehavior.SuppressFurtherCommandHandlers) == 0)
                         nextCommandHandler(); // Replay the key, so that we get brace completion.
 
                     // Complete the transaction before stopping it.

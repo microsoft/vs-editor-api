@@ -32,14 +32,13 @@
             bool ignoreBufferChange = false,
             Func<bool> keepOpenFunc = null)
         {
-            this.TrackMouse = trackMouse;
-            this.IgnoreBufferChange = ignoreBufferChange;
-
-            if (!trackMouse && ignoreBufferChange)
+            if (trackMouse && ignoreBufferChange)
             {
                 throw new ArgumentException($"{nameof(ignoreBufferChange)} can only be true if {nameof(trackMouse)} is false");
             }
 
+            this.TrackMouse = trackMouse;
+            this.IgnoreBufferChange = ignoreBufferChange;
             this.keepOpenFunc = keepOpenFunc;
         }
 

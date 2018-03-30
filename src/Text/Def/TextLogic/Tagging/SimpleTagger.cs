@@ -198,7 +198,7 @@ namespace Microsoft.VisualStudio.Text.Tagging
         /// <returns>The set of <see cref="TrackingTagSpan&lt;T&gt;"/> objects that intersect the given span, in order.</returns>
         public IEnumerable<TrackingTagSpan<T>> GetTaggedSpans(SnapshotSpan span)
         {
-            IList<TrackingTagSpan<T>> tagSpanList = new List<TrackingTagSpan<T>>(_trackingTagSpans);
+            IList<TrackingTagSpan<T>> tagSpanList;
 
             lock (mutex)
             {
@@ -230,25 +230,40 @@ namespace Microsoft.VisualStudio.Text.Tagging
         public IEnumerable<ITagSpan<T>> GetTags(NormalizedSnapshotSpanCollection spans)
         {
             if (spans.Count == 0)
-                yield break;
+            {
+                return Enumerable.Empty<ITagSpan<T>>();
+            }
 
-            IList<TrackingTagSpan<T>> tagSpanList;
+            TrackingTagSpan<T>[] tagSpanList = null;
 
             lock (mutex)
             {
-                tagSpanList = new List<TrackingTagSpan<T>>(_trackingTagSpans);
+                if (_trackingTagSpans.Count > 0)
+                {
+                    tagSpanList = _trackingTagSpans.ToArray();
+                }
             }
 
-            foreach (var tagSpan in tagSpanList)
+            if (tagSpanList == null)
             {
-                SnapshotSpan tagSnapshotSpan = tagSpan.Span.GetSpan(spans[0].Snapshot);
-                
-                foreach (var querySpan in spans)
+                return Enumerable.Empty<ITagSpan<T>>();
+            }
+
+            return GetTagsImpl(tagSpanList, spans);
+
+            IEnumerable<ITagSpan<T>> GetTagsImpl(TrackingTagSpan<T>[] tagSpans, NormalizedSnapshotSpanCollection querySpans)
+            {
+                for (int i = 0; i < tagSpans.Length; i++)
                 {
-                    if (tagSnapshotSpan.IntersectsWith(querySpan))
+                    SnapshotSpan tagSnapshotSpan = tagSpans[i].Span.GetSpan(querySpans[0].Snapshot);
+
+                    for (int j = 0; j < querySpans.Count; j++)
                     {
-                        yield return new TagSpan<T>(tagSnapshotSpan, tagSpan.Tag);
-                        break;
+                        if (tagSnapshotSpan.IntersectsWith(querySpans[j]))
+                        {
+                            yield return new TagSpan<T>(tagSnapshotSpan, tagSpans[i].Tag);
+                            break;
+                        }
                     }
                 }
             }

@@ -14,8 +14,8 @@ namespace Microsoft.VisualStudio.Utilities.Implementation
     internal partial class ContentTypeImpl : IContentType
     {
         private readonly string name;
-        private readonly static IReadOnlyList<ContentTypeImpl> emptyBaseTypes = new ContentTypeImpl[0];
-        private IReadOnlyList<ContentTypeImpl> baseTypeList = emptyBaseTypes;
+        private readonly static ContentTypeImpl[] emptyBaseTypes = Array.Empty<ContentTypeImpl>();
+        private ContentTypeImpl[] baseTypeList = emptyBaseTypes;
 
         internal ContentTypeImpl(string name, string mimeType = null, IEnumerable<string> baseTypes = null)
         {
@@ -38,15 +38,15 @@ namespace Microsoft.VisualStudio.Utilities.Implementation
 
         public bool IsOfType(string type)
         {
-            if (String.Compare(type, this.name, StringComparison.OrdinalIgnoreCase) == 0)
+            if (string.Compare(type, this.name, StringComparison.OrdinalIgnoreCase) == 0)
             {
                 return true;
             }
             else
             {
-                foreach (IContentType baseType in this.baseTypeList)
+                for (int i = 0; i < this.baseTypeList.Length; i++)
                 {
-                    if (baseType.IsOfType(type))
+                    if (this.baseTypeList[i].IsOfType(type))
                     {
                         return true;
                     }
@@ -114,7 +114,7 @@ namespace Microsoft.VisualStudio.Utilities.Implementation
         {
             try
             {
-                if (this.baseTypeList.Count != 0)
+                if (this.baseTypeList.Length != 0)
                 {
                     this.state = VisitState.Visiting;
                     foreach (var baseType in this.baseTypeList)
@@ -173,7 +173,7 @@ namespace Microsoft.VisualStudio.Utilities.Implementation
             get
             {
                 return (this.UnprocessedBaseTypes == null) && (this.baseTypeList != null) &&
-                         ((this.baseTypeList.Count == 0)
+                         ((this.baseTypeList.Length == 0)
                           ? (object.ReferenceEquals(this.baseTypeList, ContentTypeImpl.emptyBaseTypes) && (this.state == VisitState.Visited))
                           : (this.state == VisitState.NotVisited));
             }
@@ -181,7 +181,7 @@ namespace Microsoft.VisualStudio.Utilities.Implementation
 
         internal bool IsCheckedForCycles
         {
-            get { return (this.state == VisitState.Visited) && (this.UnprocessedBaseTypes == null) && (object.ReferenceEquals(this.baseTypeList, ContentTypeImpl.emptyBaseTypes) || (this.baseTypeList.Count > 0)); }
+            get { return (this.state == VisitState.Visited) && (this.UnprocessedBaseTypes == null) && (object.ReferenceEquals(this.baseTypeList, ContentTypeImpl.emptyBaseTypes) || (this.baseTypeList.Length > 0)); }
         }
 #endif
     }

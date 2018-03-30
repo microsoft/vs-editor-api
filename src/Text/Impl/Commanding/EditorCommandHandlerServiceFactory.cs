@@ -65,12 +65,13 @@ namespace Microsoft.VisualStudio.UI.Text.Commanding.Implementation
                 return GetService(textView);
             }
 
-            return subjectBuffer.Properties.GetOrCreateSingletonProperty(() =>
-            {
-                return new EditorCommandHandlerService(textView, _commandHandlers, _uiThreadOperationExecutor,
-                    _joinableTaskContext, _contentTypeComparer,
-                    new SingleBufferResolver(subjectBuffer), _guardedOperations);
-            });
+            // We cannot cache view/buffer affinitized service instance in the buffer property bag as the
+            // buffer can be used by another text view, see https://devdiv.visualstudio.com/DevDiv/_workitems/edit/563472.
+            // There is no good way to cache it without holding onto the buffer (which can be disconnected
+            // from the text view anytime).
+            return new EditorCommandHandlerService(textView, _commandHandlers, _uiThreadOperationExecutor,
+                _joinableTaskContext, _contentTypeComparer,
+                new SingleBufferResolver(subjectBuffer), _guardedOperations);
         }
 
         private IEnumerable<Lazy<ICommandHandler, ICommandHandlerMetadata>> OrderCommandHandlers(IEnumerable<Lazy<ICommandHandler, ICommandHandlerMetadata>> commandHandlers)

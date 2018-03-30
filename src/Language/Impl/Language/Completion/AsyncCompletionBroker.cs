@@ -34,24 +34,24 @@ namespace Microsoft.VisualStudio.Language.Intellisense.Implementation
         private ITextDocumentFactoryService TextDocumentFactoryService;
 
         [ImportMany]
-        private IEnumerable<Lazy<ICompletionPresenterProvider, IOrderableContentTypeMetadata>> UnorderedPresenterProviders;
+        private IEnumerable<Lazy<ICompletionPresenterProvider, IOrderableContentTypeAndOptionalTextViewRoleMetadata>> UnorderedPresenterProviders;
 
         [ImportMany]
-        private IEnumerable<Lazy<IAsyncCompletionItemSourceProvider, IOrderableContentTypeMetadata>> UnorderedCompletionItemSourceProviders;
+        private IEnumerable<Lazy<IAsyncCompletionItemSourceProvider, IOrderableContentTypeAndOptionalTextViewRoleMetadata>> UnorderedCompletionItemSourceProviders;
 
         [ImportMany]
-        private IEnumerable<Lazy<IAsyncCompletionServiceProvider, IOrderableContentTypeMetadata>> UnorderedCompletionServiceProviders;
+        private IEnumerable<Lazy<IAsyncCompletionServiceProvider, IOrderableContentTypeAndOptionalTextViewRoleMetadata>> UnorderedCompletionServiceProviders;
 
-        private IList<Lazy<ICompletionPresenterProvider, IOrderableContentTypeMetadata>> _orderedPresenterProviders;
-        private IList<Lazy<ICompletionPresenterProvider, IOrderableContentTypeMetadata>> OrderedPresenterProviders
+        private IList<Lazy<ICompletionPresenterProvider, IOrderableContentTypeAndOptionalTextViewRoleMetadata>> _orderedPresenterProviders;
+        private IList<Lazy<ICompletionPresenterProvider, IOrderableContentTypeAndOptionalTextViewRoleMetadata>> OrderedPresenterProviders
             => _orderedPresenterProviders ?? (_orderedPresenterProviders = Orderer.Order(UnorderedPresenterProviders));
 
-        private IList<Lazy<IAsyncCompletionItemSourceProvider, IOrderableContentTypeMetadata>> _orderedCompletionItemSourceProviders;
-        private IList<Lazy<IAsyncCompletionItemSourceProvider, IOrderableContentTypeMetadata>> OrderedCompletionItemSourceProviders
+        private IList<Lazy<IAsyncCompletionItemSourceProvider, IOrderableContentTypeAndOptionalTextViewRoleMetadata>> _orderedCompletionItemSourceProviders;
+        private IList<Lazy<IAsyncCompletionItemSourceProvider, IOrderableContentTypeAndOptionalTextViewRoleMetadata>> OrderedCompletionItemSourceProviders
             => _orderedCompletionItemSourceProviders ?? (_orderedCompletionItemSourceProviders = Orderer.Order(UnorderedCompletionItemSourceProviders));
 
-        private IList<Lazy<IAsyncCompletionServiceProvider, IOrderableContentTypeMetadata>> _orderedCompletionServiceProviders;
-        private IList<Lazy<IAsyncCompletionServiceProvider, IOrderableContentTypeMetadata>> OrderedCompletionServiceProviders
+        private IList<Lazy<IAsyncCompletionServiceProvider, IOrderableContentTypeAndOptionalTextViewRoleMetadata>> _orderedCompletionServiceProviders;
+        private IList<Lazy<IAsyncCompletionServiceProvider, IOrderableContentTypeAndOptionalTextViewRoleMetadata>> OrderedCompletionServiceProviders
             => _orderedCompletionServiceProviders ?? (_orderedCompletionServiceProviders = Orderer.Order(UnorderedCompletionServiceProviders));
 
         private ImmutableDictionary<IContentType, ImmutableSortedSet<char>> _commitCharacters = ImmutableDictionary<IContentType, ImmutableSortedSet<char>>.Empty;
@@ -90,8 +90,12 @@ namespace Microsoft.VisualStudio.Language.Intellisense.Implementation
                 return session;
             }
 
-            var sourcesWithData = MetadataUtilities<IAsyncCompletionItemSourceProvider>.GetBuffersAndImports(textView, triggerLocation, GetCompletionItemSourceProviders);
+            var sourcesWithData = MetadataUtilities<IAsyncCompletionItemSourceProvider, IOrderableContentTypeAndOptionalTextViewRoleMetadata>.GetBuffersAndImports(textView, triggerLocation, GetCompletionItemSourceProviders);
+
+            // We will pass this to the next TriggerCompletion. This feels hacky, refactor the way parts are collected and built
             var cachedData = new CompletionSourcesWithData(sourcesWithData);
+
+            SnapshotSpan? applicableSpan = null;
             foreach (var sourceWithData in sourcesWithData)
             {
                 var sourceProvider = GuardedOperations.InstantiateExtension(this, sourceWithData.import); // TODO: consider caching this
@@ -102,14 +106,16 @@ namespace Microsoft.VisualStudio.Language.Intellisense.Implementation
                     valueOnThrow: null
                 );
 
-                if (candidateSpan.HasValue)
+                // Assume that sources are ordered. If this source is the first one to provide span, map it to the view's top buffer and use it for completion,
+                if (applicableSpan == null && candidateSpan.HasValue)
                 {
                     var mappingSpan = textView.BufferGraph.CreateMappingSpan(candidateSpan.Value, SpanTrackingMode.EdgeInclusive);
-                    var applicableSpan = mappingSpan.GetSpans(textView.TextBuffer)[0];
-                    return TriggerCompletion(textView, triggerLocation, applicableSpan, cachedData);
+                    applicableSpan = mappingSpan.GetSpans(textView.TextBuffer)[0];
                 }
             }
-            return null;
+            return applicableSpan.HasValue
+                ? TriggerCompletion(textView, triggerLocation, applicableSpan.Value, cachedData)
+                : null;
         }
 
         private IAsyncCompletionSession TriggerCompletion(ITextView textView, SnapshotPoint triggerLocation, SnapshotSpan applicableSpan, CompletionSourcesWithData sources)
@@ -126,9 +132,8 @@ namespace Microsoft.VisualStudio.Language.Intellisense.Implementation
                 return null;
             }
 
-            //var sourcesWithLocations = new Dictionary<IAsyncCompletionItemSource, SnapshotPoint>();
             var potentialCommitCharsBuilder = ImmutableArray.CreateBuilder<char>();
-            var sourcesWithLocations = new Dictionary<IAsyncCompletionItemSource, SnapshotPoint>();
+            var sourcesWithLocations = new List<(IAsyncCompletionItemSource, SnapshotPoint)>();
             foreach (var sourceWithData in sources.Data)
             {
                 var sourceProvider = GuardedOperations.InstantiateExtension(this, sourceWithData.import); // TODO: consider caching this
@@ -138,14 +143,14 @@ namespace Microsoft.VisualStudio.Language.Intellisense.Implementation
                     {
                         var source = sourceProvider.GetOrCreate(textView);
                         potentialCommitCharsBuilder.AddRange(source.GetPotentialCommitCharacters());
-                        sourcesWithLocations[source] = sourceWithData.point;
+                        sourcesWithLocations.Add((source, sourceWithData.point));
                     });
             }
 
             if (_contentTypeComparer == null)
                 _contentTypeComparer = new StableContentTypeComparer(ContentTypeRegistryService);
 
-            var servicesWithLocations = MetadataUtilities<IAsyncCompletionServiceProvider>.GetOrderedBuffersAndImports(textView, triggerLocation, GetServiceProviders, _contentTypeComparer);
+            var servicesWithLocations = MetadataUtilities<IAsyncCompletionServiceProvider, IOrderableContentTypeAndOptionalTextViewRoleMetadata>.GetOrderedBuffersAndImports(textView, triggerLocation, GetServiceProviders, _contentTypeComparer);
             var bestServiceWithData = servicesWithLocations.FirstOrDefault();
             var serviceProvider = GuardedOperations.InstantiateExtension(this, bestServiceWithData.import); // TODO: consider caching this
             var service = GuardedOperations.CallExtensionPoint(serviceProvider, () => serviceProvider.GetOrCreate(textView), null);
@@ -155,7 +160,7 @@ namespace Microsoft.VisualStudio.Language.Intellisense.Implementation
                 throw new InvalidOperationException("No completion services not found. Completion will be unavailable.");
             }
 
-            var presentationProvidersWithLocations = MetadataUtilities<ICompletionPresenterProvider>.GetOrderedBuffersAndImports(textView, triggerLocation, GetPresenters, _contentTypeComparer);
+            var presentationProvidersWithLocations = MetadataUtilities<ICompletionPresenterProvider, IOrderableContentTypeAndOptionalTextViewRoleMetadata>.GetOrderedBuffersAndImports(textView, triggerLocation, GetPresenters, _contentTypeComparer);
             var bestPresentationProviderWithLocation = presentationProvidersWithLocations.FirstOrDefault();
             var presenterProvider = GuardedOperations.InstantiateExtension(this, bestPresentationProviderWithLocation.import); // TODO: consider caching this
 
@@ -176,20 +181,17 @@ namespace Microsoft.VisualStudio.Language.Intellisense.Implementation
             return session;
         }
 
-        private IReadOnlyList<Lazy<IAsyncCompletionItemSourceProvider, IOrderableContentTypeMetadata>> GetCompletionItemSourceProviders(IContentType contentType, ITextViewRoleSet textViewRoles)
+        private IReadOnlyList<Lazy<IAsyncCompletionItemSourceProvider, IOrderableContentTypeAndOptionalTextViewRoleMetadata>> GetCompletionItemSourceProviders(IContentType contentType, ITextViewRoleSet textViewRoles)
         {
-            // TODO: Respect the text view roles
-            return OrderedCompletionItemSourceProviders.Where(n => n.Metadata.ContentTypes.Any(c => contentType.IsOfType(c))).ToList();
+            return OrderedCompletionItemSourceProviders.Where(n => n.Metadata.ContentTypes.Any(c => contentType.IsOfType(c)) && (n.Metadata.TextViewRoles == null || textViewRoles.ContainsAny(n.Metadata.TextViewRoles))).ToList();
         }
-        private IReadOnlyList<Lazy<IAsyncCompletionServiceProvider, IOrderableContentTypeMetadata>> GetServiceProviders(IContentType contentType, ITextViewRoleSet textViewRoles)
+        private IReadOnlyList<Lazy<IAsyncCompletionServiceProvider, IOrderableContentTypeAndOptionalTextViewRoleMetadata>> GetServiceProviders(IContentType contentType, ITextViewRoleSet textViewRoles)
         {
-            // TODO: Respect the text view roles
-            return OrderedCompletionServiceProviders.Where(n => n.Metadata.ContentTypes.Any(c => contentType.IsOfType(c))).OrderBy(n => n.Metadata.ContentTypes, _contentTypeComparer).ToList();
+            return OrderedCompletionServiceProviders.Where(n => n.Metadata.ContentTypes.Any(c => contentType.IsOfType(c)) && (n.Metadata.TextViewRoles == null || textViewRoles.ContainsAny(n.Metadata.TextViewRoles))).OrderBy(n => n.Metadata.ContentTypes, _contentTypeComparer).ToList();
         }
-        private IReadOnlyList<Lazy<ICompletionPresenterProvider, IOrderableContentTypeMetadata>> GetPresenters(IContentType contentType, ITextViewRoleSet textViewRoles)
+        private IReadOnlyList<Lazy<ICompletionPresenterProvider, IOrderableContentTypeAndOptionalTextViewRoleMetadata>> GetPresenters(IContentType contentType, ITextViewRoleSet textViewRoles)
         {
-            // TODO: Respect the text view roles
-            return OrderedPresenterProviders.Where(n => n.Metadata.ContentTypes.Any(c => contentType.IsOfType(c))).OrderBy(n => n.Metadata.ContentTypes, _contentTypeComparer).ToList();
+            return OrderedPresenterProviders.Where(n => n.Metadata.ContentTypes.Any(c => contentType.IsOfType(c)) && (n.Metadata.TextViewRoles == null || textViewRoles.ContainsAny(n.Metadata.TextViewRoles))).OrderBy(n => n.Metadata.ContentTypes, _contentTypeComparer).ToList();
         }
 
         // TODO: Evaluate the methods below and clean them up. We should have one reliable way to get parts in correct order
@@ -312,9 +314,9 @@ namespace Microsoft.VisualStudio.Language.Intellisense.Implementation
         /// </summary>
         private struct CompletionSourcesWithData
         {
-            internal IEnumerable<(ITextBuffer buffer, SnapshotPoint point, Lazy<IAsyncCompletionItemSourceProvider, IOrderableContentTypeMetadata> import)> Data;
+            internal IEnumerable<(ITextBuffer buffer, SnapshotPoint point, Lazy<IAsyncCompletionItemSourceProvider, IOrderableContentTypeAndOptionalTextViewRoleMetadata> import)> Data;
 
-            public CompletionSourcesWithData(IEnumerable<(ITextBuffer buffer, SnapshotPoint point, Lazy<IAsyncCompletionItemSourceProvider, IOrderableContentTypeMetadata> import)> data)
+            public CompletionSourcesWithData(IEnumerable<(ITextBuffer buffer, SnapshotPoint point, Lazy<IAsyncCompletionItemSourceProvider, IOrderableContentTypeAndOptionalTextViewRoleMetadata> import)> data)
             {
                 Data = data;
             }

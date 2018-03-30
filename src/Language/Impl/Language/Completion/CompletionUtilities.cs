@@ -10,7 +10,9 @@ using Microsoft.VisualStudio.Utilities;
 
 namespace Microsoft.VisualStudio.Language.Intellisense.Implementation
 {
-    internal class MetadataUtilities<T> where T : class
+    internal class MetadataUtilities<T, TMetadata>
+        where T : class
+        where TMetadata : IContentTypeMetadata
     {
         /// <summary>
         /// This method creates a collection of (T, SnapshotPoint) pairs where the SnapshotPoint is the originalPoint
@@ -21,7 +23,7 @@ namespace Microsoft.VisualStudio.Language.Intellisense.Implementation
         /// <param name="originalPoint"></param>
         /// <param name="imports"></param>
         /// <returns></returns>
-        internal static IEnumerable<(ITextBuffer buffer, SnapshotPoint point, Lazy<T, IOrderableContentTypeMetadata> import)> GetOrderedBuffersAndImports(ITextView textView, SnapshotPoint location, Func<IContentType, ITextViewRoleSet, IReadOnlyList<Lazy<T, IOrderableContentTypeMetadata>>> getImports, IComparer<IEnumerable<string>> contentTypeComparer)
+        internal static IEnumerable<(ITextBuffer buffer, SnapshotPoint point, Lazy<T, TMetadata> import)> GetOrderedBuffersAndImports(ITextView textView, SnapshotPoint location, Func<IContentType, ITextViewRoleSet, IReadOnlyList<Lazy<T, TMetadata>>> getImports, IComparer<IEnumerable<string>> contentTypeComparer)
         {
             // This method is created based on EditorCommandHandlerService.GetOrderedBuffersAndCommandHandlers
 
@@ -60,15 +62,15 @@ namespace Microsoft.VisualStudio.Language.Intellisense.Implementation
 
             // An array of per-buffer buckets, each containing cached list of matching imports,
             // ordered by [Order] and content type specificity
-            var importBuckets = new ImportBucket<T>[buffers.Length];
+            var importBuckets = new ImportBucket<T, TMetadata>[buffers.Length];
             for (int i = 0; i < buffers.Length; i++)
             {
-                importBuckets[i] = new ImportBucket<T>(getImports(buffers[i].ContentType, textView.Roles));
+                importBuckets[i] = new ImportBucket<T, TMetadata>(getImports(buffers[i].ContentType, textView.Roles));
             }
 
             while (true)
             {
-                Lazy<T, IOrderableContentTypeMetadata> currentImport = null;
+                Lazy<T, TMetadata> currentImport = null;
                 int currentImportIndex = 0;
 
                 for (int i = 0; i < importBuckets.Length; i++)
@@ -125,7 +127,7 @@ namespace Microsoft.VisualStudio.Language.Intellisense.Implementation
         /// <param name="getImports"></param>
         /// <param name="contentTypeComparer"></param>
         /// <returns></returns>
-        internal static IEnumerable<(ITextBuffer buffer, SnapshotPoint point, Lazy<T, IOrderableContentTypeMetadata> import)> GetBuffersAndImports(ITextView textView, SnapshotPoint location, Func<IContentType, ITextViewRoleSet, IReadOnlyList<Lazy<T, IOrderableContentTypeMetadata>>> getImports)
+        internal static IEnumerable<(ITextBuffer buffer, SnapshotPoint point, Lazy<T, TMetadata> import)> GetBuffersAndImports(ITextView textView, SnapshotPoint location, Func<IContentType, ITextViewRoleSet, IReadOnlyList<Lazy<T, TMetadata>>> getImports)
         {
             var mappedPointsEnumeration = GetPointsOnAvailableBuffers(textView, location);
             if (!mappedPointsEnumeration.Any())
@@ -136,7 +138,7 @@ namespace Microsoft.VisualStudio.Language.Intellisense.Implementation
 
             // An array of per-buffer buckets, each containing cached list of matching imports,
             // ordered by [Order] and content type specificity
-            var importBuckets = new ImportBucket<T>[buffers.Length];
+            var importBuckets = new ImportBucket<T, TMetadata>[buffers.Length];
             for (int i = 0; i < buffers.Length; i++)
             {
                 foreach (var import in getImports(buffers[i].ContentType, textView.Roles))

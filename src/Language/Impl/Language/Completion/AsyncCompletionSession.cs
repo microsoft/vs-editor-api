@@ -19,10 +19,11 @@ namespace Microsoft.VisualStudio.Language.Intellisense.Implementation
     /// Holds a state of the session
     /// and a reference to the UI element
     /// </summary>
-    internal class AsyncCompletionSession : IAsyncCompletionSession, ICompletionComputationCallbackHandler<CompletionModel>
+    internal class AsyncCompletionSession : IAsyncCompletionSession, ICompletionComputationCallbackHandler<CompletionModel>, IPropertyOwner
     {
         // Available data and services
-        private readonly IDictionary<IAsyncCompletionItemSource, SnapshotPoint> _completionSources;
+        private readonly IList<(IAsyncCompletionItemSource Source, SnapshotPoint Point)> _completionSources;
+        private readonly IDictionary<IAsyncCompletionItemSource, SnapshotPoint> _completionSourcesWhoGaveItems;
         private readonly IAsyncCompletionService _completionService;
         private readonly SnapshotSpan _initialApplicableSpan;
         private readonly JoinableTaskFactory _jtf;
@@ -72,8 +73,10 @@ namespace Microsoft.VisualStudio.Language.Intellisense.Implementation
 
         public bool IsDismissed => _isDismissed;
 
+        public PropertyCollection Properties { get; }
+
         public AsyncCompletionSession(SnapshotSpan applicableSpan, ImmutableArray<char> potentialCommitChars, JoinableTaskFactory jtf,
-            ICompletionPresenterProvider presenterProvider, IDictionary<IAsyncCompletionItemSource, SnapshotPoint> completionSources,
+            ICompletionPresenterProvider presenterProvider, IList<(IAsyncCompletionItemSource, SnapshotPoint)> completionSources,
             IAsyncCompletionService completionService, AsyncCompletionBroker broker, ITextView view, CompletionTelemetryHost telemetryHost, IGuardedOperations guardedOperations)
         {
             _initialApplicableSpan = applicableSpan;
@@ -81,13 +84,15 @@ namespace Microsoft.VisualStudio.Language.Intellisense.Implementation
             _jtf = jtf;
             _presenterProvider = presenterProvider;
             _broker = broker;
-            _completionSources = completionSources;
+            _completionSources = completionSources; // still prorotype at the momemnt.
+            _completionSourcesWhoGaveItems = new Dictionary<IAsyncCompletionItemSource, SnapshotPoint>(); // To be filled in GetInitialModel
             _completionService = completionService;
             _textView = view;
             _guardedOperations = guardedOperations;
             _telemetry = new CompletionSessionTelemetry(telemetryHost, completionService, presenterProvider);
             PageStepSize = presenterProvider?.ResultsPerPage ?? 1;
             _textView.Caret.PositionChanged += OnCaretPositionChanged;
+            Properties = new PropertyCollection();
         }
 
         bool IAsyncCompletionSession.CommitIfUnique(CancellationToken token)
@@ -171,7 +176,7 @@ namespace Microsoft.VisualStudio.Language.Intellisense.Implementation
             UiStopwatch.Restart();
 
             // Pass appropriate buffer to the item's provider
-            var buffer = _completionSources[itemToCommit.Source].Snapshot.TextBuffer;
+            var buffer = _completionSourcesWhoGaveItems[itemToCommit.Source].Snapshot.TextBuffer;
             if (itemToCommit.UseCustomCommit)
             {
                 result = _guardedOperations.CallExtensionPoint(
@@ -350,7 +355,7 @@ namespace Microsoft.VisualStudio.Language.Intellisense.Implementation
             if (_potentialCommitChars.Contains(typeChar))
             {
                 var mappingPoint = _textView.BufferGraph.CreateMappingPoint(triggerLocation, PointTrackingMode.Negative);
-                return _completionSources
+                return _completionSourcesWhoGaveItems
                     .Select(p => (p, mappingPoint.GetPoint(p.Value.Snapshot.TextBuffer, PositionAffinity.Predecessor)))
                     .Where(n => n.Item2.HasValue)
                     .Any(n => _guardedOperations.CallExtensionPoint(
@@ -441,13 +446,27 @@ namespace Microsoft.VisualStudio.Language.Intellisense.Implementation
         private async Task<CompletionModel> GetInitialModel(ITextView view, CompletionTrigger trigger, SnapshotPoint triggerLocation, CancellationToken token)
         {
             // Map the trigger location to respective view for each completion provider
-            var nestedResults = await Task.WhenAll(
-                _completionSources.Select(
-                    p => _guardedOperations.CallExtensionPointAsync<CompletionContext>(
-                        errorSource: p.Key,
-                        asyncCall: () => p.Key.GetCompletionContextAsync(trigger, triggerLocation, _initialApplicableSpan, token),
+            var getCompletionTasks = new Task<CompletionContext>[_completionSources.Count];
+            for (int i = 0; i < _completionSources.Count; i++)
+            {
+                var index = i; // Capture current value of i
+                getCompletionTasks[i] = Task.Run(async () =>
+                {
+                    var source = _completionSources[index].Source;
+                    var point = _completionSources[index].Point;
+                    var context = await _guardedOperations.CallExtensionPointAsync(
+                        errorSource: _completionSources[index].Source,
+                        asyncCall: () => _completionSources[index].Source.GetCompletionContextAsync(trigger, point, _initialApplicableSpan, token),
                         valueOnThrow: null
-                    )));
+                    );
+                    if (context != null && !context.Items.IsDefaultOrEmpty)
+                    {
+                        _completionSourcesWhoGaveItems[source] = point;
+                    }
+                    return context;
+                });
+            }
+            var nestedResults = await Task.WhenAll(getCompletionTasks);
             var initialCompletionItems = nestedResults.Where(n => n != null && !n.Items.IsDefaultOrEmpty).SelectMany(n => n.Items).ToImmutableArray();
 
             // Do not continue with empty session
@@ -471,7 +490,7 @@ namespace Microsoft.VisualStudio.Language.Intellisense.Implementation
 
 #if DEBUG
             Debug.WriteLine("Completion session got data.");
-            Debug.WriteLine("Sources: " + String.Join(", ", _completionSources.Select(n => n.Key.GetType())));
+            Debug.WriteLine("Sources: " + String.Join(", ", _completionSources.Select(n => n.Source.GetType())));
             Debug.WriteLine("Service: " + _completionService.GetType());
             Debug.WriteLine("Filters: " + String.Join(", ", availableFilters.Select(n => n.Filter.DisplayText)));
             Debug.WriteLine("Span: " + _initialApplicableSpan.GetText());
@@ -552,10 +571,10 @@ namespace Microsoft.VisualStudio.Language.Intellisense.Implementation
                     model.InitialItems,
                     model.InitialTriggerReason,
                     filterReason,
-                    triggerLocation.Snapshot,
+                    triggerLocation.Snapshot, // used exclusively to resolve applicable span
                     model.ApplicableSpan,
                     model.Filters,
-                    _textView,
+                    _textView, // Roslyn doesn't need it, and likely, can't use it
                     token),
                 valueOnThrow: null);
 

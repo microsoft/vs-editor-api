@@ -15,7 +15,7 @@ namespace Microsoft.VisualStudio.Language.Intellisense.Implementation
 {
     [Export(typeof(IAsyncCompletionServiceProvider))]
     [Name(KnownCompletionNames.DefaultCompletionService)]
-    [ContentType("any")]
+    [ContentType("text")]
     internal class DefaultCompletionServiceProvider : IAsyncCompletionServiceProvider
     {
         [Import]
