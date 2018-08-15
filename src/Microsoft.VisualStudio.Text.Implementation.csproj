@@ -126,10 +126,13 @@
 
   <ItemGroup>
     <Compile Remove="Core\Def\**\*" />
+    <Compile Remove="Language\Def\**\*" />
     <Compile Remove="Text\Def\Text*\**\*" />
     <EmbeddedResource Remove="Core\Def\**\*" />
+    <EmbeddedResource Remove="Language\Def\**\*" />
     <EmbeddedResource Remove="Text\Def\Text*\**\*" />
     <None Remove="Core\Def\**\*" />
+    <None Remove="Language\Def\**\*" />
     <None Remove="Text\Def\Text*\**\*" />
   </ItemGroup>
 
