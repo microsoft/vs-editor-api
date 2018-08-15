@@ -12,10 +12,8 @@ namespace Microsoft.VisualStudio.Text
     /// </summary>
     public class ContentTypeChangedEventArgs : TextSnapshotChangedEventArgs
     {
-        #region Private Members
 
-        IContentType _beforeContentType;
-        IContentType _afterContentType;
+        #region Private Members
 
         #endregion
 
@@ -38,40 +36,18 @@ namespace Microsoft.VisualStudio.Text
                                            object editTag)
             : base(beforeSnapshot, afterSnapshot, editTag)
         {
-            if (beforeContentType == null)
-            {
-                throw new ArgumentNullException("beforeContentType");
-            }
-
-            if (afterContentType == null)
-            {
-                throw new ArgumentNullException("afterContentType");
-            }
-
-            _beforeContentType = beforeContentType;
-            _afterContentType = afterContentType;
+            BeforeContentType = beforeContentType ?? throw new ArgumentNullException(nameof(beforeContentType));
+            AfterContentType = afterContentType ?? throw new ArgumentNullException(nameof(afterContentType));
         }
 
         /// <summary>
         /// The <see cref="IContentType"/> before the change occurred.
         /// </summary>
-        public IContentType BeforeContentType
-        {
-            get
-            {
-                return _beforeContentType;
-            }
-        }
+        public IContentType BeforeContentType { get; }
 
         /// <summary>
         /// The <see cref="IContentType"/> after the change occurred.
         /// </summary>
-        public IContentType AfterContentType
-        {
-            get
-            {
-                return _afterContentType;
-            }
-        }
+        public IContentType AfterContentType { get; }
     }
 }

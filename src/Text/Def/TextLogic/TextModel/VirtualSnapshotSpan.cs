@@ -6,10 +6,12 @@ namespace Microsoft.VisualStudio.Text
 {
     using System;
 
+#pragma warning disable CA1066 // Type {0} should implement IEquatable<T> because it overrides Equals
     /// <summary>
     /// Represents two <see cref="VirtualSnapshotPoint" />s
     /// </summary>
     public struct VirtualSnapshotSpan
+#pragma warning restore CA1066 // Type {0} should implement IEquatable<T> because it overrides Equals
     {
         private readonly VirtualSnapshotPoint _start;
         private readonly VirtualSnapshotPoint _end;
@@ -47,7 +49,7 @@ namespace Microsoft.VisualStudio.Text
             }
             if (end < start)
             {
-                throw new ArgumentOutOfRangeException("end");
+                throw new ArgumentOutOfRangeException(nameof(end));
             }
 
             _start = start;
@@ -290,12 +292,12 @@ namespace Microsoft.VisualStudio.Text
         {
             if (snapshot == null)
             {
-                throw new ArgumentNullException("snapshot");
+                throw new ArgumentNullException(nameof(snapshot));
             }
 
             if (snapshot.Version.VersionNumber < _start.Position.Snapshot.Version.VersionNumber)
             {
-                throw new ArgumentException("VirtualSnapshotSpans can only be translated to later snapshots", "snapshot");
+                throw new ArgumentException("VirtualSnapshotSpans can only be translated to later snapshots", nameof(snapshot));
             }
             else if (snapshot == _start.Position.Snapshot)
             {

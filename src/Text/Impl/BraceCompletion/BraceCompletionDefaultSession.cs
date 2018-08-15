@@ -12,6 +12,7 @@ namespace Microsoft.VisualStudio.Text.BraceCompletion.Implementation
     using Microsoft.VisualStudio.Text.Editor;
     using Microsoft.VisualStudio.Text.Operations;
     using System.Diagnostics;
+    using System.Globalization;
 
     /// <summary>
     /// BraceCompletionDefaultSession is a language neutral brace completion session
@@ -102,7 +103,7 @@ namespace Microsoft.VisualStudio.Text.BraceCompletion.Implementation
                 // insert the closing brace
                 using (ITextEdit edit = _subjectBuffer.CreateEdit())
                 {
-                    edit.Insert(closingSnapshotPoint, _closingBrace.ToString());
+                    edit.Insert(closingSnapshotPoint, _closingBrace.ToString(CultureInfo.CurrentCulture));
 
                     if (edit.HasFailedChanges)
                     {
@@ -125,7 +126,7 @@ namespace Microsoft.VisualStudio.Text.BraceCompletion.Implementation
                 _closingPoint = SubjectBuffer.CurrentSnapshot.CreateTrackingPoint(_closingPoint.GetPoint(snapshot), PointTrackingMode.Negative);
 
                 Debug.Assert(_closingPoint.GetPoint(snapshot).Position > 0 && (new SnapshotSpan(_closingPoint.GetPoint(snapshot).Subtract(1), 1))
-                            .GetText().Equals(_closingBrace.ToString()), "The closing point does not match the closing brace character");
+                            .GetText().Equals(_closingBrace.ToString(CultureInfo.CurrentCulture), System.StringComparison.Ordinal), "The closing point does not match the closing brace character");
 
                 // move the caret back between the braces
                 _textView.Caret.MoveTo(beforePoint);

@@ -4,10 +4,12 @@
 //
 namespace Microsoft.VisualStudio.Text.Tagging
 {
+#pragma warning disable CA1040 // Avoid empty interfaces
     /// <summary>
     /// The base interface of all tags.
     /// </summary>
     public interface ITag
+#pragma warning restore CA1040 // Avoid empty interfaces
     {
     }
 }

@@ -44,7 +44,7 @@ namespace Microsoft.VisualStudio.Text.Implementation
         {
             if (fidelity != TrackingFidelityMode.UndoRedo && fidelity != TrackingFidelityMode.Backward)
             {
-                throw new ArgumentOutOfRangeException("fidelity");
+                throw new ArgumentOutOfRangeException(nameof(fidelity));
             }
             List<VersionNumberPosition> initialHistory = null;
             if (fidelity == TrackingFidelityMode.UndoRedo && version.VersionNumber > 0)

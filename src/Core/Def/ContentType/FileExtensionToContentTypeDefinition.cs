@@ -14,10 +14,14 @@ namespace Microsoft.VisualStudio.Utilities
     /// internal sealed class Components
     /// {
     ///    [Export]
-    ///    [FileExtension(".abc")]
+    ///    [FileExtension(".abc")]           // Any file with the extention "abc" will get the "alphabet" content type.
     ///    [ContentType("alphabet")]
     ///    internal FileExtensionToContentTypeDefinition abcFileExtensionDefinition;
     ///    
+    ///    [Export]
+    ///    [FileName("readme")]           // Any file named "readme" will get the "alphabet" content type.
+    ///    [ContentType("alphabet")]
+    ///    internal FileExtensionToContentTypeDefinition readmeFileNameDefinition;
     ///    { other components }
     /// }
     /// </example>

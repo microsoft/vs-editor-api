@@ -23,7 +23,7 @@ namespace Microsoft.VisualStudio.Text.Editor
         {
             if (string.IsNullOrEmpty(role))
             {
-                throw new ArgumentNullException("role");
+                throw new ArgumentNullException(nameof(role));
             }
             this.roles = role;
         }

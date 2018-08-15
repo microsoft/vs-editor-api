@@ -58,7 +58,9 @@ namespace Microsoft.VisualStudio.Text.PatternMatching.Implementation
             _allowSimpleSubstringMatching = allowSimpleSubstringMatching;
         }
 
+#pragma warning disable CA1063
         public virtual void Dispose()
+#pragma warning restore CA1063
         {
             foreach (var kvp in _stringToWordSpans)
             {
@@ -138,7 +140,7 @@ namespace Microsoft.VisualStudio.Text.PatternMatching.Implementation
                 : NonFuzzyMatchPatternChunk(candidate, patternChunk, punctuationStripped, chunkOffset);
         }
 
-        private PatternMatch? FuzzyMatchPatternChunk(
+        private static PatternMatch? FuzzyMatchPatternChunk(
             string candidate,
             TextChunk patternChunk,
             bool punctuationStripped)
@@ -167,7 +169,7 @@ namespace Microsoft.VisualStudio.Text.PatternMatching.Implementation
                     // a) Check if the part matches the candidate entirely, in an case insensitive or
                     //    sensitive manner.  If it does, return that there was an exact match.
                     return new PatternMatch(
-                        PatternMatchKind.Exact, punctuationStripped, isCaseSensitive: candidate == patternChunk.Text,
+                        PatternMatchKind.Exact, punctuationStripped, isCaseSensitive: string.Equals(candidate, patternChunk.Text, StringComparison.Ordinal),
                         matchedSpans: GetMatchedSpans(chunkOffset, candidate.Length));
                 }
                 else
@@ -541,7 +543,7 @@ namespace Microsoft.VisualStudio.Text.PatternMatching.Implementation
                         matchedSpansInReverse: null,
                         chunkOffset: chunkOffset
                         );
-                    return GetCamelCaseKind(camelCaseResult, candidateHumps);
+                    return GetCamelCaseKind(camelCaseResult);
                 }
                 else if (currentCandidateHump == candidateHumpCount)
                 {

@@ -4,8 +4,6 @@
     <AssemblyName>Microsoft.VisualStudio.Text.Data</AssemblyName>
     <TargetFramework>net46</TargetFramework>
     <RootNamespace>Microsoft.VisualStudio.Text</RootNamespace>
-    <NonShipping>false</NonShipping>
-    <IsPackable>true</IsPackable>
     <PushToPublicFeed>true</PushToPublicFeed>
     <NoWarn>649;436;$(NoWarn)</NoWarn>
     <AssemblyAttributeClsCompliant>true</AssemblyAttributeClsCompliant>
@@ -15,8 +13,7 @@
     <Reference Include="System.Core" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="Microsoft.VisualStudio.Threading" Version="$(MicrosoftVisualStudioThreadingVersion)" />
-    <PackageReference Include="Microsoft.VisualStudio.Validation" Version="$(MicrosoftVisualStudioValidationVersion)" />
+    <PackageReference Include="Microsoft.VisualStudio.Threading" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\Core\Def\CoreUtility.csproj" />

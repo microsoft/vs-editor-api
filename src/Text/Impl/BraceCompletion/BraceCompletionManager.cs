@@ -9,6 +9,7 @@ namespace Microsoft.VisualStudio.Text.BraceCompletion.Implementation
 {
     using Microsoft.VisualStudio.Text.Editor;
     using Microsoft.VisualStudio.Text.Utilities;
+    using Microsoft.VisualStudio.Utilities;
     using System;
     using System.Diagnostics;
 
@@ -24,7 +25,7 @@ namespace Microsoft.VisualStudio.Text.BraceCompletion.Implementation
         private readonly IBraceCompletionAggregatorFactory _sessionFactory;
         private readonly IBraceCompletionAggregator _sessionAggregator;
         private readonly ITextView _textView;
-        private readonly GuardedOperations _guardedOperations;
+        private readonly IGuardedOperations _guardedOperations;
 
         private bool _braceCompletionEnabled;
 
@@ -36,7 +37,7 @@ namespace Microsoft.VisualStudio.Text.BraceCompletion.Implementation
 
         #region Constructors
 
-        internal BraceCompletionManager(ITextView textView, IBraceCompletionStack stack, IBraceCompletionAggregatorFactory sessionFactory, GuardedOperations guardedOperations)
+        internal BraceCompletionManager(ITextView textView, IBraceCompletionStack stack, IBraceCompletionAggregatorFactory sessionFactory, IGuardedOperations guardedOperations)
         {
             _textView = textView;
             _stack = stack;
@@ -450,7 +451,7 @@ namespace Microsoft.VisualStudio.Text.BraceCompletion.Implementation
             }
         }
 
-        private bool IsSingleLine(ITrackingPoint openingPoint, ITrackingPoint closingPoint)
+        private static bool IsSingleLine(ITrackingPoint openingPoint, ITrackingPoint closingPoint)
         {
             if (openingPoint != null && closingPoint != null)
             {

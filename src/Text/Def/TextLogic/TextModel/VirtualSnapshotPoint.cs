@@ -6,10 +6,12 @@ namespace Microsoft.VisualStudio.Text
 {
     using System;
 
+#pragma warning disable CA1066 // Type {0} should implement IEquatable<T> because it overrides Equals
     /// <summary>
     /// Represents a <see cref="SnapshotPoint"/> that may have virtual spaces.
     /// </summary>
     public struct VirtualSnapshotPoint : IComparable<VirtualSnapshotPoint>
+#pragma warning restore CA1066 // Type {0} should implement IEquatable<T> because it overrides Equals
     {
         private readonly SnapshotPoint _position;
         private readonly int _virtualSpaces;
@@ -48,7 +50,7 @@ namespace Microsoft.VisualStudio.Text
         public VirtualSnapshotPoint(SnapshotPoint position, int virtualSpaces)
         {
             if (virtualSpaces < 0)
-                throw new ArgumentOutOfRangeException("virtualSpaces");
+                throw new ArgumentOutOfRangeException(nameof(virtualSpaces));
 
             //Treat trying to set virtual spaces in the middle of a line as a soft error. It is easy to do if some 3rd party does an unexpected edit on a text change
             //and setting virtualSpaces to 0 is a reasonable fallback behavior.
@@ -73,9 +75,9 @@ namespace Microsoft.VisualStudio.Text
         public VirtualSnapshotPoint(ITextSnapshotLine line, int offset)
         {
             if (line == null)
-                throw new ArgumentNullException("line");
+                throw new ArgumentNullException(nameof(line));
             if (offset < 0)
-                throw new ArgumentOutOfRangeException("offset");
+                throw new ArgumentOutOfRangeException(nameof(offset));
 
             if (offset <= line.Length)
             {
@@ -152,12 +154,12 @@ namespace Microsoft.VisualStudio.Text
         {
             if (snapshot == null)
             {
-                throw new ArgumentNullException("snapshot");
+                throw new ArgumentNullException(nameof(snapshot));
             }
 
             if (snapshot.Version.VersionNumber < _position.Snapshot.Version.VersionNumber)
             {
-                throw new ArgumentException("VirtualSnapshotPoints can only be translated to later snapshots", "snapshot");
+                throw new ArgumentException("VirtualSnapshotPoints can only be translated to later snapshots", nameof(snapshot));
             }
             else if (snapshot == _position.Snapshot)
             {

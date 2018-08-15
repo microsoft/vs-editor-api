@@ -34,7 +34,7 @@ namespace Microsoft.VisualStudio.Text.Implementation
         public static StringRebuilder Create(string text)
         {
             if (text == null)
-                throw new ArgumentNullException("text");
+                throw new ArgumentNullException(nameof(text));
 #if DEBUG
             Interlocked.Add(ref _totalCharactersScanned, text.Length);
 #endif
@@ -258,10 +258,10 @@ namespace Microsoft.VisualStudio.Text.Implementation
         public char[] ToCharArray(int startIndex, int length)
         {
             if (startIndex < 0)
-                throw new ArgumentOutOfRangeException("startIndex");
+                throw new ArgumentOutOfRangeException(nameof(startIndex));
 
             if ((length < 0) || (startIndex + length > this.Length) || (startIndex + length < 0))
-                throw new ArgumentOutOfRangeException("length");
+                throw new ArgumentOutOfRangeException(nameof(length));
 
             char[] copy = new char[length];
             this.CopyTo(startIndex, copy, 0, length);
@@ -331,9 +331,9 @@ namespace Microsoft.VisualStudio.Text.Implementation
         public StringRebuilder Insert(int position, StringRebuilder text)
         {
             if ((position < 0) || (position > this.Length))
-                throw new ArgumentOutOfRangeException("position");
+                throw new ArgumentOutOfRangeException(nameof(position));
             if (text == null)
-                throw new ArgumentNullException("text");
+                throw new ArgumentNullException(nameof(text));
 
             return this.Assemble(Span.FromBounds(0, position), text, Span.FromBounds(position, this.Length));
         }
@@ -351,7 +351,7 @@ namespace Microsoft.VisualStudio.Text.Implementation
         public StringRebuilder Delete(Span span)
         {
             if (span.End > this.Length)
-                throw new ArgumentOutOfRangeException("span");
+                throw new ArgumentOutOfRangeException(nameof(span));
 
             return this.Assemble(Span.FromBounds(0, span.Start), Span.FromBounds(span.End, this.Length));
         }
@@ -402,9 +402,9 @@ namespace Microsoft.VisualStudio.Text.Implementation
         public StringRebuilder Replace(Span span, StringRebuilder text)
         {
             if (span.End > this.Length)
-                throw new ArgumentOutOfRangeException("span");
+                throw new ArgumentOutOfRangeException(nameof(span));
             if (text == null)
-                throw new ArgumentNullException("text");
+                throw new ArgumentNullException(nameof(text));
 
             return this.Assemble(Span.FromBounds(0, span.Start), text, Span.FromBounds(span.End, this.Length));
         }

@@ -22,7 +22,7 @@ namespace Microsoft.VisualStudio.Text.Editor.OptionsExtensionMethods
         public static bool IsConvertTabsToSpacesEnabled(this IEditorOptions options)
         {
             if (options == null)
-                throw new ArgumentNullException("options");
+                throw new ArgumentNullException(nameof(options));
 
             return options.GetOptionValue(DefaultOptions.ConvertTabsToSpacesOptionId);
         }
@@ -35,7 +35,7 @@ namespace Microsoft.VisualStudio.Text.Editor.OptionsExtensionMethods
         public static int GetTabSize(this IEditorOptions options)
         {
             if (options == null)
-                throw new ArgumentNullException("options");
+                throw new ArgumentNullException(nameof(options));
 
             return options.GetOptionValue(DefaultOptions.TabSizeOptionId);
         }
@@ -48,7 +48,7 @@ namespace Microsoft.VisualStudio.Text.Editor.OptionsExtensionMethods
         public static int GetIndentSize(this IEditorOptions options)
         {
             if (options == null)
-                throw new ArgumentNullException("options");
+                throw new ArgumentNullException(nameof(options));
 
             return options.GetOptionValue(DefaultOptions.IndentSizeOptionId);
         }
@@ -61,7 +61,7 @@ namespace Microsoft.VisualStudio.Text.Editor.OptionsExtensionMethods
         public static bool GetReplicateNewLineCharacter(this IEditorOptions options)
         {
             if (options == null)
-                throw new ArgumentNullException("options");
+                throw new ArgumentNullException(nameof(options));
 
             return options.GetOptionValue(DefaultOptions.ReplicateNewLineCharacterOptionId);
         }
@@ -74,7 +74,7 @@ namespace Microsoft.VisualStudio.Text.Editor.OptionsExtensionMethods
         public static string GetNewLineCharacter(this IEditorOptions options)
         {
             if (options == null)
-                throw new ArgumentNullException("options");
+                throw new ArgumentNullException(nameof(options));
 
             return options.GetOptionValue(DefaultOptions.NewLineCharacterOptionId);
         }
@@ -87,7 +87,7 @@ namespace Microsoft.VisualStudio.Text.Editor.OptionsExtensionMethods
         public static bool GetTrimTrailingWhieSpace(this IEditorOptions options)
         {
             if (options == null)
-                throw new ArgumentNullException("options");
+                throw new ArgumentNullException(nameof(options));
 
             return options.GetOptionValue(DefaultOptions.TrimTrailingWhiteSpaceOptionId);
         }
@@ -100,9 +100,22 @@ namespace Microsoft.VisualStudio.Text.Editor.OptionsExtensionMethods
         public static bool GetInsertFinalNewLine(this IEditorOptions options)
         {
             if (options == null)
-                throw new ArgumentNullException("options");
+                throw new ArgumentNullException(nameof(options));
 
             return options.GetOptionValue(DefaultOptions.InsertFinalNewLineOptionId);
+        }
+
+        /// <summary>
+        /// Determines appearance category for tooltips originating in this view
+        /// </summary>
+        /// <param name="options">The <see cref="IEditorOptions"/>.</param>
+        /// <returns>A string containing the appearance category for tooltips originating in this view.</returns>
+        public static string GetTooltipAppearanceCategory(this IEditorOptions options)
+        {
+            if (options == null)
+                throw new ArgumentNullException(nameof(options));
+
+            return options.GetOptionValue(DefaultOptions.TooltipAppearanceCategoryOptionId);
         }
 
         #endregion
@@ -184,6 +197,12 @@ namespace Microsoft.VisualStudio.Text.Editor
         /// </summary>
         public static readonly EditorOptionKey<bool> InsertFinalNewLineOptionId = new EditorOptionKey<bool>(InsertFinalNewLineOptionName);
         public const string InsertFinalNewLineOptionName = "InsertFinalNewLine";
+
+        /// <summary>
+        /// The default option that determines appearance category for tooltips originating in this view.
+        /// </summary>
+        public static readonly EditorOptionKey<string> TooltipAppearanceCategoryOptionId = new EditorOptionKey<string>(TooltipAppearanceCategoryOptionName);
+        public const string TooltipAppearanceCategoryOptionName = "TooltipAppearanceCategory";
 
         #endregion
     }
@@ -369,6 +388,24 @@ namespace Microsoft.VisualStudio.Text.Editor
         /// Gets the editor option key.
         /// </summary>
         public override EditorOptionKey<bool> Key { get { return DefaultOptions.InsertFinalNewLineOptionId; } }
+    }
+
+    /// <summary>
+    /// The option definition that determines whether to insert a final newline.
+    /// </summary>
+    [Export(typeof(EditorOptionDefinition))]
+    [Name(DefaultOptions.TooltipAppearanceCategoryOptionName)]
+    public sealed class TooltipAppearanceCategory : EditorOptionDefinition<string>
+    {
+        /// <summary>
+        /// Gets the default value ("text").
+        /// </summary>
+        public override string Default { get => "text"; }
+
+        /// <summary>
+        /// Gets the editor option key.
+        /// </summary>
+        public override EditorOptionKey<string> Key { get { return DefaultOptions.TooltipAppearanceCategoryOptionId; } }
     }
 
     #endregion

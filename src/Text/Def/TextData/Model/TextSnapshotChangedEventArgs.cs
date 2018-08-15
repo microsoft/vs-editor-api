@@ -31,11 +31,11 @@ namespace Microsoft.VisualStudio.Text
         {
             if (beforeSnapshot == null)
             {
-                throw new ArgumentNullException("beforeSnapshot");
+                throw new ArgumentNullException(nameof(beforeSnapshot));
             }
             if (afterSnapshot == null)
             {
-                throw new ArgumentNullException("afterSnapshot");
+                throw new ArgumentNullException(nameof(afterSnapshot));
             }
             this.before = beforeSnapshot;
             this.after = afterSnapshot;

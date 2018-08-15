@@ -52,7 +52,7 @@ namespace Microsoft.VisualStudio.Text
         {
             if (filePath == null)
             {
-                throw new ArgumentNullException("filePath");
+                throw new ArgumentNullException(nameof(filePath));
             }
 
             _filePath = filePath;

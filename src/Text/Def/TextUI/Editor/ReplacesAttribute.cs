@@ -29,7 +29,7 @@ namespace Microsoft.VisualStudio.Text.Editor
         public ReplacesAttribute(string replaces)
         {
             if (replaces == null)
-                throw new ArgumentNullException("replaces");
+                throw new ArgumentNullException(nameof(replaces));
             if (replaces.Length == 0)
                 throw new ArgumentException("replaces is an empty string.");
 

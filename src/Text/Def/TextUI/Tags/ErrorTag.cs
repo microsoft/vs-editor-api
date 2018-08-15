@@ -22,7 +22,7 @@ namespace Microsoft.VisualStudio.Text.Tagging
         public ErrorTag(string errorType, object toolTipContent)
         {
             if (errorType == null)
-                throw new ArgumentNullException("errorType");
+                throw new ArgumentNullException(nameof(errorType));
             
             ErrorType = errorType;
             ToolTipContent = toolTipContent;

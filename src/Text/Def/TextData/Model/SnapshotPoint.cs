@@ -6,14 +6,15 @@ namespace Microsoft.VisualStudio.Text
 {
     using System;
 
+#pragma warning disable CA1066 // Type {0} should implement IEquatable<T> because it overrides Equals
+#pragma warning disable CA1036 // Override methods on comparable types
     /// <summary>
     /// An immutable text position in a particular text snapshot.
     /// </summary>
     public struct SnapshotPoint : IComparable<SnapshotPoint>
+#pragma warning restore CA1036 // Override methods on comparable types
+#pragma warning restore CA1066 // Type {0} should implement IEquatable<T> because it overrides Equals
     {
-        // Member must match order in the ctor, otherwise the COM tool gets confused.
-        private ITextSnapshot snapshot;
-        private int position;
 
         /// <summary>
         /// Initializes a new instance of a <see cref="SnapshotPoint"/> with respect to a particular snapshot and position.
@@ -24,32 +25,26 @@ namespace Microsoft.VisualStudio.Text
         {
             if (snapshot == null)
             {
-                throw new ArgumentNullException("snapshot");
+                throw new ArgumentNullException(nameof(snapshot));
             }
             if (position < 0 || position > snapshot.Length)
             {
-                throw new ArgumentOutOfRangeException("position");
+                throw new ArgumentOutOfRangeException(nameof(position));
             }
-            this.snapshot = snapshot;
-            this.position = position;
+            this.Snapshot = snapshot;
+            this.Position = position;
         }
 
         /// <summary>
         /// Gets the position of the point.
         /// </summary>
         /// <value>A non-negative integer less than or equal to the length of the snapshot.</value>
-        public int Position
-        {
-            get { return this.position; }
-        }
+        public int Position { get; }
 
         /// <summary>
         /// Gets the <see cref="ITextSnapshot"/> to which this snapshot point refers.
         /// </summary>
-        public ITextSnapshot Snapshot
-        {
-            get { return this.snapshot; }
-        }
+        public ITextSnapshot Snapshot { get; }
 
         /// <summary>
         /// Implicitly converts the snapshot point to an integer equal to the position of the snapshot point in the snapshot.
@@ -65,7 +60,7 @@ namespace Microsoft.VisualStudio.Text
         /// <returns></returns>
         public ITextSnapshotLine GetContainingLine()
         {
-            return this.snapshot.GetLineFromPosition(this.position);
+            return this.Snapshot.GetLineFromPosition(this.Position);
         }
 
         /// <summary>
@@ -75,7 +70,7 @@ namespace Microsoft.VisualStudio.Text
         /// <exception cref="ArgumentOutOfRangeException"> if the position of this point is equal to the length of the snapshot.</exception>
         public char GetChar()
         {
-            return this.snapshot[this.position];
+            return this.Snapshot[this.Position];
         }
 
         /// <summary>
@@ -88,7 +83,7 @@ namespace Microsoft.VisualStudio.Text
         /// <exception cref="ArgumentException"><paramref name="targetSnapshot"/> does not refer to the same <see cref="ITextBuffer"/> as this snapshot point.</exception>
         public SnapshotPoint TranslateTo(ITextSnapshot targetSnapshot, PointTrackingMode trackingMode)
         {
-            if (targetSnapshot == this.snapshot)
+            if (targetSnapshot == this.Snapshot)
             {
                 return this;
             }
@@ -96,16 +91,16 @@ namespace Microsoft.VisualStudio.Text
             {
                 if (targetSnapshot == null)
                 {
-                    throw new ArgumentNullException("targetSnapshot");
+                    throw new ArgumentNullException(nameof(targetSnapshot));
                 }
-                if (targetSnapshot.TextBuffer != this.snapshot.TextBuffer)
+                if (targetSnapshot.TextBuffer != this.Snapshot.TextBuffer)
                 {
                     throw new ArgumentException(Strings.InvalidSnapshot);
                 }
 
-                int targetPosition = targetSnapshot.Version.VersionNumber > this.snapshot.Version.VersionNumber 
-                                        ? Tracking.TrackPositionForwardInTime(trackingMode, this.position, this.snapshot.Version, targetSnapshot.Version)
-                                        : Tracking.TrackPositionBackwardInTime(trackingMode, this.position, this.snapshot.Version, targetSnapshot.Version);
+                int targetPosition = targetSnapshot.Version.VersionNumber > this.Snapshot.Version.VersionNumber 
+                                        ? Tracking.TrackPositionForwardInTime(trackingMode, this.Position, this.Snapshot.Version, targetSnapshot.Version)
+                                        : Tracking.TrackPositionBackwardInTime(trackingMode, this.Position, this.Snapshot.Version, targetSnapshot.Version);
 
                 return new SnapshotPoint(targetSnapshot, targetPosition);
             }
@@ -116,7 +111,7 @@ namespace Microsoft.VisualStudio.Text
         /// </summary>
         public override int GetHashCode()
         {
-            return (this.snapshot != null) ? (this.position.GetHashCode() ^ this.snapshot.GetHashCode()) : 0;
+            return (this.Snapshot != null) ? (this.Position.GetHashCode() ^ this.Snapshot.GetHashCode()) : 0;
         }
 
         /// <summary>
@@ -124,19 +119,18 @@ namespace Microsoft.VisualStudio.Text
         /// </summary>
         public override string ToString()
         {
-            if (this.snapshot == null)
+            if (this.Snapshot == null)
             {
                 return "uninit";
             }
             else
             {
-                string tag;
-                this.Snapshot.TextBuffer.Properties.TryGetProperty<string>("tag", out tag);
+                this.Snapshot.TextBuffer.Properties.TryGetProperty("tag", out string tag);
                 return string.Format(System.Globalization.CultureInfo.CurrentCulture, "{0}_v{1}_{2}_'{3}'",
                                      tag ?? "?",
                                      this.Snapshot.Version.VersionNumber,
-                                     this.position,
-                                     position == this.Snapshot.Length ? "<end>" : this.Snapshot.GetText(position, 1));
+                                     this.Position,
+                                     this.Position == this.Snapshot.Length ? "<end>" : this.Snapshot.GetText(this.Position, 1));
             }
         }
 
@@ -297,7 +291,7 @@ namespace Microsoft.VisualStudio.Text
                 throw new ArgumentException(Strings.InvalidSnapshotPoint);
             }
 
-            return this.position.CompareTo(other.position);
+            return this.Position.CompareTo(other.Position);
         }
 
         #endregion

@@ -28,7 +28,9 @@ namespace Microsoft.VisualStudio.Text.Operations.Standalone
             history.ForwardToUndoOperation(primitive);
         }
 
+#pragma warning disable CA1063 // Implement IDisposable Correctly
         public void Dispose()
+#pragma warning restore CA1063 // Implement IDisposable Correctly
         {
             history.EndForwardToUndoOperation(primitive);
             primitive.State = DelegatedUndoPrimitiveState.Inactive;

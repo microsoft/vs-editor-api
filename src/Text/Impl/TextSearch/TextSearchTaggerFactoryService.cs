@@ -25,7 +25,7 @@ namespace Microsoft.VisualStudio.Text.Find.Implementation
         {
             if (buffer == null)
             {
-                throw new ArgumentNullException("buffer");
+                throw new ArgumentNullException(nameof(buffer));
             }
 
             // Don't return singleton instances since multiple taggers can exist per buffer

@@ -24,19 +24,19 @@ namespace Microsoft.VisualStudio.Utilities
         {
             get 
             { 
-                return before; 
+                return this.before; 
             }
             set 
             {
                 if (value == null)
                 {
-                    throw new ArgumentNullException("value");
+                    throw new ArgumentNullException(nameof(value));
                 }
                 if (value.Length == 0)
                 {
-                    throw new ArgumentException("Before value must not be empty", "value");
+                    throw new ArgumentException("Before value must not be empty", nameof(value));
                 }
-                before = value; 
+                this.before = value; 
             }
         }
 
@@ -50,19 +50,19 @@ namespace Microsoft.VisualStudio.Utilities
         {
             get 
             { 
-                return after; 
+                return this.after; 
             }
             set 
             {
                 if (value == null)
                 {
-                    throw new ArgumentNullException("value");
+                    throw new ArgumentNullException(nameof(value));
                 }
                 if (value.Length == 0)
                 {
-                    throw new ArgumentException("After value must not be empty", "value");
+                    throw new ArgumentException("After value must not be empty", nameof(value));
                 }
-                after = value; 
+                this.after = value; 
             }
         }
     }

@@ -17,7 +17,9 @@ namespace Microsoft.VisualStudio.Text.Utilities
     /// </summary>
     public class LineBuffer
     {
+#pragma warning disable CA2211 // Non-constant fields should not be visible
         public static int BufferSize = 1024;   // this is non-constant so unit tests can change it to better test LineBuffer logic
+#pragma warning restore CA2211 // Non-constant fields should not be visible
 
         private readonly ITextSnapshotLine line;
 
@@ -63,7 +65,7 @@ namespace Microsoft.VisualStudio.Text.Utilities
         }
     }
     
-    public class UnicodeWordExtent
+    public static class UnicodeWordExtent
     {
         static public bool FindCurrentToken(SnapshotPoint currentPosition, out SnapshotSpan span)
         {

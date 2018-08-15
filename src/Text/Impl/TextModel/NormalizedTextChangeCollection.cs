@@ -16,7 +16,7 @@ namespace Microsoft.VisualStudio.Text.Implementation
 
     internal partial class NormalizedTextChangeCollection : INormalizedTextChangeCollection 
     {
-        public static readonly NormalizedTextChangeCollection Empty = new NormalizedTextChangeCollection(new TextChange[0]);
+        public static readonly NormalizedTextChangeCollection Empty = new NormalizedTextChangeCollection(Array.Empty<TextChange>());
         private readonly IReadOnlyList<TextChange> _changes;
 
         public static INormalizedTextChangeCollection Create(IReadOnlyList<TextChange> changes)
@@ -36,7 +36,7 @@ namespace Microsoft.VisualStudio.Text.Implementation
         {
             if (changes == null)
             {
-                throw new ArgumentNullException("changes");
+                throw new ArgumentNullException(nameof(changes));
             }
 
             if (changes.Count == 0)
@@ -122,7 +122,7 @@ namespace Microsoft.VisualStudio.Text.Implementation
             }
             else if (changes.Count == 0)
             {
-                return new TextChange[0];
+                return Array.Empty<TextChange>();
             }
 
             TextChange[] work = TextUtilities.StableSort(changes, TextChange.Compare);
@@ -215,10 +215,7 @@ namespace Microsoft.VisualStudio.Text.Implementation
 
             if (differenceOptions.HasValue)
             {
-                if (textDifferencingService == null)
-                {
-                    throw new ArgumentNullException("stringDifferenceUtility");
-                }
+                Requires.NotNull(textDifferencingService, nameof(textDifferencingService));
                 foreach (TextChange change in work)
                 {
                     if (change == null) continue;
@@ -259,7 +256,7 @@ namespace Microsoft.VisualStudio.Text.Implementation
                         string oldText = change.OldText;
                         string newText = change.NewText;
 
-                        if (oldText == newText)
+                        if (string.Equals(oldText, newText, StringComparison.Ordinal))
                         {
                             // This change simply evaporates. This case occurs frequently in Venus and it is much
                             // better to short circuit it here than to fire up the differencing engine.

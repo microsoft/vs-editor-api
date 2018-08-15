@@ -25,7 +25,7 @@ namespace Microsoft.VisualStudio.Text.Find.Implementation
         {
             if (buffer == null)
             {
-                throw new ArgumentNullException("buffer");
+                throw new ArgumentNullException(nameof(buffer));
             }
 
             // Don't return a singleton since it's allowed to have multiple search navigators on the same buffer

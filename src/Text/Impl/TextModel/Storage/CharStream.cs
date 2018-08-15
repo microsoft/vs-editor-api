@@ -119,12 +119,12 @@ namespace Microsoft.VisualStudio.Text.Implementation
             }
         }
 
-        private char Make(byte hi, byte lo)
+        private static char Make(byte hi, byte lo)
         {
             return (char)((hi << 8) | lo);
         }
 
-        private void Split(char c, out byte hi, out byte lo)
+        private static void Split(char c, out byte hi, out byte lo)
         {
             hi = (byte)(c >> 8);
             lo = (byte)(c & 255);

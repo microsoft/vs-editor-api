@@ -61,7 +61,7 @@ namespace Microsoft.VisualStudio.Text.Editor
         public ViewState(ITextView view, double effectiveViewportWidth, double effectiveViewportHeight)
         {
             if (view == null)
-                throw new ArgumentNullException("view");
+                throw new ArgumentNullException(nameof(view));
 
             this.ViewportLeft = view.ViewportLeft;
             this.ViewportTop = view.ViewportTop;

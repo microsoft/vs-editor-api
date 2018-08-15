@@ -12,9 +12,9 @@ namespace Microsoft.VisualStudio.Utilities
     /// <remarks>
     /// This attribute should be localized wherever it is used.
     /// </remarks>
+    [Obsolete("Use " + nameof(LocalizedNameAttribute) + " instead.")]
     public sealed class DisplayNameAttribute : SingletonBaseMetadataAttribute
     {
-        private string displayName;
 
         /// <summary>
         /// Initializes a new instance of <see cref="DisplayNameAttribute"/>.
@@ -22,22 +22,12 @@ namespace Microsoft.VisualStudio.Utilities
         /// <param name="displayName">The display name of an editor component part.</param>
         public DisplayNameAttribute(string displayName)
         {
-            if (displayName == null)
-            {
-                throw new ArgumentNullException("displayName");
-            }
-            this.displayName = displayName;
+            this.DisplayName = displayName ?? throw new ArgumentNullException(nameof(displayName));
         }
 
         /// <summary>
         /// Gets the display name of an editor component part.
         /// </summary>
-        public string DisplayName
-        {
-            get
-            {
-                return this.displayName;
-            }
-        }
+        public string DisplayName { get; }
     }
 }

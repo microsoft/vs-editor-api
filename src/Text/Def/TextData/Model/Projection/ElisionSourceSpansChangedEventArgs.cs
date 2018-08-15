@@ -33,11 +33,11 @@ namespace Microsoft.VisualStudio.Text.Projection
         {
             if (elidedSpans == null)
             {
-                throw new ArgumentNullException("elidedSpans");
+                throw new ArgumentNullException(nameof(elidedSpans));
             }
             if (expandedSpans == null)
             {
-                throw new ArgumentNullException("expandedSpans");
+                throw new ArgumentNullException(nameof(expandedSpans));
             }
             this.elidedSpans = elidedSpans;
             this.expandedSpans = expandedSpans;

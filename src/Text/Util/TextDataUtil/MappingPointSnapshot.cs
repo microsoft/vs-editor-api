@@ -40,7 +40,7 @@ namespace Microsoft.VisualStudio.Text.Utilities
         public SnapshotPoint? GetPoint(ITextBuffer targetBuffer, PositionAffinity affinity)
         {
             if (targetBuffer == null)
-                throw new ArgumentNullException("targetBuffer");
+                throw new ArgumentNullException(nameof(targetBuffer));
             if (_unmappable)
                 return null;
             
@@ -59,7 +59,7 @@ namespace Microsoft.VisualStudio.Text.Utilities
         public SnapshotPoint? GetPoint(ITextSnapshot targetSnapshot, PositionAffinity affinity)
         {
             if (targetSnapshot == null)
-                throw new ArgumentNullException("targetSnapshot");
+                throw new ArgumentNullException(nameof(targetSnapshot));
             if (_unmappable)
                 return null;
 
@@ -75,7 +75,7 @@ namespace Microsoft.VisualStudio.Text.Utilities
         public SnapshotPoint? GetPoint(Predicate<ITextBuffer> match, PositionAffinity affinity)
         {
             if (match == null)
-                throw new ArgumentNullException("match");
+                throw new ArgumentNullException(nameof(match));
             if (_unmappable)
                 return null;
             
@@ -94,7 +94,7 @@ namespace Microsoft.VisualStudio.Text.Utilities
         public SnapshotPoint? GetInsertionPoint(Predicate<ITextBuffer> match)
         {
             if (match == null)
-                throw new ArgumentNullException("match");
+                throw new ArgumentNullException(nameof(match));
             if (_unmappable)
                 return null; 
             

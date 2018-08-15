@@ -30,7 +30,7 @@ namespace Microsoft.VisualStudio.Text.EditorPrimitives.Implementation
         {
             if ((position < 0) || (position > _textBuffer.CurrentSnapshot.Length))
             {
-                throw new ArgumentOutOfRangeException("position");
+                throw new ArgumentOutOfRangeException(nameof(position));
             }
             return _bufferPrimitivesFactory.CreateTextPoint(this, position);
         }
@@ -39,14 +39,14 @@ namespace Microsoft.VisualStudio.Text.EditorPrimitives.Implementation
         {
             if ((line < 0) || (line > _textBuffer.CurrentSnapshot.LineCount))
             {
-                throw new ArgumentOutOfRangeException("line");
+                throw new ArgumentOutOfRangeException(nameof(line));
             }
 
             ITextSnapshotLine snapshotLine = _textBuffer.CurrentSnapshot.GetLineFromLineNumber(line);
 
             if ((column < 0) || (column > snapshotLine.Length))
             {
-                throw new ArgumentOutOfRangeException("column");
+                throw new ArgumentOutOfRangeException(nameof(column));
             }
             return _bufferPrimitivesFactory.CreateTextPoint(this, snapshotLine.Start + column);
         }
@@ -55,7 +55,7 @@ namespace Microsoft.VisualStudio.Text.EditorPrimitives.Implementation
         {
             if ((line < 0) || (line > _textBuffer.CurrentSnapshot.LineCount))
             {
-                throw new ArgumentOutOfRangeException("line");
+                throw new ArgumentOutOfRangeException(nameof(line));
             }
 
             ITextSnapshotLine snapshotLine = _textBuffer.CurrentSnapshot.GetLineFromLineNumber(line);
@@ -67,11 +67,11 @@ namespace Microsoft.VisualStudio.Text.EditorPrimitives.Implementation
         {
             if (startPoint == null)
             {
-                throw new ArgumentNullException("startPoint");
+                throw new ArgumentNullException(nameof(startPoint));
             }
             if (endPoint == null)
             {
-                throw new ArgumentNullException("endPoint");
+                throw new ArgumentNullException(nameof(endPoint));
             }
 
             if (!object.ReferenceEquals(startPoint.TextBuffer, this))
@@ -91,12 +91,12 @@ namespace Microsoft.VisualStudio.Text.EditorPrimitives.Implementation
         {
             if ((startPosition < 0) || (startPosition > _textBuffer.CurrentSnapshot.Length))
             {
-                throw new ArgumentOutOfRangeException("startPosition");
+                throw new ArgumentOutOfRangeException(nameof(startPosition));
             }
 
             if ((endPosition < 0) || (endPosition > _textBuffer.CurrentSnapshot.Length))
             {
-                throw new ArgumentOutOfRangeException("endPosition");
+                throw new ArgumentOutOfRangeException(nameof(endPosition));
             }
             
             TextPoint startPoint = GetTextPoint(startPosition);

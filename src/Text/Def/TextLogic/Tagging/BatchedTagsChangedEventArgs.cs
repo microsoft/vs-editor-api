@@ -24,7 +24,7 @@ namespace Microsoft.VisualStudio.Text.Tagging
         public BatchedTagsChangedEventArgs(IList<IMappingSpan> spans)
         {
             if (spans == null)
-                throw new ArgumentNullException("spans");
+                throw new ArgumentNullException(nameof(spans));
 
             //Make a copy of spans so we don't need to worry about it changing.
             _spans = new ReadOnlyCollection<IMappingSpan>(new List<IMappingSpan>(spans));

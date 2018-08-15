@@ -33,12 +33,12 @@ namespace Microsoft.VisualStudio.Text.Editor
         public MouseHoverEventArgs(ITextView view, int position, IMappingPoint textPosition)
         {
             if (view == null)
-                throw new ArgumentNullException("view");
+                throw new ArgumentNullException(nameof(view));
 #pragma warning suppress 56506 // ToDo: Add a comment on why it is not necessary to check view.TextSnapshot
             if ((position < 0) || (position > view.TextSnapshot.Length)) // Allow positions at the end of the file
-                throw new ArgumentOutOfRangeException("position");
+                throw new ArgumentOutOfRangeException(nameof(position));
             if (textPosition == null)
-                throw new ArgumentNullException("textPosition");
+                throw new ArgumentNullException(nameof(textPosition));
             // we could be very paranoid and check:
             //if (textPosition.AnchorBuffer != view.TextBuffer)
             //    throw new ArgumentException();

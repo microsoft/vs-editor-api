@@ -21,7 +21,7 @@ namespace Microsoft.VisualStudio.Text.Projection.Implementation
         {
             if (textBuffer == null)
             {
-                throw new ArgumentNullException("textBuffer");
+                throw new ArgumentNullException(nameof(textBuffer));
             }
             return textBuffer.Properties.GetOrCreateSingletonProperty<BufferGraph>(() => (new BufferGraph(textBuffer, GuardedOperations)));
         }

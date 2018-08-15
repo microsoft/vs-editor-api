@@ -9,6 +9,7 @@ using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Threading;
 using ICommandHandlerAndMetadata = System.Lazy<Microsoft.VisualStudio.Commanding.ICommandHandler, Microsoft.VisualStudio.UI.Text.Commanding.Implementation.ICommandHandlerMetadata>;
+using System.Runtime.CompilerServices;
 
 namespace Microsoft.VisualStudio.UI.Text.Commanding.Implementation
 {
@@ -124,20 +125,38 @@ namespace Microsoft.VisualStudio.UI.Text.Commanding.Implementation
                         handlerChain();
                     }
 
+                    if (handler is IDynamicCommandHandler<T> dynamicCommandHandler &&
+                        !dynamicCommandHandler.CanExecuteCommand(args))
+                    {
+                        // Skip this one as it cannot execute the command.
+                        continue;
+                    }
+
                     if (commandExecutionContext == null)
                     {
                         commandExecutionContext = CreateCommandExecutionContext();
                     }
 
-                    handlerChain = () => _guardedOperations.CallExtensionPoint(handler, () => handler.ExecuteCommand(args, nextHandler, commandExecutionContext));
+                    handlerChain = () => _guardedOperations.CallExtensionPoint(handler,
+                        () => handler.ExecuteCommand(args, nextHandler, commandExecutionContext),
+                        // Do not guard against cancellation exceptions, they are handled by ExecuteCommandHandlerChain
+                        exceptionGuardFilter: (e) => !IsOperationCancelledException(e)); 
                 }
 
                 ExecuteCommandHandlerChain(commandExecutionContext, handlerChain, nextCommandHandler);
             }
         }
 
-        private void ExecuteCommandHandlerChain(CommandExecutionContext commandExecutionContext,
-            Action handlerChain, Action nextCommandHandler)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static bool IsOperationCancelledException(Exception e)
+        {
+            return e is OperationCanceledException || e is AggregateException aggregate && aggregate.InnerExceptions.All(ie => ie is OperationCanceledException);
+        }
+
+        private static void ExecuteCommandHandlerChain(
+            CommandExecutionContext commandExecutionContext,
+            Action handlerChain,
+            Action nextCommandHandler)
         {
             try
             {

@@ -5,6 +5,7 @@
 namespace Microsoft.VisualStudio.Text.IncrementalSearch
 {
 
+#pragma warning disable CA1066 // Type {0} should implement IEquatable<T> because it overrides Equals
     /// <summary>
     /// Consolidates the result of an incremental search operation.
     /// </summary>
@@ -14,6 +15,7 @@ namespace Microsoft.VisualStudio.Text.IncrementalSearch
     /// the position of the first result.
     /// </remarks>
     public struct IncrementalSearchResult
+#pragma warning restore CA1066 // Type {0} should implement IEquatable<T> because it overrides Equals
     {
         #region Public Properties
 

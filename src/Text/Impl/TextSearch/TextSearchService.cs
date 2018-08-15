@@ -8,16 +8,15 @@
 namespace Microsoft.VisualStudio.Text.Find.Implementation
 {
     using System;
-    using System.Collections;
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
     using System.ComponentModel.Composition;
     using System.Diagnostics;
+    using System.Linq;
     using System.Text.RegularExpressions;
+    using System.Threading;
     using Microsoft.VisualStudio.Text.Operations;
     using Microsoft.VisualStudio.Text.Utilities;
-    using System.Linq;
-    using System.Threading;
 
     [Export(typeof(ITextSearchService))]
     [Export(typeof(ITextSearchService2))]
@@ -30,17 +29,11 @@ namespace Microsoft.VisualStudio.Text.Find.Implementation
 
         // Cache of recently used Regex expressions to save on construction
         // of Regex objects.
-        static IDictionary<string, WeakReference> _cachedRegexEngines;
-        static ReaderWriterLockSlim _regexCacheLock;
+        static IDictionary<string, WeakReference> _cachedRegexEngines = new Dictionary<string, WeakReference>(_maxCachedRegexEngines);
+        static ReaderWriterLockSlim _regexCacheLock = new ReaderWriterLockSlim(LockRecursionPolicy.NoRecursion);
 
         // Maximum number of Regex engines to cache
         const int _maxCachedRegexEngines = 10;
-
-        static TextSearchService()
-        {
-            _cachedRegexEngines = new Dictionary<string, WeakReference>(_maxCachedRegexEngines);
-            _regexCacheLock = new ReaderWriterLockSlim(LockRecursionPolicy.NoRecursion);
-        }
 
         #region ITextSearchService Members
 
@@ -49,12 +42,12 @@ namespace Microsoft.VisualStudio.Text.Find.Implementation
             // We allow startIndex to be at the end of the buffer
             if ((startIndex < 0) || (startIndex > findData.TextSnapshotToSearch.Length))
             {
-                throw new ArgumentOutOfRangeException("startIndex");
+                throw new ArgumentOutOfRangeException(nameof(startIndex));
             }
 
             if (string.IsNullOrEmpty(findData.SearchString))
             {
-                throw new ArgumentException("Search pattern can't be empty or null", "findData");
+                throw new ArgumentException("Search pattern can't be empty or null", nameof(findData));
             }
 
             FindOptions options = findData.FindOptions;
@@ -102,7 +95,7 @@ namespace Microsoft.VisualStudio.Text.Find.Implementation
         {
             if (string.IsNullOrEmpty(findData.SearchString))
             {
-                throw new ArgumentException("Search pattern can't be empty or null", "findData");
+                throw new ArgumentException("Search pattern can't be empty or null", nameof(findData));
             }
 
             FindOptions options = findData.FindOptions;
@@ -140,7 +133,7 @@ namespace Microsoft.VisualStudio.Text.Find.Implementation
         {
             if (string.IsNullOrEmpty(searchPattern))
             {
-                throw new ArgumentException("Pattern can't be empty or null", "searchPattern");
+                throw new ArgumentException("Pattern can't be empty or null", nameof(searchPattern));
             }
 
             return Find(startingPosition, new SnapshotSpan(startingPosition.Snapshot, Span.FromBounds(0, startingPosition.Snapshot.Length)), searchPattern, options);
@@ -150,7 +143,7 @@ namespace Microsoft.VisualStudio.Text.Find.Implementation
         {
             if (string.IsNullOrEmpty(searchPattern))
             {
-                throw new ArgumentException("Pattern can't be empty or null", "searchPattern");
+                throw new ArgumentException("Pattern can't be empty or null", nameof(searchPattern));
             }
 
             if (searchRange.Snapshot != startingPosition.Snapshot)
@@ -170,13 +163,10 @@ namespace Microsoft.VisualStudio.Text.Find.Implementation
         {
             if (string.IsNullOrEmpty(searchPattern))
             {
-                throw new ArgumentException("Pattern can't be empty or null", "searchPattern");
+                throw new ArgumentException("Pattern can't be empty or null", nameof(searchPattern));
             }
 
-            if (replacePattern == null)
-            {
-                throw new ArgumentNullException("Replace pattern can't be null.", "replacePattern");
-            }
+            Requires.NotNull(replacePattern, nameof(replacePattern));
 
             return FindForReplace(startingPosition, new SnapshotSpan(startingPosition.Snapshot, Span.FromBounds(0, startingPosition.Snapshot.Length)),
                 searchPattern, replacePattern, options, out expandedReplacePattern);
@@ -186,13 +176,10 @@ namespace Microsoft.VisualStudio.Text.Find.Implementation
         {
             if (string.IsNullOrEmpty(searchPattern))
             {
-                throw new ArgumentException("Pattern can't be empty or null", "searchPattern");
+                throw new ArgumentException("Pattern can't be empty or null", nameof(searchPattern));
             }
 
-            if (replacePattern == null)
-            {
-                throw new ArgumentNullException("Replace pattern can't be null.", "replacePattern");
-            }
+            Requires.NotNull(replacePattern, nameof(replacePattern));
 
             return FindForReplace(((options & FindOptions.SearchReverse) != FindOptions.SearchReverse) ? searchRange.Start : searchRange.End, searchRange, searchPattern, replacePattern, options, out expandedReplacePattern);
         }
@@ -201,12 +188,12 @@ namespace Microsoft.VisualStudio.Text.Find.Implementation
         {
             if (string.IsNullOrEmpty(searchPattern))
             {
-                throw new ArgumentException("Pattern can't be empty or null", "searchPattern");
+                throw new ArgumentException("Pattern can't be empty or null", nameof(searchPattern));
             }
 
             if (searchRange.Length == 0)
             {
-                return new SnapshotSpan[] { };
+                return Array.Empty<SnapshotSpan>();
             }
 
             return FindAllForReplace(searchRange.Start, searchRange, searchPattern, null, options).Select(r => r.Item1);
@@ -216,12 +203,12 @@ namespace Microsoft.VisualStudio.Text.Find.Implementation
         {
             if (string.IsNullOrEmpty(searchPattern))
             {
-                throw new ArgumentException("Pattern can't be empty or null", "searchPattern");
+                throw new ArgumentException("Pattern can't be empty or null", nameof(searchPattern));
             }
 
             if (searchRange.Length == 0)
             {
-                return new SnapshotSpan[] { };
+                return Array.Empty<SnapshotSpan>();
             }
 
             if (searchRange.Snapshot != startingPosition.Snapshot)
@@ -241,13 +228,10 @@ namespace Microsoft.VisualStudio.Text.Find.Implementation
         {
             if (string.IsNullOrEmpty(searchPattern))
             {
-                throw new ArgumentException("Search pattern can't be null or empty.", "searchPattern");
+                throw new ArgumentException("Search pattern can't be null or empty.", nameof(searchPattern));
             }
 
-            if (replacePattern == null)
-            {
-                throw new ArgumentNullException("Replace pattern can't be null.", "replacePattern");
-            }
+            Requires.NotNull(replacePattern, nameof(replacePattern));
 
             return FindAllForReplace(searchRange.Start, searchRange, searchPattern, replacePattern, options);
         }

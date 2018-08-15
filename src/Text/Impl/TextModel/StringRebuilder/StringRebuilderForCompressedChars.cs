@@ -62,7 +62,7 @@ namespace Microsoft.VisualStudio.Text.Implementation
         public override StringRebuilder GetSubText(Span span)
         {
             if (span.End > this.Length)
-                throw new ArgumentOutOfRangeException("span");
+                throw new ArgumentOutOfRangeException(nameof(span));
 
             if (span.Length == this.Length)
                 return this;

@@ -59,12 +59,12 @@ namespace Microsoft.VisualStudio.Text.Classification.Implementation
         {
             if (type == null)
             {
-                throw new ArgumentNullException("type");
+                throw new ArgumentNullException(nameof(type));
             }
 
             if (baseTypes == null)
             {
-                throw new ArgumentNullException("baseTypes");
+                throw new ArgumentNullException(nameof(baseTypes));
             }
             if (ClassificationTypes.ContainsKey(type))
             {
@@ -94,7 +94,7 @@ namespace Microsoft.VisualStudio.Text.Classification.Implementation
             // Validate
             if (baseTypes == null)
             {
-                throw new ArgumentNullException("baseTypes");
+                throw new ArgumentNullException(nameof(baseTypes));
             }
             if (!baseTypes.GetEnumerator().MoveNext())
             {
@@ -115,7 +115,7 @@ namespace Microsoft.VisualStudio.Text.Classification.Implementation
             // Validate
             if (baseTypes == null)
             {
-                throw new ArgumentNullException("baseTypes");
+                throw new ArgumentNullException(nameof(baseTypes));
             }
             if (baseTypes.Length == 0)
             {
@@ -150,7 +150,7 @@ namespace Microsoft.VisualStudio.Text.Classification.Implementation
             {
                 if (_classificationTypes == null)
                 {
-                    _classificationTypes = new Dictionary<string, ClassificationTypeImpl>(StringComparer.InvariantCultureIgnoreCase);
+                    _classificationTypes = new Dictionary<string, ClassificationTypeImpl>(StringComparer.OrdinalIgnoreCase);
                     BuildClassificationTypes(_classificationTypes);
                 }
                 return _classificationTypes;
@@ -209,7 +209,7 @@ namespace Microsoft.VisualStudio.Text.Classification.Implementation
             // Lazily init
             if (_transientClassificationTypes == null)
             {
-                _transientClassificationTypes = new Dictionary<string, ClassificationTypeImpl>(StringComparer.InvariantCultureIgnoreCase);
+                _transientClassificationTypes = new Dictionary<string, ClassificationTypeImpl>(StringComparer.OrdinalIgnoreCase);
             }
 
             List<IClassificationType> sortedBaseTypes = new List<IClassificationType>(baseTypes);

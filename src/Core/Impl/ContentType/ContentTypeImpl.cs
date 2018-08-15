@@ -13,32 +13,28 @@ namespace Microsoft.VisualStudio.Utilities.Implementation
 {
     internal partial class ContentTypeImpl : IContentType
     {
-        private readonly string name;
         private readonly static ContentTypeImpl[] emptyBaseTypes = Array.Empty<ContentTypeImpl>();
         private ContentTypeImpl[] baseTypeList = emptyBaseTypes;
 
         internal ContentTypeImpl(string name, string mimeType = null, IEnumerable<string> baseTypes = null)
         {
-            this.name = name;
+            this.TypeName = name;
             this.MimeType = mimeType;
             this.UnprocessedBaseTypes = baseTypes;
         }
 
-        public string TypeName
-        {
-            get { return this.name; }
-        }
+        public string TypeName { get; private set; }
 
         public string DisplayName
         {
-            get { return this.name; }
+            get { return this.TypeName; }
         }
 
         public string MimeType { get; }
 
         public bool IsOfType(string type)
         {
-            if (string.Compare(type, this.name, StringComparison.OrdinalIgnoreCase) == 0)
+            if (string.Equals(type, this.TypeName, StringComparison.OrdinalIgnoreCase))
             {
                 return true;
             }
@@ -62,7 +58,7 @@ namespace Microsoft.VisualStudio.Utilities.Implementation
 
         public override string ToString()
         {
-            return this.name;
+            return this.TypeName;
         }
 
         internal void ProcessBaseTypes(IDictionary<string, ContentTypeImpl> nameToContentTypeBuilder,
@@ -70,7 +66,7 @@ namespace Microsoft.VisualStudio.Utilities.Implementation
         {
             if (this.UnprocessedBaseTypes != null)
             {
-                List<ContentTypeImpl> newBaseTypes = new List<ContentTypeImpl>();
+                var newBaseTypes = new List<ContentTypeImpl>();
                 foreach (var baseTypeName in this.UnprocessedBaseTypes)
                 {
                     // The expectation is that the base type will already exists but (if it doesn't) add a stub for it (& the ctor for a stub base type leaves it in a state
@@ -78,8 +74,8 @@ namespace Microsoft.VisualStudio.Utilities.Implementation
                     var baseType = ContentTypeRegistryImpl.AddContentTypeFromMetadata(baseTypeName, /* mime type */null, /* base types */null, nameToContentTypeBuilder, mimeTypeToContentTypeBuilder);
                     if (baseType == ContentTypeRegistryImpl.UnknownContentTypeImpl)
                     {
-                        throw new InvalidOperationException(String.Format(System.Globalization.CultureInfo.CurrentUICulture,
-                                                            Strings.ContentTypeRegistry_ContentTypesCannotDeriveFromUnknown, this.TypeName));
+                        throw new InvalidOperationException(string.Format(provider: System.Globalization.CultureInfo.CurrentCulture,
+                                                            format: Strings.ContentTypeRegistry_ContentTypesCannotDeriveFromUnknown, arg0: this.TypeName));
                     }
 
                     if (!newBaseTypes.Contains(baseType))

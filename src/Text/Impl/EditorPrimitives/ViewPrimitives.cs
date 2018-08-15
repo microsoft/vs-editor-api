@@ -12,7 +12,7 @@ namespace Microsoft.VisualStudio.Text.EditorPrimitives.Implementation
     internal sealed class ViewPrimitives : IViewPrimitives
     {
         private TextView _textView;
-        private Selection _selection;
+        private LegacySelection _selection;
         private Caret _caret;
         private TextBuffer _textBuffer;
         
@@ -32,7 +32,7 @@ namespace Microsoft.VisualStudio.Text.EditorPrimitives.Implementation
             get { return _textView; }
         }
 
-        public Selection Selection
+        public LegacySelection Selection
         {
             get { return _selection; }
         }

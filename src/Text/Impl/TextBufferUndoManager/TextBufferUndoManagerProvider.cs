@@ -8,18 +8,19 @@
 namespace Microsoft.VisualStudio.Text.BufferUndoManager.Implementation
 {
     using System;
-    using System.Collections.Generic;
-    using Microsoft.VisualStudio.Text;
-    using Microsoft.VisualStudio.Text.Projection;
-    using Microsoft.VisualStudio.Text.Operations;
     using System.ComponentModel.Composition;
+    using Microsoft.VisualStudio.Text;
+    using Microsoft.VisualStudio.Text.Operations;
 
     [Export(typeof(ITextBufferUndoManagerProvider))]
     internal sealed class TextBufferUndoManagerProvider : ITextBufferUndoManagerProvider
     {
         [Import]
         internal ITextUndoHistoryRegistry _undoHistoryRegistry { get; set; }
-
+#if false
+        [Import]
+        internal IEditorOperationsFactoryService _editorOperationsFactoryService { get; set; }
+#endif
         /// <summary>
         /// Provides an <see cref="ITextBufferUndoManager"/> for the given <paramref name="textBuffer"/>.
         /// </summary>
@@ -31,13 +32,16 @@ namespace Microsoft.VisualStudio.Text.BufferUndoManager.Implementation
             // Validate
             if (textBuffer == null)
             {
-                throw new ArgumentNullException("textBuffer");
+                throw new ArgumentNullException(nameof(textBuffer));
             }
 
             // See if there was already a TextBufferUndoManager created for the given textBuffer, we only ever want to create one
             ITextBufferUndoManager cachedBufferUndoManager;
             if (!textBuffer.Properties.TryGetProperty<ITextBufferUndoManager>(typeof(ITextBufferUndoManager), out cachedBufferUndoManager))
             {
+#if false
+                cachedBufferUndoManager = new TextBufferUndoManager(textBuffer, _undoHistoryRegistry, _editorOperationsFactoryService);
+#endif
                 cachedBufferUndoManager = new TextBufferUndoManager(textBuffer, _undoHistoryRegistry);
                 textBuffer.Properties.AddProperty(typeof(ITextBufferUndoManager), cachedBufferUndoManager);
             }
@@ -54,7 +58,7 @@ namespace Microsoft.VisualStudio.Text.BufferUndoManager.Implementation
             // Validate
             if (textBuffer == null)
             {
-                throw new ArgumentNullException("textBuffer");
+                throw new ArgumentNullException(nameof(textBuffer));
             }
 
             ITextBufferUndoManager cachedBufferUndoManager;

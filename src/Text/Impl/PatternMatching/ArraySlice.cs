@@ -41,12 +41,12 @@ namespace Microsoft.VisualStudio.Text.PatternMatching.Implementation
         {
             if (start < 0)
             {
-                throw new ArgumentException(nameof(start), $"{start} < {0}");
+                throw new ArgumentException($"{start} < {0}", nameof(start));
             }
 
             if (start > _array.Length)
             {
-                throw new ArgumentException(nameof(start), $"{start} > {_array.Length}");
+                throw new ArgumentException($"{start} > {_array.Length}", nameof(start));
             }
 
             CheckLength(start, length);
@@ -59,12 +59,12 @@ namespace Microsoft.VisualStudio.Text.PatternMatching.Implementation
         {
             if (length < 0)
             {
-                throw new ArgumentException(nameof(length), $"{length} < {0}");
+                throw new ArgumentException($"{length} < {0}", nameof(length));
             }
 
             if (start + length > _array.Length)
             {
-                throw new ArgumentException(nameof(start), $"{start} + {length} > {_array.Length}");
+                throw new ArgumentException($"{start} + {length} > {_array.Length}", nameof(start));
             }
         }
 

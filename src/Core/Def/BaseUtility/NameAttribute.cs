@@ -11,7 +11,6 @@ namespace Microsoft.VisualStudio.Utilities
     /// </summary>
     public sealed class NameAttribute : SingletonBaseMetadataAttribute
     {
-        private string name;
 
         /// <summary>
         /// Constructs a new instance of the attribute.
@@ -23,24 +22,18 @@ namespace Microsoft.VisualStudio.Utilities
         {
             if (name == null)
             {
-                throw new ArgumentNullException("name");
+                throw new ArgumentNullException(nameof(name));
             }
             if (name.Length == 0)
             {
-                throw new ArgumentException("name must not be empty", "name");
+                throw new ArgumentException("name must not be empty", nameof(name));
             }
-            this.name = name;
+            this.Name = name;
         }
 
         /// <summary>
         /// The name of the editor extension part.
         /// </summary>
-        public string Name
-        {
-            get 
-            { 
-                return name; 
-            }
-        }
+        public string Name { get; }
     }
 }

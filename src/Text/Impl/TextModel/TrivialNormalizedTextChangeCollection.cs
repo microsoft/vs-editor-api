@@ -39,7 +39,7 @@ namespace Microsoft.VisualStudio.Text.Implementation
             {
                 if (index != 0)
                 {
-                    throw new ArgumentOutOfRangeException("index");
+                    throw new ArgumentOutOfRangeException(nameof(index));
                 }
                 return this;
             }
@@ -95,11 +95,11 @@ namespace Microsoft.VisualStudio.Text.Implementation
         {
             if (array == null)
             {
-                throw new ArgumentNullException("array");
+                throw new ArgumentNullException(nameof(array));
             }
             if (arrayIndex < 0)
             {
-                throw new ArgumentOutOfRangeException("arrayIndex");
+                throw new ArgumentOutOfRangeException(nameof(arrayIndex));
             }
             if (array.Rank > 1 || arrayIndex >= array.Length)
             {

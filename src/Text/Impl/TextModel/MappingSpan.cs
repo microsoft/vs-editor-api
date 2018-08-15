@@ -9,6 +9,7 @@ namespace Microsoft.VisualStudio.Text.Implementation
 {
     using System;
     using System.Collections.Generic;
+    using System.Globalization;
     using Microsoft.VisualStudio.Text.Projection;
     using Microsoft.VisualStudio.Text.Utilities;
 
@@ -22,15 +23,15 @@ namespace Microsoft.VisualStudio.Text.Implementation
         {
             if (anchorSpan.Snapshot == null)
             {
-                throw new ArgumentNullException("anchorSpan");
+                throw new ArgumentNullException(nameof(anchorSpan));
             }
             if (trackingMode < SpanTrackingMode.EdgeExclusive || trackingMode > SpanTrackingMode.EdgeNegative)
             {
-                throw new ArgumentOutOfRangeException("trackingMode");
+                throw new ArgumentOutOfRangeException(nameof(trackingMode));
             }
             if (bufferGraph == null)
             {
-                throw new ArgumentNullException("bufferGraph");
+                throw new ArgumentNullException(nameof(bufferGraph));
             }
             this.anchorSpan = anchorSpan;
             this.trackingMode = trackingMode;
@@ -105,7 +106,7 @@ namespace Microsoft.VisualStudio.Text.Implementation
         public NormalizedSnapshotSpanCollection GetSpans(ITextSnapshot targetSnapshot)
         {
             if (targetSnapshot == null)
-                throw new ArgumentNullException("targetSnapshot");
+                throw new ArgumentNullException(nameof(targetSnapshot));
 
             NormalizedSnapshotSpanCollection results = GetSpans(targetSnapshot.TextBuffer);
             if ((results.Count > 0) && (results[0].Snapshot != targetSnapshot))
@@ -126,7 +127,7 @@ namespace Microsoft.VisualStudio.Text.Implementation
         {
             if (match == null)
             {
-                throw new ArgumentNullException("match");
+                throw new ArgumentNullException(nameof(match));
             }
 
             ITextBuffer anchorBuffer = this.AnchorBuffer;
@@ -156,7 +157,7 @@ namespace Microsoft.VisualStudio.Text.Implementation
 
         public override string ToString()
         {
-            return String.Format("MappingSpan anchored at {0}", this.anchorSpan);
+            return String.Format(CultureInfo.CurrentCulture, "MappingSpan anchored at {0}", this.anchorSpan);
         }
     }
 }

@@ -44,7 +44,7 @@ namespace Microsoft.VisualStudio.Text.EditorPrimitives.Implementation
             return new DefaultDisplayTextRangePrimitive(textView, textRange);
         }
 
-        public Selection CreateSelection(TextView textView)
+        public LegacySelection CreateSelection(TextView textView)
         {
             if (textView.Selection == null)
             {

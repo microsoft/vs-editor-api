@@ -6,10 +6,12 @@ namespace Microsoft.VisualStudio.Text
 {
     using System;
 
+#pragma warning disable CA1066 // Type {0} should implement IEquatable<T> because it overrides Equals
     /// <summary>
     /// An immutable text span in a particular text snapshot.
     /// </summary>
     public struct SnapshotSpan
+#pragma warning restore CA1066 // Type {0} should implement IEquatable<T> because it overrides Equals
     {
         #region Private Members
 
@@ -30,11 +32,11 @@ namespace Microsoft.VisualStudio.Text
         {
             if (snapshot == null)
             {
-                throw new ArgumentNullException("snapshot");
+                throw new ArgumentNullException(nameof(snapshot));
             }
             if (span.End > snapshot.Length)
             {
-                throw new ArgumentOutOfRangeException("span");
+                throw new ArgumentOutOfRangeException(nameof(span));
             }
 
             this.start = new SnapshotPoint(snapshot, span.Start);
@@ -78,7 +80,7 @@ namespace Microsoft.VisualStudio.Text
             }
             if (end.Position < start.Position)
             {
-                throw new ArgumentOutOfRangeException("end");
+                throw new ArgumentOutOfRangeException(nameof(end));
             }
 
             this.start = start;
@@ -98,7 +100,7 @@ namespace Microsoft.VisualStudio.Text
             if (length < 0 ||
                 start.Position + length > start.Snapshot.Length)
             {
-                throw new ArgumentOutOfRangeException("length");
+                throw new ArgumentOutOfRangeException(nameof(length));
             }
 
             this.start = start;
@@ -148,7 +150,7 @@ namespace Microsoft.VisualStudio.Text
             {
                 if (targetSnapshot == null)
                 {
-                    throw new ArgumentNullException("targetSnapshot");
+                    throw new ArgumentNullException(nameof(targetSnapshot));
                 }
                 if (targetSnapshot.TextBuffer != this.Start.Snapshot.TextBuffer)
                 {
@@ -156,8 +158,8 @@ namespace Microsoft.VisualStudio.Text
                 }
 
                 Span targetSpan = targetSnapshot.Version.VersionNumber > this.Snapshot.Version.VersionNumber
-                                    ? Tracking.TrackSpanForwardInTime(spanTrackingMode, Span, this.Snapshot.Version, targetSnapshot.Version)
-                                    : Tracking.TrackSpanBackwardInTime(spanTrackingMode, Span, this.Snapshot.Version, targetSnapshot.Version);
+                                    ? Tracking.TrackSpanForwardInTime(spanTrackingMode, this.Span, this.Snapshot.Version, targetSnapshot.Version)
+                                    : Tracking.TrackSpanBackwardInTime(spanTrackingMode, this.Span, this.Snapshot.Version, targetSnapshot.Version);
 
                 return new SnapshotSpan(targetSnapshot, targetSpan);
             }
@@ -170,7 +172,7 @@ namespace Microsoft.VisualStudio.Text
         /// </summary>
         public Span Span
         {
-            get { return new Span(start, length); }
+            get { return new Span(this.start, this.length); }
         }
 
         /// <summary>
@@ -180,7 +182,7 @@ namespace Microsoft.VisualStudio.Text
         {
             get 
             { 
-                return start;
+                return this.start;
             }
         }
 
@@ -192,7 +194,7 @@ namespace Microsoft.VisualStudio.Text
         {
             get 
             {
-                return start + length;
+                return this.start + this.length;
             }
         }
 
@@ -436,7 +438,7 @@ namespace Microsoft.VisualStudio.Text
             else
             {
                 string tag;
-                this.Snapshot.TextBuffer.Properties.TryGetProperty<string>("tag", out tag);
+                this.Snapshot.TextBuffer.Properties.TryGetProperty("tag", out tag);
                 return string.Format(System.Globalization.CultureInfo.CurrentCulture,
                                      "{0}_v{1}_{2}_'{3}'",
                                      tag ?? "?",
@@ -455,7 +457,7 @@ namespace Microsoft.VisualStudio.Text
         {
             if (obj is SnapshotSpan)
             {
-                SnapshotSpan other = (SnapshotSpan)obj;
+                var other = (SnapshotSpan)obj;
                 return other == this;
             }
             else

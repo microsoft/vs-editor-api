@@ -14,7 +14,9 @@ namespace Microsoft.VisualStudio.Text.Tagging
     /// Tag Aggregator options.
     /// </summary>
     [Flags]
+#pragma warning disable CA1714 // Flags enums should have plural names
     public enum TagAggregatorOptions2
+#pragma warning restore CA1714 // Flags enums should have plural names
     {
         /// <summary>
         /// Default behavior. The tag aggregator will map up and down through all projection buffers.

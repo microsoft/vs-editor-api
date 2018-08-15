@@ -79,13 +79,13 @@ namespace Microsoft.VisualStudio.Text
             if (_currentPosition == -1)
                 throw new ObjectDisposedException("TextSnapshotToTextReader");
             if (buffer == null)
-                throw new ArgumentNullException("buffer");
+                throw new ArgumentNullException(nameof(buffer));
             if (index < 0)
-                throw new ArgumentOutOfRangeException("index");
+                throw new ArgumentOutOfRangeException(nameof(index));
             if (count < 0)
-                throw new ArgumentOutOfRangeException("count");
+                throw new ArgumentOutOfRangeException(nameof(count));
             if (((index + count) < 0) || ((index + count) > buffer.Length))
-                throw new ArgumentOutOfRangeException("count");
+                throw new ArgumentOutOfRangeException(nameof(count));
 
             int charactersToRead = System.Math.Min(_snapshot.Length - _currentPosition, count);
             _snapshot.CopyTo(_currentPosition, buffer, index, charactersToRead);
@@ -159,7 +159,7 @@ namespace Microsoft.VisualStudio.Text
         public TextSnapshotToTextReader(ITextSnapshot textSnapshot)
         {
             if (textSnapshot == null)
-                throw new ArgumentNullException("textSnapshot");
+                throw new ArgumentNullException(nameof(textSnapshot));
 
             _snapshot = textSnapshot;
         }

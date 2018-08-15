@@ -6,10 +6,12 @@ namespace Microsoft.VisualStudio.Text.Editor
 {
     using System;
 
+#pragma warning disable CA1066 // Type {0} should implement IEquatable<T> because it overrides Equals
     /// <summary>
     /// Represents the position of a caret in an <see cref="ITextView"/>.
     /// </summary>
     public struct CaretPosition
+#pragma warning restore CA1066 // Type {0} should implement IEquatable<T> because it overrides Equals
     {
         #region Private Members
         VirtualSnapshotPoint _bufferPosition;
@@ -28,7 +30,7 @@ namespace Microsoft.VisualStudio.Text.Editor
         {
             if (mappingPoint == null)
             {
-                throw new ArgumentNullException("mappingPoint");
+                throw new ArgumentNullException(nameof(mappingPoint));
             }
 
             _bufferPosition = bufferPosition;

@@ -9,12 +9,9 @@ namespace Microsoft.VisualStudio.Text.Classification.Implementation
 {
     using System;
     using System.Collections.Generic;
-    using System.Collections.ObjectModel;
     using System.ComponentModel.Composition;
-    using Microsoft.VisualStudio.Text.Differencing;
     using Microsoft.VisualStudio.Text.Projection;
     using Microsoft.VisualStudio.Text.Tagging;
-    using Microsoft.VisualStudio.Text.Utilities;
     using Microsoft.VisualStudio.Utilities;
 
     [Export(typeof(ITaggerProvider))]
@@ -22,16 +19,13 @@ namespace Microsoft.VisualStudio.Text.Classification.Implementation
     [TagType(typeof(ClassificationTag))]
     internal class ProjectionWorkaroundProvider : ITaggerProvider
     {
-        [Import]
-        internal IDifferenceService diffService { get; set; }
-
         public ITagger<T> CreateTagger<T>(ITextBuffer buffer) where T : ITag
         {
             IProjectionBuffer projectionBuffer = buffer as IProjectionBuffer;
             if (projectionBuffer == null)
                 return null;
 
-            return new ProjectionWorkaroundTagger(projectionBuffer, diffService) as ITagger<T>;
+            return new ProjectionWorkaroundTagger(projectionBuffer) as ITagger<T>;
         }
     }
 
@@ -45,82 +39,69 @@ namespace Microsoft.VisualStudio.Text.Classification.Implementation
     internal class ProjectionWorkaroundTagger : ITagger<ClassificationTag>
     {
         IProjectionBuffer ProjectionBuffer { get; set; }
-        IDifferenceService diffService;
 
-        internal ProjectionWorkaroundTagger(IProjectionBuffer projectionBuffer, IDifferenceService diffService)
+        internal ProjectionWorkaroundTagger(IProjectionBuffer projectionBuffer)
         {
             this.ProjectionBuffer = projectionBuffer;
-            this.diffService = diffService;
             this.ProjectionBuffer.SourceBuffersChanged += SourceSpansChanged;
         }
 
         #region ITagger<ClassificationTag> members
         public IEnumerable<ITagSpan<ClassificationTag>> GetTags(NormalizedSnapshotSpanCollection spans)
         {
-            yield break;
+            return Array.Empty<ITagSpan<ClassificationTag>>();
         }
 
         public event EventHandler<SnapshotSpanEventArgs> TagsChanged;
-
         #endregion
 
         #region Source span differencing + change event
         private void SourceSpansChanged(object sender, ProjectionSourceSpansChangedEventArgs e)
         {
-            if (e.Changes.Count == 0)
+            var handler = TagsChanged;
+            if ((handler != null) && (e.Changes.Count == 0))
             {
                 // If there weren't text changes, but there were span changes, then
                 // send out a classification changed event over the spans that changed.
-                ProjectionSpanDifference difference = ProjectionSpanDiffer.DiffSourceSpans(this.diffService, e.Before, e.After);
-                int pos = 0;
-                int start = int.MaxValue;
-                int end = int.MinValue;
-                foreach (var diff in difference.DifferenceCollection)
-                {
-                    pos += GetMatchSize(difference.DeletedSpans, diff.Before);
-                    start = Math.Min(start, pos);
+                //
+                // We're raising a single event here so all we need is the start of the first changed span
+                // to the end of the last changed span (or, as we calculate it, the end of the first identical
+                // spans to the start of the last identical spans).
+                //
+                // Note that we are being generous in the span we raise. For example if I change the projection buffer
+                // from projecting (V0:[0,10)) and (V0:[10,15)) to projecting (V0:[0,5)) and (V0:[5,15)) we'll raise a snapshot changed
+                // event over the entire buffer even though neither the projected text nor the content type of its buffer
+                // changed. This case shouldn't happen very often and the cost of (falsely) raising a classification changed
+                // event is pretty small so this is a net perf win compared to doing a more expensive diff to get the actual
+                // changed span.
+                var leftSpans = e.Before.GetSourceSpans();
+                var rightSpans = e.After.GetSourceSpans();
+                var spansToCompare = Math.Min(leftSpans.Count, rightSpans.Count);
 
-                    // Now, for every span added in the new snapshot that replaced
-                    // the deleted spans, add it to our span to raise changed events 
-                    // over.
-                    for (int i = diff.Right.Start; i < diff.Right.End; i++)
+                int start = 0;
+                int identicalSpansAtStart = 0;
+                while ((identicalSpansAtStart < spansToCompare) && (leftSpans[identicalSpansAtStart] == rightSpans[identicalSpansAtStart]))
+                {
+                    start += rightSpans[identicalSpansAtStart].Length;
+                    ++identicalSpansAtStart;
+                }
+
+                if ((identicalSpansAtStart < leftSpans.Count) || (identicalSpansAtStart < rightSpans.Count))
+                {
+                    // There are at least some span differences between leftSpans and rightSpans so we don't need to worry about running over.
+                    spansToCompare -= identicalSpansAtStart;    //No need to compare spans in the starting identical block.
+                    int end = e.After.Length;
+                    int identicalSpansAtEndPlus1 = 1;
+                    while ((identicalSpansAtEndPlus1 <= spansToCompare) && (leftSpans[leftSpans.Count - identicalSpansAtEndPlus1] == rightSpans[rightSpans.Count - identicalSpansAtEndPlus1]))
                     {
-                        pos += difference.InsertedSpans[i].Length;
+                        end -= rightSpans[rightSpans.Count - identicalSpansAtEndPlus1].Length;
+                        ++identicalSpansAtEndPlus1;
                     }
 
-                    end = Math.Max(end, pos);
-                }
-
-                if (start != int.MaxValue && end != int.MinValue)
-                {
-                    RaiseTagsChangedEvent(new SnapshotSpan(e.After, Span.FromBounds(start, end)));
+                    handler(this, new SnapshotSpanEventArgs(new SnapshotSpan(e.After, Span.FromBounds(start, end))));
                 }
             }
         }
-
-        private static int GetMatchSize(ReadOnlyCollection<SnapshotSpan> spans, Match match)
-        {
-            int size = 0;
-            if (match != null)
-            {
-                Span extent = match.Left;
-                for (int s = extent.Start; s < extent.End; ++s)
-                {
-                    size += spans[s].Length;
-                }
-            }
-            return size;
-        }
-
-        private void RaiseTagsChangedEvent(SnapshotSpan span)
-        {
-            var handler = TagsChanged;
-            if (handler != null)
-            {
-                handler(this, new SnapshotSpanEventArgs(span));
-            }
-        }
-
         #endregion
     }
 }

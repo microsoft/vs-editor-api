@@ -3,11 +3,13 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
 using System.Text;
 using System.Threading;
 
 namespace Microsoft.VisualStudio.Text.PatternMatching.Implementation
 {
+#pragma warning disable CA1814 // Prefer jagged arrays over multidimensional
     ///<summary>
     /// NOTE: Only use if you truly need an edit distance.
     ///
@@ -24,7 +26,7 @@ namespace Microsoft.VisualStudio.Text.PatternMatching.Implementation
     /// Specifically, this implementation satisfies the following inequality: D(x, y) + D(y, z) >= D(x, z)
     /// (where D is the edit distance).
     ///</summary> 
-    internal class EditDistance : IDisposable
+    internal sealed class EditDistance : IDisposable
     {
         // Our edit distance algorithm makes use of an 'infinite' value.  A value so high that it 
         // could never participate in an edit distance (and effectively means the path through it
@@ -556,7 +558,7 @@ namespace Microsoft.VisualStudio.Text.PatternMatching.Implementation
                 for (var i = 0; i < width; i++)
                 {
                     var v = matrix[i + 2, j + 2];
-                    sb.Append((v == Infinity ? "∞" : v.ToString()) + " ");
+                    sb.Append((v == Infinity ? "∞" : v.ToString(CultureInfo.CurrentCulture)) + " ");
                 }
                 sb.AppendLine();
             }
@@ -666,4 +668,5 @@ namespace Microsoft.VisualStudio.Text.PatternMatching.Implementation
             }
         }
     }
+#pragma warning restore CA1814 // Prefer jagged arrays over multidimensional
 }

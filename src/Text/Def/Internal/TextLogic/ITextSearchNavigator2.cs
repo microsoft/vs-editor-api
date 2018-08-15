@@ -13,6 +13,7 @@ namespace Microsoft.VisualStudio.Text.Operations
     /// </summary>
     public interface ITextSearchNavigator2 : ITextSearchNavigator
     {
+#pragma warning disable CA2227 // Collection properties should be read only
         /// <summary>
         /// Indicates the ranges that should be searched (if any).
         /// </summary>
@@ -20,5 +21,6 @@ namespace Microsoft.VisualStudio.Text.Operations
         /// If this value to a non-null value will effectively override the ITextSearchNavigator.SearchSpan property.
         /// </remarks>
         NormalizedSnapshotSpanCollection SearchSpans { get; set; }
+#pragma warning restore CA2227 // Collection properties should be read only
     }
 }

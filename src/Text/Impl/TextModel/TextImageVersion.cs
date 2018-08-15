@@ -98,7 +98,7 @@ namespace Microsoft.VisualStudio.Text.Implementation
         public int TrackTo(VersionedPosition other, PointTrackingMode mode)
         {
             if (other.Version == null)
-                throw new ArgumentException(nameof(other));
+                throw new ArgumentException(nameof(other) + " version cannot be null");
 
             if (other.Version.VersionNumber == this.VersionNumber)
                 return other.Position;
@@ -112,7 +112,7 @@ namespace Microsoft.VisualStudio.Text.Implementation
         public Span TrackTo(VersionedSpan span, SpanTrackingMode mode)
         {
             if (span.Version == null)
-                throw new ArgumentException(nameof(span));
+                throw new ArgumentException(nameof(span) + " version cannot be null");
 
             if (span.Version.VersionNumber == this.VersionNumber)
                 return span.Span;

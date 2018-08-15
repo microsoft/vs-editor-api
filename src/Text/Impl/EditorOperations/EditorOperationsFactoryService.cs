@@ -22,6 +22,9 @@ namespace Microsoft.VisualStudio.Text.Operations.Implementation
     internal sealed class EditorOperationsFactoryService : IEditorOperationsFactoryService
     {
         [Import]
+        public IMultiSelectionBrokerFactory MultiSelectionBrokerFactory { get; set; }
+
+        [Import]
         internal ITextStructureNavigatorSelectorService TextStructureNavigatorFactory { get; set; }
 
 #if WINDOWS
@@ -76,7 +79,7 @@ namespace Microsoft.VisualStudio.Text.Operations.Implementation
             // Validate
             if (textView == null)
             {
-                throw new ArgumentNullException("textView");
+                throw new ArgumentNullException(nameof(textView));
             }
 
             // Only one EditorOperations should be created per ITextView

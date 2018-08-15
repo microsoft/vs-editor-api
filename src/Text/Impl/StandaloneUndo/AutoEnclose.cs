@@ -20,7 +20,9 @@ namespace Microsoft.VisualStudio.Text.Operations.Standalone
             this.end = end;
         }
 
+#pragma warning disable CA1063 // Implement IDisposable Correctly
         public void Dispose()
+#pragma warning restore CA1063 // Implement IDisposable Correctly
         {
             if (end != null) end();
             GC.SuppressFinalize(this);

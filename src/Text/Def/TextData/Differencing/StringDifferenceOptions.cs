@@ -7,29 +7,22 @@ using System.Globalization;
 
 namespace Microsoft.VisualStudio.Text.Differencing
 {
-// Ignore the warnings about deprecated properties
+    // Ignore the warnings about deprecated properties
 #pragma warning disable 0618
 
+#pragma warning disable CA1066 // Type {0} should implement IEquatable<T> because it overrides Equals
     /// <summary>
     /// Options to use in computing string differences.
     /// </summary>
     public struct StringDifferenceOptions
+#pragma warning restore CA1066 // Type {0} should implement IEquatable<T> because it overrides Equals
     {
-        // These need to be fields and specifically in this order in order for the COM-friendly
-        // interfaces to be generated correctly.
-        private StringDifferenceTypes differenceType;
-        private int locality;
-        private bool ignoreTrimWhiteSpace;
 
         /// <summary>
         /// The type of string differencing to do, as a combination
         /// of line, word, and character differencing.
         /// </summary>
-        public StringDifferenceTypes DifferenceType 
-        { 
-            get { return differenceType; }
-            set { differenceType = value; }
-        }
+        public StringDifferenceTypes DifferenceType { get; set; }
 
         /// <summary>
         /// The greatest distance a differencing element (line, span, or character) can move 
@@ -47,20 +40,12 @@ namespace Microsoft.VisualStudio.Text.Differencing
         /// </para>
         /// </remarks>
         [Obsolete("This value is no longer used and will be ignored.")]
-        public int Locality
-        {
-            get { return locality; }
-            set { locality = value; }
-        }
+        public int Locality { get; set; }
 
         /// <summary>
         /// Gets or sets whether to ignore white space.
         /// </summary>
-        public bool IgnoreTrimWhiteSpace
-        {
-            get { return ignoreTrimWhiteSpace; }
-            set { ignoreTrimWhiteSpace = value; }
-        }
+        public bool IgnoreTrimWhiteSpace { get; set; }
 
         /// <summary>
         /// The behavior to use when splitting words, if word differencing is requested
@@ -91,9 +76,9 @@ namespace Microsoft.VisualStudio.Text.Differencing
         /// <param name="ignoreTrimWhiteSpace">Determines whether whitespace should be ignored.</param>
         public StringDifferenceOptions(StringDifferenceTypes differenceType, int locality, bool ignoreTrimWhiteSpace) : this()
         {
-            this.differenceType = differenceType;
-            this.locality = locality;
-            this.ignoreTrimWhiteSpace = ignoreTrimWhiteSpace;
+            this.DifferenceType = differenceType;
+            this.Locality = locality;
+            this.IgnoreTrimWhiteSpace = ignoreTrimWhiteSpace;
         }
 
         /// <summary>
@@ -102,9 +87,9 @@ namespace Microsoft.VisualStudio.Text.Differencing
         /// <param name="other">The <see cref="StringDifferenceOptions"/> to use in constructing a new <see cref="StringDifferenceOptions"/>.</param>
         public StringDifferenceOptions(StringDifferenceOptions other) : this()
         {
-            this.differenceType = other.DifferenceType;
-            this.locality = other.Locality;
-            this.ignoreTrimWhiteSpace = other.IgnoreTrimWhiteSpace;
+            this.DifferenceType = other.DifferenceType;
+            this.Locality = other.Locality;
+            this.IgnoreTrimWhiteSpace = other.IgnoreTrimWhiteSpace;
             this.WordSplitBehavior = other.WordSplitBehavior;
             this.DetermineLocalityCallback = other.DetermineLocalityCallback;
             this.ContinueProcessingPredicate = other.ContinueProcessingPredicate;
@@ -119,7 +104,7 @@ namespace Microsoft.VisualStudio.Text.Differencing
         {
             return string.Format(CultureInfo.InvariantCulture,
                     "Type: {0}, Locality: {1}, IgnoreTrimWhiteSpace: {2}, WordSplitBehavior: {3}, DetermineLocalityCallback: {4}, ContinueProcessingPredicate: {5}",
-                    DifferenceType, Locality, IgnoreTrimWhiteSpace, WordSplitBehavior, DetermineLocalityCallback, ContinueProcessingPredicate);
+                    this.DifferenceType, this.Locality, this.IgnoreTrimWhiteSpace, this.WordSplitBehavior, this.DetermineLocalityCallback, this.ContinueProcessingPredicate);
         }
 
         /// <summary>
@@ -127,9 +112,9 @@ namespace Microsoft.VisualStudio.Text.Differencing
         /// </summary>
         public override int GetHashCode()
         {
-            int callbackHashCode = (DetermineLocalityCallback != null) ? DetermineLocalityCallback.GetHashCode() : 0;
-            int predicateHashCode = (ContinueProcessingPredicate != null)? ContinueProcessingPredicate.GetHashCode() : 0;
-            return (DifferenceType.GetHashCode() ^ Locality.GetHashCode() ^ IgnoreTrimWhiteSpace.GetHashCode() ^ WordSplitBehavior.GetHashCode() ^ callbackHashCode ^ predicateHashCode);
+            int callbackHashCode = (this.DetermineLocalityCallback != null) ? this.DetermineLocalityCallback.GetHashCode() : 0;
+            int predicateHashCode = (this.ContinueProcessingPredicate != null)? this.ContinueProcessingPredicate.GetHashCode() : 0;
+            return (this.DifferenceType.GetHashCode() ^ this.Locality.GetHashCode() ^ this.IgnoreTrimWhiteSpace.GetHashCode() ^ this.WordSplitBehavior.GetHashCode() ^ callbackHashCode ^ predicateHashCode);
         }
 
         /// <summary>
@@ -149,7 +134,7 @@ namespace Microsoft.VisualStudio.Text.Differencing
         /// </summary>
         public static bool operator ==(StringDifferenceOptions left, StringDifferenceOptions right)
         {
-            if (object.ReferenceEquals(left, right))
+            if (ReferenceEquals(left, right))
                 return true;
 
             if ((object)left == null || (object)right == null)

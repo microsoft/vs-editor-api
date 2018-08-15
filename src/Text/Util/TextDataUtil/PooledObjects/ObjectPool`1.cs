@@ -224,7 +224,9 @@ namespace Microsoft.VisualStudio.Text.Utilities
         /// return a larger array to the pool than was originally allocated.
         /// </summary>
         [Conditional("DEBUG")]
+#pragma warning disable CA1822 // Mark members as static
         internal void ForgetTrackedObject(T old, T replacement = null)
+#pragma warning restore CA1822 // Mark members as static
         {
 #if DETECT_LEAKS
             LeakTracker tracker;

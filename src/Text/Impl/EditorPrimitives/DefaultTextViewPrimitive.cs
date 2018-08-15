@@ -10,12 +10,13 @@ namespace Microsoft.VisualStudio.Text.EditorPrimitives.Implementation
     using Microsoft.VisualStudio.Text;
     using Microsoft.VisualStudio.Text.Editor;
     using Microsoft.VisualStudio.Text.Formatting;
+    using LegacySelection = Microsoft.VisualStudio.Text.Editor.LegacySelection;
 
     internal sealed class DefaultTextViewPrimitive : TextView
     {
         private ITextView _textView;
         private Caret _caret;
-        private Selection _selection;
+        private LegacySelection _selection;
         private TextBuffer _textBuffer;
         private IViewPrimitivesFactoryService _viewPrimitivesFactory;
 
@@ -144,7 +145,7 @@ namespace Microsoft.VisualStudio.Text.EditorPrimitives.Implementation
             get { return _caret; }
         }
 
-        public override Selection Selection
+        public override LegacySelection Selection
         {
             get { return _selection; }
         }

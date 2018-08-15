@@ -60,6 +60,7 @@ namespace Microsoft.VisualStudio.Text.Operations
     /// </remarks>
     public interface ITextSearchTagger<T> : ITagger<T> where T : ITag
     {
+#pragma warning disable CA2227 // Collection properties should be read only
         /// <summary>
         /// Limits the scope of the tagger to the provided <see cref="NormalizedSnapshotSpanCollection"/>.
         /// </summary>
@@ -67,6 +68,7 @@ namespace Microsoft.VisualStudio.Text.Operations
         /// If the value is set to <c>null</c> the entire range of the buffer will be searched.
         /// </remarks>
         NormalizedSnapshotSpanCollection SearchSpans { get; set; }
+#pragma warning restore CA2227 // Collection properties should be read only
 
         /// <summary>
         /// Starts tagging occurences of the <paramref name="searchTerm"/>.

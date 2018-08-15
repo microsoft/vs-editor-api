@@ -3,8 +3,6 @@
     <AssemblyName>Microsoft.VisualStudio.Text.Logic</AssemblyName>
     <RootNamespace>$(AssemblyName)</RootNamespace>
     <TargetFramework>net46</TargetFramework>
-    <NonShipping>false</NonShipping>
-    <IsPackable>true</IsPackable>
     <PushToPublicFeed>true</PushToPublicFeed>
     <NoWarn>649;436;$(NoWarn)</NoWarn>
     <AssemblyAttributeClsCompliant>true</AssemblyAttributeClsCompliant>
@@ -15,7 +13,7 @@
     <Reference Include="System.Core" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="System.Collections.Immutable" Version="$(SystemCollectionsImmutableVersion)" />
+    <PackageReference Include="System.Collections.Immutable" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\TextData\TextData.csproj" />

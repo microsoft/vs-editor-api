@@ -19,7 +19,7 @@ namespace Microsoft.VisualStudio.Text.Tagging
         public TextMarkerTag(string type)
         {
             if (type == null)
-                throw new ArgumentNullException("type");
+                throw new ArgumentNullException(nameof(type));
             
             Type = type;
         }

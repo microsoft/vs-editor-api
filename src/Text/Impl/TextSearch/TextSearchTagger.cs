@@ -19,7 +19,7 @@ namespace Microsoft.VisualStudio.Text.Find.Implementation
     /// <remarks>
     /// This tagger -- like most others -- will not raise a TagsChanged event when the buffer changes.
     /// </remarks>
-    class TextSearchTagger<T> : ITextSearchTagger<T> where T : ITag
+    internal sealed class TextSearchTagger<T> : ITextSearchTagger<T> where T : ITag
     {
         // search service to use for doing the real search
         ITextSearchService2 _searchService;
@@ -103,12 +103,12 @@ namespace Microsoft.VisualStudio.Text.Find.Implementation
         {
             if ((searchOptions & FindOptions.SearchReverse) == FindOptions.SearchReverse)
             {
-                throw new ArgumentException("FindOptions.SearchReverse is invalid as searches are performed forwards to ensure all matches in a requested search span are found.", "searchOptions");
+                throw new ArgumentException("FindOptions.SearchReverse is invalid as searches are performed forwards to ensure all matches in a requested search span are found.", nameof(searchOptions));
             }
 
             if ((searchOptions & FindOptions.Wrap) == FindOptions.Wrap)
             {
-                throw new ArgumentException("FindOptions.Wrap is invalid as searches are performed forwards with no wrapping to ensure all matches in a requested span are found.", "searchOptions");
+                throw new ArgumentException("FindOptions.Wrap is invalid as searches are performed forwards with no wrapping to ensure all matches in a requested span are found.", nameof(searchOptions));
             }
 
             _searchTerms.Add(new BackgroundSearch<T>(_searchService, _buffer, searchTerm, searchOptions, tagFactory, this.ResultsCalculated));

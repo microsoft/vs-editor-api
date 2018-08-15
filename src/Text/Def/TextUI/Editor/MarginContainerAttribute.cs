@@ -26,7 +26,7 @@ namespace Microsoft.VisualStudio.Text.Editor
         public MarginContainerAttribute(string marginContainer)
         {
             if (marginContainer == null)
-                throw new ArgumentNullException("marginContainer");
+                throw new ArgumentNullException(nameof(marginContainer));
             if (marginContainer.Length == 0)
                 throw new ArgumentException("marginContainer is an empty string.");
 

@@ -32,7 +32,7 @@ namespace Microsoft.VisualStudio.Text.Operations.Implementation
         {
             if (textBuffer == null)
             {
-                throw new ArgumentNullException("textBuffer");
+                throw new ArgumentNullException(nameof(textBuffer));
             }
 
             ITextStructureNavigator navigator = null;
@@ -55,11 +55,11 @@ namespace Microsoft.VisualStudio.Text.Operations.Implementation
         {
             if (textBuffer == null)
             {
-                throw new ArgumentNullException("textBuffer");
+                throw new ArgumentNullException(nameof(textBuffer));
             }
             if (contentType == null)
             {
-                throw new ArgumentNullException("contentType");
+                throw new ArgumentNullException(nameof(contentType));
             }
             return CreateNavigator(textBuffer, contentType);
         }

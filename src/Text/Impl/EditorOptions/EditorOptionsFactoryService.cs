@@ -35,7 +35,7 @@ namespace Microsoft.VisualStudio.Text.EditorOptions.Implementation
         public IEditorOptions GetOptions(IPropertyOwner scope)
         {
             if (scope == null)
-                throw new ArgumentNullException("scope");
+                throw new ArgumentNullException(nameof(scope));
 
             return scope.Properties.GetOrCreateSingletonProperty<IEditorOptions>(() => new EditorOptions(this.GlobalOptions as EditorOptions, scope, this));
         }
@@ -133,7 +133,7 @@ namespace Microsoft.VisualStudio.Text.EditorOptions.Implementation
         {
             var definition = this.GetOptionDefinition(optionId);
             if (definition == null)
-                throw new ArgumentException(string.Format("No EditorOptionDefinition export found for the given option name: {0}", optionId), "optionId");
+                throw new ArgumentException(string.Format(CultureInfo.CurrentCulture, "No EditorOptionDefinition export found for the given option name: {0}", optionId), nameof(optionId));
 
             return definition;
         }

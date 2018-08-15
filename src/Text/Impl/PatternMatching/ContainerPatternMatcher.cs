@@ -43,6 +43,7 @@ namespace Microsoft.VisualStudio.Text.PatternMatching.Implementation
                 _invalidPattern = _patternSegments.Length == 0 || _patternSegments.Any(s => s.IsInvalid);
             }
 
+#pragma warning disable CA1063
             public override void Dispose()
             {
                 base.Dispose();
@@ -52,6 +53,7 @@ namespace Microsoft.VisualStudio.Text.PatternMatching.Implementation
                     segment.Dispose();
                 }
             }
+#pragma warning restore CA1063
 
             public override PatternMatch? TryMatch(string candidate)
             {

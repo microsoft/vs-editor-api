@@ -1,6 +1,7 @@
 ﻿namespace Microsoft.VisualStudio.Text.Adornments
 {
     using System;
+    using System.Diagnostics.CodeAnalysis;
 
     /// <summary>
     /// Determines behavior for a <see cref="IToolTipPresenter"/>.
@@ -12,6 +13,7 @@
         /// <summary>
         /// Default options for a mouse tracking tooltip.
         /// </summary>
+        [SuppressMessage("Microsoft.Security", "CA2104", Justification = "Type is readonly")]
         public static readonly ToolTipParameters Default = new ToolTipParameters();
 
         /// <summary>

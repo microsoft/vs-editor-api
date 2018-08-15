@@ -37,7 +37,7 @@ namespace Microsoft.VisualStudio.Text.EditorPrimitives.Implementation
             if ((position < 0) ||
                 (position > textBuffer.AdvancedTextBuffer.CurrentSnapshot.Length))
             {
-                throw new ArgumentOutOfRangeException("position");
+                throw new ArgumentOutOfRangeException(nameof(position));
             }
 
             _textBuffer = textBuffer;
@@ -78,7 +78,7 @@ namespace Microsoft.VisualStudio.Text.EditorPrimitives.Implementation
                     for (int i = 0; i < lineTextInfo.LengthInTextElements; i++)
                     {
                         string textElement = lineTextInfo.SubstringByTextElements(i, 1);
-                        if (textElement == "\t")
+                        if (string.Equals(textElement, "\t", StringComparison.Ordinal))
                         {
                             // If there is a tab in the text, then the column automatically jumps
                             // to the next tab stop.
@@ -291,7 +291,7 @@ namespace Microsoft.VisualStudio.Text.EditorPrimitives.Implementation
         {
             if (otherPoint == null)
             {
-                throw new ArgumentNullException("otherPoint");
+                throw new ArgumentNullException(nameof(otherPoint));
             }
 
             if (otherPoint.TextBuffer != TextBuffer)
@@ -306,7 +306,7 @@ namespace Microsoft.VisualStudio.Text.EditorPrimitives.Implementation
         {
             if ((otherPosition < 0) || (otherPosition > TextBuffer.AdvancedTextBuffer.CurrentSnapshot.Length))
             {
-                throw new ArgumentOutOfRangeException("otherPosition");
+                throw new ArgumentOutOfRangeException(nameof(otherPosition));
             }
 
             TextPoint otherPoint = this.Clone();
@@ -354,7 +354,7 @@ namespace Microsoft.VisualStudio.Text.EditorPrimitives.Implementation
         {
             if (text == null)
             {
-                throw new ArgumentNullException("text");
+                throw new ArgumentNullException(nameof(text));
             }
 
             if (text.Length > 0)
@@ -410,7 +410,7 @@ namespace Microsoft.VisualStudio.Text.EditorPrimitives.Implementation
                 {
                     newPoint.MoveTo(i);
                     string character = newPoint.GetNextCharacter();
-                    if (character != " " && character != "\t")
+                    if (!string.Equals(character, " ", StringComparison.Ordinal) && !string.Equals(character, "\t", StringComparison.Ordinal))
                     {
                         break;
                     }
@@ -510,7 +510,7 @@ namespace Microsoft.VisualStudio.Text.EditorPrimitives.Implementation
         {
             if ((lineNumber < 0) || (lineNumber > _textBuffer.AdvancedTextBuffer.CurrentSnapshot.LineCount))
             {
-                throw new ArgumentOutOfRangeException("lineNumber");
+                throw new ArgumentOutOfRangeException(nameof(lineNumber));
             }
 
             ITextSnapshot currentSnapshot = _textBuffer.AdvancedTextBuffer.CurrentSnapshot;
@@ -737,11 +737,11 @@ namespace Microsoft.VisualStudio.Text.EditorPrimitives.Implementation
         {
             if (pattern == null)
             {
-                throw new ArgumentNullException("pattern");
+                throw new ArgumentNullException(nameof(pattern));
             }
             if (endPoint == null)
             {
-                throw new ArgumentNullException("endPoint");
+                throw new ArgumentNullException(nameof(endPoint));
             }
             if (endPoint.TextBuffer != TextBuffer)
             {
@@ -769,7 +769,7 @@ namespace Microsoft.VisualStudio.Text.EditorPrimitives.Implementation
             if ((position < 0) ||
                 (position > snapshot.Length))
             {
-                throw new ArgumentOutOfRangeException("position");
+                throw new ArgumentOutOfRangeException(nameof(position));
             }
 
             // If this is the end of the snapshot, we don't need to check anything.
@@ -872,7 +872,7 @@ namespace Microsoft.VisualStudio.Text.EditorPrimitives.Implementation
             if ((lineNumber < 0) ||
                 (lineNumber > _textBuffer.AdvancedTextBuffer.CurrentSnapshot.LineCount))
             {
-                throw new ArgumentOutOfRangeException("lineNumber");
+                throw new ArgumentOutOfRangeException(nameof(lineNumber));
             }
 
             ITextSnapshotLine line = _textBuffer.AdvancedTextBuffer.CurrentSnapshot.GetLineFromLineNumber(lineNumber);

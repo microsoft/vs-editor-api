@@ -28,7 +28,7 @@ namespace Microsoft.VisualStudio.Text.Outlining
         public IOutliningManager GetOutliningManager(ITextView textView)
         {
             if (textView == null)
-                throw new ArgumentNullException("textView");
+                throw new ArgumentNullException(nameof(textView));
 
             if (!textView.Roles.Contains(PredefinedTextViewRoles.Structured))
                 return null;

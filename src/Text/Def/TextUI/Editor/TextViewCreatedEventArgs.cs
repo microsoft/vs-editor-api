@@ -24,7 +24,7 @@ namespace Microsoft.VisualStudio.Text.Editor
         {
             if (textView == null)
             {
-                throw new ArgumentNullException("textView");
+                throw new ArgumentNullException(nameof(textView));
             }
             TextView = textView;
         }

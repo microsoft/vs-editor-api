@@ -40,11 +40,11 @@ namespace Microsoft.VisualStudio.Text.Projection
         {
             if (insertedSpans == null)
             {
-                throw new ArgumentNullException("insertedSpans");
+                throw new ArgumentNullException(nameof(insertedSpans));
             }
             if (deletedSpans == null)
             {
-                throw new ArgumentNullException("deletedSpans");
+                throw new ArgumentNullException(nameof(deletedSpans));
             }
             this.insertedSpans = new ReadOnlyCollection<ITrackingSpan>(insertedSpans);
             this.deletedSpans = new ReadOnlyCollection<ITrackingSpan>(deletedSpans);

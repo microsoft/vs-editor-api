@@ -6,6 +6,7 @@ namespace Microsoft.VisualStudio.Text.Formatting
 {
     using System;
     
+#pragma warning disable CA1066 // Type {0} should implement IEquatable<T> because it overrides Equals
     /// <summary>
     /// The bounds of a span of text in a given text line.
     /// </summary>
@@ -27,6 +28,7 @@ namespace Microsoft.VisualStudio.Text.Formatting
     /// corresponds to one pixel on the display.</para>
     /// </remarks>
     public struct TextBounds
+#pragma warning restore CA1066 // Type {0} should implement IEquatable<T> because it overrides Equals
     {
         #region Private Members
         private readonly double _leading;
@@ -64,17 +66,17 @@ namespace Microsoft.VisualStudio.Text.Formatting
         {
             // Validate
             if (double.IsNaN(leading))
-                throw new ArgumentOutOfRangeException("leading");
+                throw new ArgumentOutOfRangeException(nameof(leading));
             if (double.IsNaN(top))
-                throw new ArgumentOutOfRangeException("top");
+                throw new ArgumentOutOfRangeException(nameof(top));
             if (double.IsNaN(bidiWidth))
-                throw new ArgumentOutOfRangeException("bidiWidth");
+                throw new ArgumentOutOfRangeException(nameof(bidiWidth));
             if (double.IsNaN(height) || (height < 0.0))
-                throw new ArgumentOutOfRangeException("height");
+                throw new ArgumentOutOfRangeException(nameof(height));
             if (double.IsNaN(textTop))
-                throw new ArgumentOutOfRangeException("textTop");
+                throw new ArgumentOutOfRangeException(nameof(textTop));
             if (double.IsNaN(textHeight) || (textHeight < 0.0))
-                throw new ArgumentOutOfRangeException("textHeight");
+                throw new ArgumentOutOfRangeException(nameof(textHeight));
 
             _leading = leading;
             _top = top;

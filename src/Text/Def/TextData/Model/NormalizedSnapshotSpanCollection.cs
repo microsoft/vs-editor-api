@@ -7,6 +7,7 @@ namespace Microsoft.VisualStudio.Text
     using System;
     using System.Collections;
     using System.Collections.Generic;
+    using System.Diagnostics.CodeAnalysis;
 
     /// <summary>
     /// A read-only collection of <see cref="SnapshotSpan"/> objects, all from the same snapshot. 
@@ -28,10 +29,11 @@ namespace Microsoft.VisualStudio.Text
         // over 95% of the instances of this class). If this.spans is nonnull, the collection is size two or greater.
         // We can't do this by subclassing because of backward compatibility with the concrete constructor.
 
-        private ITextSnapshot snapshot;
-        private NormalizedSpanCollection spans;
-        private Span span;
+        private readonly ITextSnapshot snapshot;
+        private readonly NormalizedSpanCollection spans;
+        private readonly Span span;
 
+        [SuppressMessage("Microsoft.Security", "CA2104", Justification = "Type is immutable")]
         public readonly static NormalizedSnapshotSpanCollection Empty = new NormalizedSnapshotSpanCollection();
 
         /// <summary>
@@ -68,11 +70,11 @@ namespace Microsoft.VisualStudio.Text
         {
             if (snapshot == null)
             {
-                throw new ArgumentNullException("snapshot");
+                throw new ArgumentNullException(nameof(snapshot));
             }
             if (spans == null)
             {
-                throw new ArgumentNullException("spans");
+                throw new ArgumentNullException(nameof(spans));
             }
             if (spans.Count > 0 && spans[spans.Count - 1].End > snapshot.Length)
             {
@@ -101,11 +103,11 @@ namespace Microsoft.VisualStudio.Text
         {
             if (snapshot == null)
             {
-                throw new ArgumentNullException("snapshot");
+                throw new ArgumentNullException(nameof(snapshot));
             }
             if (spans == null)
             {
-                throw new ArgumentNullException("spans");
+                throw new ArgumentNullException(nameof(spans));
             }
 
             using (IEnumerator<Span> spanEnumerator = spans.GetEnumerator())
@@ -151,11 +153,11 @@ namespace Microsoft.VisualStudio.Text
         {
             if (snapshot == null)
             {
-                throw new ArgumentNullException("snapshot");
+                throw new ArgumentNullException(nameof(snapshot));
             }
             if (spans == null)
             {
-                throw new ArgumentNullException("spans");
+                throw new ArgumentNullException(nameof(spans));
             }
 
             if (spans.Count == 0)
@@ -197,7 +199,7 @@ namespace Microsoft.VisualStudio.Text
         {
             if (snapshotSpans == null)
             {
-                throw new ArgumentNullException("snapshotSpans");
+                throw new ArgumentNullException(nameof(snapshotSpans));
             }
 
             using (IEnumerator<SnapshotSpan> spanEnumerator = snapshotSpans.GetEnumerator())
@@ -265,7 +267,7 @@ namespace Microsoft.VisualStudio.Text
             // TODO: possibly eliminate based on slight usage?
             if (snapshotSpans == null)
             {
-                throw new ArgumentNullException("snapshotSpans");
+                throw new ArgumentNullException(nameof(snapshotSpans));
             }
 
             if (snapshotSpans.Count == 0)
@@ -324,7 +326,7 @@ namespace Microsoft.VisualStudio.Text
         {
             if (snapshot == null)
             {
-                throw new ArgumentNullException("snapshot");
+                throw new ArgumentNullException(nameof(snapshot));
             }
 
             if (span.End > snapshot.Length)
@@ -341,11 +343,11 @@ namespace Microsoft.VisualStudio.Text
         {
             if (targetSnapshot == null)
             {
-                throw new ArgumentNullException("targetSnapshot");
+                throw new ArgumentNullException(nameof(targetSnapshot));
             }
             if (mode < SpanTrackingMode.EdgeExclusive || mode > SpanTrackingMode.Custom)
             {
-                throw new ArgumentOutOfRangeException("mode");
+                throw new ArgumentOutOfRangeException(nameof(mode));
             }
 
             if (this.snapshot == null)
@@ -425,11 +427,11 @@ namespace Microsoft.VisualStudio.Text
         {
             if (left == null)
             {
-                throw new ArgumentNullException("left");
+                throw new ArgumentNullException(nameof(left));
             }
             if (right == null)
             {
-                throw new ArgumentNullException("right");
+                throw new ArgumentNullException(nameof(right));
             }
 
             if (left.Count == 0)
@@ -465,11 +467,11 @@ namespace Microsoft.VisualStudio.Text
         {
             if (left == null)
             {
-                throw new ArgumentNullException("left");
+                throw new ArgumentNullException(nameof(left));
             }
             if (right == null)
             {
-                throw new ArgumentNullException("right");
+                throw new ArgumentNullException(nameof(right));
             }
 
             if (left.Count == 0)
@@ -504,11 +506,11 @@ namespace Microsoft.VisualStudio.Text
         {
             if (left == null)
             {
-                throw new ArgumentNullException("left");
+                throw new ArgumentNullException(nameof(left));
             }
             if (right == null)
             {
-                throw new ArgumentNullException("right");
+                throw new ArgumentNullException(nameof(right));
             }
 
             if (left.Count == 0)
@@ -543,11 +545,11 @@ namespace Microsoft.VisualStudio.Text
         {
             if (left == null)
             {
-                throw new ArgumentNullException("left");
+                throw new ArgumentNullException(nameof(left));
             }
             if (right == null)
             {
-                throw new ArgumentNullException("right");
+                throw new ArgumentNullException(nameof(right));
             }
 
             if (left.Count == 0)
@@ -581,7 +583,7 @@ namespace Microsoft.VisualStudio.Text
         {
             if (set == null)
             {
-                throw new ArgumentNullException("set");
+                throw new ArgumentNullException(nameof(set));
             }
             else if (set.Count == 0 || this.Count == 0)
             {
@@ -636,7 +638,7 @@ namespace Microsoft.VisualStudio.Text
         {
             if (set == null)
             {
-                throw new ArgumentNullException("set");
+                throw new ArgumentNullException(nameof(set));
             }
             else if (set.Count == 0 || this.Count == 0)
             {
@@ -742,7 +744,10 @@ namespace Microsoft.VisualStudio.Text
                 }
                 else
                 {
-                    throw new ArgumentOutOfRangeException("index");
+                    // Analyzer has a bug where it is giving a false positive in this location.
+#pragma warning disable CA1065 // Do not raise exceptions in unexpected locations
+                    throw new ArgumentOutOfRangeException(nameof(index));
+#pragma warning restore CA1065 // Do not raise exceptions in unexpected locations
                 }
             }
             set
@@ -806,11 +811,11 @@ namespace Microsoft.VisualStudio.Text
         {
             if (array == null)
             {
-                throw new ArgumentNullException("array");
+                throw new ArgumentNullException(nameof(array));
             }
             if (arrayIndex < 0 || arrayIndex > array.Length || this.Count > array.Length - arrayIndex)
             {
-                throw new ArgumentOutOfRangeException("arrayIndex");
+                throw new ArgumentOutOfRangeException(nameof(arrayIndex));
             }
             if (this.spans != null)
             {
@@ -1034,7 +1039,7 @@ namespace Microsoft.VisualStudio.Text
                 }
                 else
                 {
-                    throw new ArgumentOutOfRangeException("index");
+                    throw new ArgumentOutOfRangeException(nameof(index));
                 }
             }
             set
@@ -1060,11 +1065,11 @@ namespace Microsoft.VisualStudio.Text
         {
             if (array == null)
             {
-                throw new ArgumentNullException("array");
+                throw new ArgumentNullException(nameof(array));
             }
             if (index < 0 || index > array.Length || this.Count > array.Length - index)
             {
-                throw new ArgumentOutOfRangeException("index");
+                throw new ArgumentOutOfRangeException(nameof(index));
             }
             if (array.Rank != 1)
             {

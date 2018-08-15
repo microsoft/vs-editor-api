@@ -7,14 +7,8 @@
 //
 namespace Microsoft.VisualStudio.Text.Implementation
 {
-    using Microsoft.VisualStudio.Text;
-    using Microsoft.VisualStudio.Utilities;
-    using Microsoft.VisualStudio.Text.Utilities;
-    using System;
     using System.Collections.Generic;
     using System.ComponentModel.Composition;
-    using System.Diagnostics;
-    using System.IO;
 
     [Export(typeof(IPersistentSpanFactory))]
     internal class PersistentSpanFactory : IPersistentSpanFactory
@@ -22,17 +16,13 @@ namespace Microsoft.VisualStudio.Text.Implementation
         [Import]
         internal ITextDocumentFactoryService TextDocumentFactoryService;
 
-        private readonly Dictionary<object, FrugalList<PersistentSpan>> _spansOnDocuments = new Dictionary<object, FrugalList<PersistentSpan>>();   //Used for lock
-
+        private readonly Dictionary<object, PersistentSpanSet> _spansOnDocuments = new Dictionary<object, PersistentSpanSet>();   //Used for lock
         private bool _eventsHooked;
 
         #region IPersistentSpanFactory members
         public bool CanCreate(ITextBuffer buffer)
         {
-            if (buffer == null)
-            {
-                throw new ArgumentNullException("buffer");
-            }
+            Requires.NotNull(buffer, nameof(buffer));
 
             ITextDocument document;
             return this.TextDocumentFactoryService.TryGetTextDocument(buffer, out document);
@@ -40,14 +30,16 @@ namespace Microsoft.VisualStudio.Text.Implementation
 
         public IPersistentSpan Create(SnapshotSpan span, SpanTrackingMode trackingMode)
         {
+            Requires.NotNull(span.Snapshot, nameof(span.Snapshot));
+
             ITextDocument document;
             if (this.TextDocumentFactoryService.TryGetTextDocument(span.Snapshot.TextBuffer, out document))
             {
-                PersistentSpan persistentSpan = new PersistentSpan(document, span, trackingMode, this);
-
-                this.AddSpan(document, persistentSpan);
-
-                return persistentSpan;
+                lock (_spansOnDocuments)
+                {
+                    var spanSet = this.GetOrCreateSpanSet(null, document);
+                    return spanSet.Create(span, trackingMode);
+                }
             }
 
             return null;
@@ -55,21 +47,21 @@ namespace Microsoft.VisualStudio.Text.Implementation
 
         public IPersistentSpan Create(ITextSnapshot snapshot, int startLine, int startIndex, int endLine, int endIndex, SpanTrackingMode trackingMode)
         {
+            Requires.NotNull(snapshot, nameof(snapshot));
+            Requires.Argument(startLine >= 0, nameof(startLine), "Must be non-negative.");
+            Requires.Argument(startIndex >= 0, nameof(startIndex), "Must be non-negative.");
+            Requires.Argument(endLine >= startLine, nameof(endLine), "Must be >= startLine.");
+            Requires.Argument((endIndex >= 0) && ((startLine != endLine) || (endIndex >= startIndex)), nameof(endIndex), "Must be non-negative and (endLine,endIndex) may not be before (startLine,startIndex).");
+            Requires.Range(((int)trackingMode >= (int)SpanTrackingMode.EdgeExclusive) || ((int)trackingMode <= (int)(SpanTrackingMode.EdgeNegative)), nameof(trackingMode));
+
             ITextDocument document;
             if (this.TextDocumentFactoryService.TryGetTextDocument(snapshot.TextBuffer, out document))
             {
-                var start = PersistentSpan.LineIndexToSnapshotPoint(startLine, startIndex, snapshot);
-                var end = PersistentSpan.LineIndexToSnapshotPoint(endLine, endIndex, snapshot);
-                if (end < start)
+                lock (_spansOnDocuments)
                 {
-                    end = start;
+                    var spanSet = this.GetOrCreateSpanSet(null, document);
+                    return spanSet.Create(snapshot, startLine, startIndex, endLine, endIndex, trackingMode);
                 }
-
-                PersistentSpan persistentSpan = new PersistentSpan(document, new SnapshotSpan(start, end), trackingMode, this);
-
-                this.AddSpan(document, persistentSpan);
-
-                return persistentSpan;
             }
 
             return null;
@@ -77,218 +69,134 @@ namespace Microsoft.VisualStudio.Text.Implementation
 
         public IPersistentSpan Create(string filePath, int startLine, int startIndex, int endLine, int endIndex, SpanTrackingMode trackingMode)
         {
-            if (string.IsNullOrEmpty(filePath))
-            {
-                throw new ArgumentException("filePath");
-            }
-            if (startLine < 0)
-            {
-                throw new ArgumentOutOfRangeException("startLine", "Must be non-negative.");
-            }
-            if (startIndex < 0)
-            {
-                throw new ArgumentOutOfRangeException("startIndex", "Must be non-negative.");
-            }
-            if (endLine < startLine)
-            {
-                throw new ArgumentOutOfRangeException("endLine", "Must be >= startLine.");
-            }
-            if ((endIndex < 0) || ((startLine == endLine) && (endIndex < startIndex)))
-            {
-                throw new ArgumentOutOfRangeException("endIndex", "Must be non-negative and (endLine,endIndex) may not be before (startLine,startIndex).");
-            }
-            if (((int)trackingMode < (int)SpanTrackingMode.EdgeExclusive) || ((int)trackingMode > (int)(SpanTrackingMode.EdgeNegative)))
-            {
-                throw new ArgumentOutOfRangeException("trackingMode");
-            }
+            Requires.NotNullOrEmpty(filePath, nameof(filePath));
+            Requires.Argument(startLine >= 0, nameof(startLine), "Must be non-negative.");
+            Requires.Argument(startIndex >= 0, nameof(startIndex), "Must be non-negative.");
+            Requires.Argument(endLine >= startLine, nameof(endLine), "Must be >= startLine.");
+            Requires.Argument((endIndex >= 0) && ((startLine != endLine) || (endIndex >= startIndex)), nameof(endIndex), "Must be non-negative and (endLine,endIndex) may not be before (startLine,startIndex).");
+            Requires.Range(((int)trackingMode >= (int)SpanTrackingMode.EdgeExclusive) || ((int)trackingMode <= (int)(SpanTrackingMode.EdgeNegative)), nameof(trackingMode));
 
-            PersistentSpan persistentSpan = new PersistentSpan(filePath, startLine, startIndex, endLine, endIndex, trackingMode, this);
-
-            this.AddSpan(new FileNameKey(filePath), persistentSpan);
-
-            return persistentSpan;
+            var key = new FileNameKey(filePath);
+            lock (_spansOnDocuments)
+            {
+                var spanSet = this.GetOrCreateSpanSet(key, null);
+                return spanSet.Create(startLine, startIndex, endLine, endIndex, trackingMode);
+            }
         }
 
         public IPersistentSpan Create(string filePath, Span span, SpanTrackingMode trackingMode)
         {
-            if (string.IsNullOrEmpty(filePath))
+            Requires.NotNullOrEmpty(filePath, nameof(filePath));
+            Requires.Range(((int)trackingMode >= (int)SpanTrackingMode.EdgeExclusive) || ((int)trackingMode <= (int)(SpanTrackingMode.EdgeNegative)), nameof(trackingMode));
+
+            var key = new FileNameKey(filePath);
+            lock (_spansOnDocuments)
             {
-                throw new ArgumentException("filePath");
+                var spanSet = this.GetOrCreateSpanSet(key, null);
+                return spanSet.Create(span, trackingMode);
             }
-            if (((int)trackingMode < (int)SpanTrackingMode.EdgeExclusive) || ((int)trackingMode > (int)(SpanTrackingMode.EdgeNegative)))
-            {
-                throw new ArgumentOutOfRangeException("trackingMode");
-            }
-
-            PersistentSpan persistentSpan = new PersistentSpan(filePath, span, trackingMode, this);
-
-            this.AddSpan(new FileNameKey(filePath), persistentSpan);
-
-            return persistentSpan;
         }
         #endregion
 
-        internal bool IsEmpty {  get { return _spansOnDocuments.Count == 0; } } //For unit tests
+        internal bool IsEmpty { get { return _spansOnDocuments.Count == 0; } } //For unit tests
 
-        private void AddSpan(object key, PersistentSpan persistentSpan)
+        private PersistentSpanSet GetOrCreateSpanSet(FileNameKey filePath, ITextDocument document)
         {
-            lock (_spansOnDocuments)
+            object key = ((object)document) ?? filePath;
+            if (!_spansOnDocuments.TryGetValue(key, out PersistentSpanSet spanSet))
             {
-                FrugalList<PersistentSpan> spans;
-                if (!_spansOnDocuments.TryGetValue(key, out spans))
+                if (!_eventsHooked)
                 {
-                    this.EnsureEventsHooked();
+                    _eventsHooked = true;
 
-                    spans = new FrugalList<PersistentSpan>();
-                    _spansOnDocuments.Add(key, spans);
+                    this.TextDocumentFactoryService.TextDocumentCreated += OnTextDocumentCreated;
+                    this.TextDocumentFactoryService.TextDocumentDisposed += OnTextDocumentDisposed;
                 }
 
-                spans.Add(persistentSpan);
+                spanSet = new PersistentSpanSet(filePath, document, this);
+                _spansOnDocuments.Add(key, spanSet);
             }
-        }
 
-        private void EnsureEventsHooked()
-        {
-            if (!_eventsHooked)
-            {
-                _eventsHooked = true;
-
-                this.TextDocumentFactoryService.TextDocumentCreated += OnTextDocumentCreated;
-                this.TextDocumentFactoryService.TextDocumentDisposed += OnTextDocumentDisposed;
-            }
+            return spanSet;
         }
 
         private void OnTextDocumentCreated(object sender, TextDocumentEventArgs e)
         {
             var path = new FileNameKey(e.TextDocument.FilePath);
-            FrugalList<PersistentSpan> spans;
             lock (_spansOnDocuments)
             {
-                if (_spansOnDocuments.TryGetValue(path, out spans))
+                if (_spansOnDocuments.TryGetValue(path, out PersistentSpanSet spanSet))
                 {
-                    foreach (var span in spans)
-                    {
-                        span.DocumentReopened(e.TextDocument);
-                    }
+                    spanSet.DocumentReopened(e.TextDocument);
 
                     _spansOnDocuments.Remove(path);
-                    _spansOnDocuments.Add(e.TextDocument, spans);
+                    _spansOnDocuments.Add(e.TextDocument, spanSet);
                 }
             }
         }
 
         private void OnTextDocumentDisposed(object sender, TextDocumentEventArgs e)
         {
-            FrugalList<PersistentSpan> spans;
             lock (_spansOnDocuments)
             {
-                if (_spansOnDocuments.TryGetValue(e.TextDocument, out spans))
+                if (_spansOnDocuments.TryGetValue(e.TextDocument, out PersistentSpanSet spanSet))
                 {
-                    foreach (var span in spans)
-                    {
-                        span.DocumentClosed();
-                    }
-
+                    spanSet.DocumentClosed();
                     _spansOnDocuments.Remove(e.TextDocument);
 
-                    var path = new FileNameKey(e.TextDocument.FilePath);
-                    FrugalList<PersistentSpan> existingSpansOnPath;
-                    if (_spansOnDocuments.TryGetValue(path, out existingSpansOnPath))
+                    if (_spansOnDocuments.TryGetValue(spanSet.FileKey, out PersistentSpanSet existingSpansOnPath))
                     {
-                        //Handle (badly) the case where a document is renamed to an existing closed document & then closed.
-                        existingSpansOnPath.AddRange(spans);
+                        // Handle (badly) the case where a document is renamed to an existing closed document & then closed.
+                        // We should only end up in this case if we had spans on two open documents that were both renamed
+                        // to the same file name & then closed.
+                        foreach (var s in spanSet.Spans)
+                        {
+                            s.SetSpanSet(existingSpansOnPath);
+                            existingSpansOnPath.Spans.Add(s);
+                        }
+
+                        spanSet.Spans.Clear();
+                        spanSet.Dispose();
                     }
                     else
                     {
-                        _spansOnDocuments.Add(path, spans);
+                        _spansOnDocuments.Add(spanSet.FileKey, spanSet);
                     }
                 }
             }
         }
 
-        internal void Delete(PersistentSpan span)
+        internal void DocumentRenamed(PersistentSpanSet spanSet)
         {
             lock (_spansOnDocuments)
             {
-                ITextDocument document = span.Document;
-                if (document != null)
+                if (_spansOnDocuments.TryGetValue(spanSet.FileKey, out PersistentSpanSet existingSpansOnPath))
                 {
-                    FrugalList<PersistentSpan> spans;
-                    if (_spansOnDocuments.TryGetValue(document, out spans))
+                    // There were spans on a closed document with the same name as this one. Move all of those spans to this one
+                    // and "open" them (note that this will probably do bad things to their positions but it is the best we
+                    // can do).
+                    foreach (var s in existingSpansOnPath.Spans)
                     {
-                        spans.Remove(span);
+                        s.SetSpanSet(spanSet);
+                        spanSet.Spans.Add(s);
 
-                        if (spans.Count == 0)
-                        {
-                            //Last one ... remove all references to document.
-                            _spansOnDocuments.Remove(document);
-                        }
+                        s.DocumentReopened();
                     }
-                    else
-                    {
-                        Debug.Fail("There should have been an entry in SpanOnDocuments.");
-                    }
-                }
-                else
-                {
-                    var path = new FileNameKey(span.FilePath);
-                    FrugalList<PersistentSpan> spans;
-                    if (_spansOnDocuments.TryGetValue(path, out spans))
-                    {
-                        spans.Remove(span);
 
-                        if (spans.Count == 0)
-                        {
-                            //Last one ... remove all references to path.
-                            _spansOnDocuments.Remove(path);
-                        }
-                    }
-                    else
-                    {
-                        Debug.Fail("There should have been an entry in SpanOnDocuments.");
-                    }
+                    existingSpansOnPath.Spans.Clear();
+                    existingSpansOnPath.Dispose();
                 }
             }
         }
-
-        private class FileNameKey
+        internal void Delete(PersistentSpanSet spanSet, PersistentSpan span)
         {
-            private readonly string _fileName;
-            private readonly int _hashCode;
-
-            public FileNameKey(string fileName)
+            lock (_spansOnDocuments)
             {
-                //Gracefully catch errors getting the full path (which can happen if the file name is on a protected share).
-                try
+                if (spanSet.Spans.Remove(span) && (spanSet.Spans.Count == 0))
                 {
-                    _fileName = Path.GetFullPath(fileName);
+                    _spansOnDocuments.Remove(((object)(spanSet.Document)) ?? spanSet.FileKey);
+                    spanSet.Dispose();
                 }
-                catch
-                {
-                    //This shouldn't happen (we are generally passed names associated with documents that we are expecting to open so
-                    //we should have access). If we fail, we will, at worst not get the same underlying document when people create
-                    //persistent spans using unnormalized names.
-                    _fileName = fileName;
-                }
-
-                _hashCode = StringComparer.OrdinalIgnoreCase.GetHashCode(_fileName);
-            }
-
-            //Override equality and hash code
-            public override int GetHashCode()
-            {
-                return _hashCode;
-            }
-
-            public override bool Equals(object obj)
-            {
-                var other = obj as FileNameKey;
-                return (other != null) && string.Equals(_fileName, other._fileName, StringComparison.OrdinalIgnoreCase);
-            }
-
-            public override string ToString()
-            {
-                return _fileName;
             }
         }
     }

@@ -49,6 +49,6 @@ namespace Microsoft.VisualStudio.Utilities
         /// </summary>
         /// <remarks>If the specified name does not exist, then the method does nothing.</remarks>
         /// <param name="name">The file name (the period is optional).</param>
-        void RemoveFileName(string name); 
+        void RemoveFileName(string name);
     }
 }

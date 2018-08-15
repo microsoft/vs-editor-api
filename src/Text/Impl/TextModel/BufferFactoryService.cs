@@ -149,7 +149,7 @@ namespace Microsoft.VisualStudio.Text.Implementation
         {
             if (contentType == null)
             {
-                throw new ArgumentNullException("contentType");
+                throw new ArgumentNullException(nameof(contentType));
             }
             return Make(contentType, StringRebuilder.Empty, false);
         }
@@ -163,7 +163,7 @@ namespace Microsoft.VisualStudio.Text.Implementation
         {
             if (contentType == null)
             {
-                throw new ArgumentNullException("contentType");
+                throw new ArgumentNullException(nameof(contentType));
             }
 
             StringRebuilder content = StringRebuilderFromSnapshotSpan(span);
@@ -191,11 +191,11 @@ namespace Microsoft.VisualStudio.Text.Implementation
         {
             if (text == null)
             {
-                throw new ArgumentNullException("text");
+                throw new ArgumentNullException(nameof(text));
             }
             if (contentType == null)
             {
-                throw new ArgumentNullException("contentType");
+                throw new ArgumentNullException(nameof(contentType));
             }
             return Make(contentType, StringRebuilder.Create(text), spurnGroup);
         }
@@ -204,11 +204,11 @@ namespace Microsoft.VisualStudio.Text.Implementation
         {
             if (reader == null)
             {
-                throw new ArgumentNullException("reader");
+                throw new ArgumentNullException(nameof(reader));
             }
             if (contentType == null)
             {
-                throw new ArgumentNullException("contentType");
+                throw new ArgumentNullException(nameof(contentType));
             }
             if (length > int.MaxValue)
             {
@@ -217,7 +217,7 @@ namespace Microsoft.VisualStudio.Text.Implementation
 
             bool hasConsistentLineEndings;
             int longestLineLength;
-            StringRebuilder content = TextImageLoader.Load(reader, length, traceId, out hasConsistentLineEndings, out longestLineLength);
+            StringRebuilder content = TextImageLoader.Load(reader, length, out hasConsistentLineEndings, out longestLineLength);
 
             ITextBuffer buffer = Make(contentType, content, false);
             if (!hasConsistentLineEndings)
@@ -286,7 +286,7 @@ namespace Microsoft.VisualStudio.Text.Implementation
             bool hasConsistentLineEndings;
             int longestLineLength;
 
-            return CachingTextImage.Create(TextImageLoader.Load(reader, length, string.Empty, out hasConsistentLineEndings, out longestLineLength), null);
+            return CachingTextImage.Create(TextImageLoader.Load(reader, length, out hasConsistentLineEndings, out longestLineLength), null);
         }
 
         public ITextImage CreateTextImage(MemoryMappedFile source)
@@ -318,11 +318,11 @@ namespace Microsoft.VisualStudio.Text.Implementation
             // projectionEditResolver is allowed to be null.
             if (trackingSpans == null)
             {
-                throw new ArgumentNullException("trackingSpans");
+                throw new ArgumentNullException(nameof(trackingSpans));
             }
             if (contentType == null)
             {
-                throw new ArgumentNullException("contentType");
+                throw new ArgumentNullException(nameof(contentType));
             }
             IProjectionBuffer buffer = 
                 new ProjectionBuffer(this, projectionEditResolver, contentType, trackingSpans, _differenceService, _textDifferencingSelectorService.DefaultTextDifferencingService, options, _guardedOperations);
@@ -337,7 +337,7 @@ namespace Microsoft.VisualStudio.Text.Implementation
             // projectionEditResolver is allowed to be null.
             if (trackingSpans == null)
             {
-                throw new ArgumentNullException("trackingSpans");
+                throw new ArgumentNullException(nameof(trackingSpans));
             }
 
             IProjectionBuffer buffer =
@@ -354,15 +354,15 @@ namespace Microsoft.VisualStudio.Text.Implementation
             // projectionEditResolver is allowed to be null.
             if (exposedSpans == null)
             {
-                throw new ArgumentNullException("exposedSpans");
+                throw new ArgumentNullException(nameof(exposedSpans));
             }
             if (exposedSpans.Count == 0)
             {
-                throw new ArgumentOutOfRangeException("exposedSpans");  // really?
+                throw new ArgumentOutOfRangeException(nameof(exposedSpans));  // really?
             }
             if (contentType == null)
             {
-                throw new ArgumentNullException("contentType");
+                throw new ArgumentNullException(nameof(contentType));
             }
 
             if (exposedSpans[0].Snapshot != exposedSpans[0].Snapshot.TextBuffer.CurrentSnapshot)

@@ -10,6 +10,7 @@ namespace Microsoft.VisualStudio.Text.EditorOptions.Implementation
     using System;
     using System.Collections.Generic;
     using System.Collections.Specialized;
+    using System.Globalization;
     using System.Linq;
     using Microsoft.VisualStudio.Text.Editor;
     using Microsoft.VisualStudio.Text.Utilities;
@@ -60,7 +61,7 @@ namespace Microsoft.VisualStudio.Text.EditorOptions.Implementation
                     throw new InvalidOperationException("Cannot change the Parent of the global options.");
 
                 if (value == null)
-                    throw new ArgumentNullException("value");
+                    throw new ArgumentNullException(nameof(value));
 
                 if (value == this)
                     throw new ArgumentException("The Parent of this instance of IEditorOptions cannot be set to itself.");
@@ -124,7 +125,7 @@ namespace Microsoft.VisualStudio.Text.EditorOptions.Implementation
             object value;
 
             if (!TryGetOption(definition, out value))
-                throw new ArgumentException(string.Format("The specified option is not valid in this scope: {0}", definition.Name));
+                throw new ArgumentException(string.Format(CultureInfo.CurrentCulture, "The specified option is not valid in this scope: {0}", definition.Name));
 
             return value;
         }
@@ -136,12 +137,12 @@ namespace Microsoft.VisualStudio.Text.EditorOptions.Implementation
             // Make sure the type of the provided value is correct
             if (!definition.ValueType.IsAssignableFrom(value.GetType()))
             {
-                throw new ArgumentException("Specified option value is of an invalid type", "value");
+                throw new ArgumentException("Specified option value is of an invalid type", nameof(value));
             }
             // Make sure the option is valid, also
             else if(!definition.IsValid(ref value))
             {
-                throw new ArgumentException("The supplied value failed validation for the option.", "value");
+                throw new ArgumentException("The supplied value failed validation for the option.", nameof(value));
             }
             // Finally, set the option value locally
             else

@@ -21,7 +21,7 @@ namespace Microsoft.VisualStudio.Text.Editor
         /// <summary>
         /// Gets the <see cref="Selection"/> primitive used for selection manipulation.
         /// </summary>
-        Selection Selection { get; }
+        LegacySelection Selection { get; }
 
         /// <summary>
         /// Gets the <see cref="Caret"/> primitive used for caret movement.

@@ -65,7 +65,7 @@ namespace Microsoft.VisualStudio.Text.Operations
         SnapshotSpan? Find(SnapshotSpan searchRange, SnapshotPoint startingPosition, string searchPattern, FindOptions options);
 
         /// <summary>
-        /// Searches for the next occurence of <paramref name="searchPattern"/> and sets <paramref name="expandedReplacePattern"/> to the result of
+        /// Searches for the next occurrence of <paramref name="searchPattern"/> and sets <paramref name="expandedReplacePattern"/> to the result of
         /// the text replacement.
         /// </summary>
         /// <param name="startingPosition">
@@ -101,7 +101,7 @@ namespace Microsoft.VisualStudio.Text.Operations
         SnapshotSpan? FindForReplace(SnapshotPoint startingPosition, string searchPattern, string replacePattern, FindOptions options, out string expandedReplacePattern);
 
         /// <summary>
-        /// Searches for the next occurence of <paramref name="searchPattern"/> and sets <paramref name="expandedReplacePattern"/> to the result of
+        /// Searches for the next occurrence of <paramref name="searchPattern"/> and sets <paramref name="expandedReplacePattern"/> to the result of
         /// the text replacement.
         /// </summary>
         /// <param name="searchRange">
@@ -136,7 +136,7 @@ namespace Microsoft.VisualStudio.Text.Operations
         SnapshotSpan? FindForReplace(SnapshotSpan searchRange, string searchPattern, string replacePattern, FindOptions options, out string expandedReplacePattern);
 
         /// <summary>
-        /// Finds all occurences of the <paramref name="searchPattern"/> in <paramref name="searchRange"/>.
+        /// Finds all occurrences of the <paramref name="searchPattern"/> in <paramref name="searchRange"/>.
         /// </summary>
         /// <param name="searchRange">
         /// The range to search in.
@@ -148,7 +148,7 @@ namespace Microsoft.VisualStudio.Text.Operations
         /// The options to use while performing the search operation.
         /// </param>
         /// <returns>
-        /// An <see cref="IEnumerable{SnapshotSpan}"/> containing all occurences of the <paramref name="searchPattern"/>.
+        /// An <see cref="IEnumerable{SnapshotSpan}"/> containing all occurrences of the <paramref name="searchPattern"/>.
         /// </returns>
         /// <remarks>
         /// This method is safe to execute on any thread.
@@ -156,7 +156,7 @@ namespace Microsoft.VisualStudio.Text.Operations
         IEnumerable<SnapshotSpan> FindAll(SnapshotSpan searchRange, string searchPattern, FindOptions options);
 
         /// <summary>
-        /// Finds all occurences of the <paramref name="searchPattern"/> in <paramref name="searchRange"/> starting from
+        /// Finds all occurrences of the <paramref name="searchPattern"/> in <paramref name="searchRange"/> starting from
         /// <paramref name="startingPosition"/>.
         /// </summary>
         /// <param name="searchRange">
@@ -172,7 +172,7 @@ namespace Microsoft.VisualStudio.Text.Operations
         /// The options to use while performing the search operation.
         /// </param>
         /// <returns>
-        /// An <see cref="IEnumerable{SnapshotSpan}"/> containing all occurences of the <paramref name="searchPattern"/>.
+        /// An <see cref="IEnumerable{SnapshotSpan}"/> containing all occurrences of the <paramref name="searchPattern"/>.
         /// </returns>
         /// <remarks>
         /// This method is safe to execute on any thread.
@@ -180,7 +180,7 @@ namespace Microsoft.VisualStudio.Text.Operations
         IEnumerable<SnapshotSpan> FindAll(SnapshotSpan searchRange, SnapshotPoint startingPosition, string searchPattern, FindOptions options);
 
         /// <summary>
-        /// Searches for all occurences of the <paramref name="searchPattern"/> and calculates all
+        /// Searches for all occurrences of the <paramref name="searchPattern"/> and calculates all
         /// the corresponding replacement results for every match according to the <paramref name="replacePattern"/>.
         /// </summary>
         /// <param name="searchRange">

@@ -20,7 +20,7 @@ namespace Microsoft.VisualStudio.Text.Differencing.Implementation
     internal sealed class MaximalSubsequenceAlgorithm : IDifferenceService
     {
         #region IDifferenceService Members
-        static readonly Microsoft.TeamFoundation.Diff.Copy.IDiffChange[] Empty = new Microsoft.TeamFoundation.Diff.Copy.IDiffChange[0];
+        static readonly Microsoft.TeamFoundation.Diff.Copy.IDiffChange[] Empty = Array.Empty<TeamFoundation.Diff.Copy.IDiffChange>();
         
         public IDifferenceCollection<T> DifferenceSequences<T>(IList<T> left, IList<T> right)
         {
@@ -37,9 +37,9 @@ namespace Microsoft.VisualStudio.Text.Differencing.Implementation
         internal static DifferenceCollection<T> DifferenceSequences<T>(IList<T> left, IList<T> right, IList<T> originalLeft, IList<T> originalRight, ContinueProcessingPredicate<T> continueProcessingPredicate)
         {
             if (left == null)
-                throw new ArgumentNullException("left");
+                throw new ArgumentNullException(nameof(left));
             if (right == null)
-                throw new ArgumentNullException("right");
+                throw new ArgumentNullException(nameof(right));
 
             Microsoft.TeamFoundation.Diff.Copy.IDiffChange[] changes;
             if ((left.Count == 0) || (right.Count == 0))

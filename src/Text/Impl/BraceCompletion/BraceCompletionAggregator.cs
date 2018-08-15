@@ -249,7 +249,7 @@ namespace Microsoft.VisualStudio.Text.BraceCompletion.Implementation
         /// This checks the type against all others until it finds one that it is
         /// a type of. List.Sort() does not work here since most types are unrelated.
         /// </summary>
-        private List<IContentType> SortContentTypes(List<IContentType> contentTypes)
+        private static List<IContentType> SortContentTypes(List<IContentType> contentTypes)
         {
             List<IContentType> sorted = new List<IContentType>(contentTypes.Count);
 

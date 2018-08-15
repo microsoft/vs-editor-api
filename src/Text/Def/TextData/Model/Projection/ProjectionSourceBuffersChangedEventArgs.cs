@@ -44,11 +44,11 @@ namespace Microsoft.VisualStudio.Text.Projection
         {
             if (addedBuffers == null)
             {
-                throw new ArgumentNullException("addedBuffers");
+                throw new ArgumentNullException(nameof(addedBuffers));
             }
             if (removedBuffers == null)
             {
-                throw new ArgumentNullException("removedBuffers");
+                throw new ArgumentNullException(nameof(removedBuffers));
             }
             this.addedBuffers = addedBuffers;
             this.removedBuffers = removedBuffers;

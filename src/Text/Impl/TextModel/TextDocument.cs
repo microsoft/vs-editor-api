@@ -15,7 +15,7 @@ namespace Microsoft.VisualStudio.Text.Implementation
     using Microsoft.VisualStudio.Utilities;
     using Microsoft.VisualStudio.Text.Editor;
 
-    internal partial class TextDocument : ITextDocument
+    internal sealed partial class TextDocument : ITextDocument
     {
         #region Private Members
 
@@ -50,19 +50,19 @@ namespace Microsoft.VisualStudio.Text.Implementation
         {
             if (textBuffer == null)
             {
-                throw new ArgumentNullException("textBuffer");
+                throw new ArgumentNullException(nameof(textBuffer));
             }
             if (filePath == null)
             {
-                throw new ArgumentNullException("filePath");
+                throw new ArgumentNullException(nameof(filePath));
             }
             if (textDocumentFactoryService == null)
             {
-                throw new ArgumentNullException("textDocumentFactoryService");
+                throw new ArgumentNullException(nameof(textDocumentFactoryService));
             }
             if (encoding == null)
             {
-                throw new ArgumentNullException("encoding");
+                throw new ArgumentNullException(nameof(encoding));
             }
 
             _textBuffer = textBuffer;
@@ -125,7 +125,7 @@ namespace Microsoft.VisualStudio.Text.Implementation
             }
             if (newFilePath == null)
             {
-                throw new ArgumentNullException("newFilePath");
+                throw new ArgumentNullException(nameof(newFilePath));
             }
 
             _filePath = newFilePath;
@@ -147,7 +147,7 @@ namespace Microsoft.VisualStudio.Text.Implementation
                 {
                     bool hasConsistentLineEndings;
                     int longestLineLength;
-                    StringRebuilder newContent = TextImageLoader.Load(streamReader, fileSize, _filePath, out hasConsistentLineEndings, out longestLineLength);
+                    StringRebuilder newContent = TextImageLoader.Load(streamReader, fileSize, out hasConsistentLineEndings, out longestLineLength);
 
                     if (!hasConsistentLineEndings)
                     {
@@ -361,11 +361,11 @@ namespace Microsoft.VisualStudio.Text.Implementation
             }
             if (filePath == null)
             {
-                throw new ArgumentNullException("filePath");
+                throw new ArgumentNullException(nameof(filePath));
             }
 
             PerformSave(overwrite ? FileMode.Create : FileMode.CreateNew, filePath, createFolder);
-            UpdateSaveStatus(filePath, _filePath != filePath);
+            UpdateSaveStatus(filePath, !string.Equals(_filePath, filePath, StringComparison.Ordinal));
 
             // file path won't be updated if the save fails (in which case PerformSave will throw an exception)
 
@@ -376,7 +376,7 @@ namespace Microsoft.VisualStudio.Text.Implementation
         {
              if (newContentType == null)
             {
-                throw new ArgumentNullException("newContentType");
+                throw new ArgumentNullException(nameof(newContentType));
             }
              SaveAs(filePath, overwrite, createFolder);
             // content type won't be changed if the save fails (in which case SaveAs will throw an exception)
@@ -391,7 +391,7 @@ namespace Microsoft.VisualStudio.Text.Implementation
             }
             if (filePath == null)
             {
-                throw new ArgumentNullException("filePath");
+                throw new ArgumentNullException(nameof(filePath));
             }
 
             PerformSave(overwrite ? FileMode.Create : FileMode.CreateNew, filePath, createFolder);
@@ -453,7 +453,7 @@ namespace Microsoft.VisualStudio.Text.Implementation
             {
                 if (value == null)
                 {
-                    throw new ArgumentNullException("value");
+                    throw new ArgumentNullException(nameof(value));
                 }
 
                 Encoding oldEncoding = _encoding;

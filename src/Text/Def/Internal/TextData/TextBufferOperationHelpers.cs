@@ -11,7 +11,7 @@ using Microsoft.VisualStudio.Text.Editor.OptionsExtensionMethods;
 
 namespace Microsoft.VisualStudio.Text
 {
-    public class TextBufferOperationHelpers
+    public static class TextBufferOperationHelpers
     {
         /// <summary>
         /// Checks if the given <see cref="ITextSnapshotLine"/> has any non-whitespace characters

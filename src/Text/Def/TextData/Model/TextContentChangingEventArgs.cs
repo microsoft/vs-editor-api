@@ -39,7 +39,7 @@ namespace Microsoft.VisualStudio.Text
         {
             if (beforeSnapshot == null)
             {
-                throw new ArgumentNullException("beforeSnapshot");
+                throw new ArgumentNullException(nameof(beforeSnapshot));
             }
 
             Canceled = false;

@@ -70,7 +70,7 @@ namespace Microsoft.VisualStudio.Utilities
         public T GetOrCreateSingletonProperty<T>(object key, Func<T> creator) where T : class
         {
             if (creator == null)
-                throw new ArgumentNullException("creator");
+                throw new ArgumentNullException(nameof(creator));
 
             lock (this.syncLock)
             {

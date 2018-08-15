@@ -38,7 +38,7 @@ namespace Microsoft.VisualStudio.Text.Classification.Implementation
 
         public bool IsOfType(string type)
         {
-            if (this.name == type)
+            if (string.Equals(this.name, type, System.StringComparison.Ordinal))
                 return true;
             else if (this.baseTypes != null)
             {

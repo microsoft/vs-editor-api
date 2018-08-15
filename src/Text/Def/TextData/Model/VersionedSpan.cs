@@ -5,14 +5,18 @@
 namespace Microsoft.VisualStudio.Text
 {
     using System;
+    using System.Diagnostics.CodeAnalysis;
 
     /// <summary>
     /// Describes a span in a specific <see cref="ITextImageVersion"/>.
     /// </summary>
     public struct VersionedSpan : IEquatable<VersionedSpan>
     {
+#pragma warning disable CA1051 // Do not declare visible instance fields
+        [SuppressMessage("Microsoft.Security", "CA2104", Justification = "Type is readonly")]
         public readonly ITextImageVersion Version;
         public readonly Span Span;
+#pragma warning disable CA1051 // Do not declare visible instance fields
 
         public readonly static VersionedSpan Invalid = new VersionedSpan();
 
@@ -82,7 +86,7 @@ namespace Microsoft.VisualStudio.Text
         {
             return (this.Version == null)
                    ? nameof(Invalid)
-                   : string.Format(System.Globalization.CultureInfo.CurrentCulture, "v{1}_{2}",
+                   : string.Format(System.Globalization.CultureInfo.CurrentCulture, "v{0}_{1}",
                                    this.Version.VersionNumber,
                                    this.Span);
         }

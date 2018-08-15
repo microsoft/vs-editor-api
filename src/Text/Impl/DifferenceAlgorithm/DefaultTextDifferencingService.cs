@@ -53,7 +53,7 @@ namespace Microsoft.VisualStudio.Text.Differencing.Implementation
             }
             else
             {
-                throw new ArgumentOutOfRangeException("differenceOptions");
+                throw new ArgumentOutOfRangeException(nameof(differenceOptions));
             }
 
             return DiffText(left, right, type, differenceOptions);
@@ -92,7 +92,7 @@ namespace Microsoft.VisualStudio.Text.Differencing.Implementation
             }
             else
             {
-                throw new ArgumentOutOfRangeException("differenceOptions");
+                throw new ArgumentOutOfRangeException(nameof(differenceOptions));
             }
 
             return DiffText(left, right, type, differenceOptions);
@@ -103,7 +103,7 @@ namespace Microsoft.VisualStudio.Text.Differencing.Implementation
             StringDifferenceOptions nextOptions = new StringDifferenceOptions(differenceOptions);
             nextOptions.DifferenceType &= ~type;
 
-            var diffCollection = ComputeMatches(type, differenceOptions, left, right);
+            var diffCollection = ComputeMatches(differenceOptions, left, right);
             return new HierarchicalDifferenceCollection(diffCollection, left, right, this, nextOptions);
         }
 
@@ -133,13 +133,13 @@ namespace Microsoft.VisualStudio.Text.Differencing.Implementation
             return line.GetTextIncludingLineBreak();
         }
 
-        static IDifferenceCollection<string> ComputeMatches(StringDifferenceTypes differenceType, StringDifferenceOptions differenceOptions,
+        static IDifferenceCollection<string> ComputeMatches(StringDifferenceOptions differenceOptions,
                                            IList<string> leftSequence, IList<string> rightSequence)
         {
-            return ComputeMatches(differenceType, differenceOptions, leftSequence, rightSequence, leftSequence, rightSequence);
+            return ComputeMatches(differenceOptions, leftSequence, rightSequence, leftSequence, rightSequence);
         }
 
-        static IDifferenceCollection<string> ComputeMatches(StringDifferenceTypes differenceType, StringDifferenceOptions differenceOptions,
+        static IDifferenceCollection<string> ComputeMatches(StringDifferenceOptions differenceOptions,
                                                            IList<string> leftSequence, IList<string> rightSequence,
                                                            IList<string> originalLeftSequence, IList<string> originalRightSequence)
         {

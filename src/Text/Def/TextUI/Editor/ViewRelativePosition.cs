@@ -16,6 +16,6 @@ namespace Microsoft.VisualStudio.Text.Editor
         /// <summary>
         /// The offset with respect to the bottom of the view.
         /// </summary>
-        Bottom      
+        Bottom
     }
 }

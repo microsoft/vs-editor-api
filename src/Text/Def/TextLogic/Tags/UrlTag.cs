@@ -20,7 +20,7 @@ namespace Microsoft.VisualStudio.Text.Tagging
         public UrlTag(Uri url)
         {
             if (url == null)
-                throw new ArgumentNullException("url");
+                throw new ArgumentNullException(nameof(url));
 
             Url = url;
         }

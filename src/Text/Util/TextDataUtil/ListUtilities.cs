@@ -14,11 +14,10 @@ namespace Microsoft.VisualStudio.Text.Utilities
     internal static class ListUtilities
     {
         /// <summary>
-        /// Do a binary search in <paramref name="list"/> for an element that matches <paramref name="target"/>
+        /// Do a binary search in <paramref name="list"/> for an element that matches an implicit target (built into the comparison function).
         /// </summary>
         /// <param name="list">List to search.</param>
-        /// <param name="target">Object of the search.</param>
-        /// <param name="compare">Comparison function between an element and target (returns &lt; 0 if e comes before t, 0 if e matches, &gt; 0 if e comes after).
+        /// <param name="compare">Comparison function between an element (returns &lt; 0 if e comes before t, 0 if e matches, &gt; 0 if e comes after).
         /// <param name="index">Index of the matching element (or, if there is no exact match, index of the element that follows it).</param>
         /// <returns>true if an exact match was found.</returns>
         /// <remarks>Yes, I know there is List.BinarySearch but that doesn't do exactly what I need most of the time.</remarks>
@@ -61,4 +60,4 @@ namespace Microsoft.VisualStudio.Text.Utilities
             return source.Cast<T?>().FirstOrDefault();
         }
     }
-    }
+}

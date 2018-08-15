@@ -244,7 +244,7 @@ namespace Microsoft.VisualStudio.Text.Outlining
             if (internalCollapsed == null)
             {
                 throw new ArgumentException("The given collapsed region was not created by this outlining manager.",
-                                            "collapsed");
+                                            nameof(collapsed));
             }
 
             if (!internalCollapsed.IsValid)
@@ -272,7 +272,7 @@ namespace Microsoft.VisualStudio.Text.Outlining
         internal IEnumerable<ICollapsed> InternalCollapseAll(SnapshotSpan span, Predicate<ICollapsible> match, CancellationToken? cancel)
         {
             if (match == null)
-                throw new ArgumentNullException("match");
+                throw new ArgumentNullException(nameof(match));
 
             EnsureValid(span);
 
@@ -312,7 +312,7 @@ namespace Microsoft.VisualStudio.Text.Outlining
         public IEnumerable<ICollapsible> ExpandAllInternal(bool removalPending, SnapshotSpan span, Predicate<ICollapsed> match)
         {
             if (match == null)
-                throw new ArgumentNullException("match");
+                throw new ArgumentNullException(nameof(match));
 
             EnsureValid(span);
 
@@ -676,19 +676,19 @@ namespace Microsoft.VisualStudio.Text.Outlining
 
             if (spans == null)
             {
-                throw new ArgumentNullException("spans");
+                throw new ArgumentNullException(nameof(spans));
             }
 
             if (spans.Count == 0)
             {
-                throw new ArgumentException("The given span collection is empty.", "spans");
+                throw new ArgumentException("The given span collection is empty.", nameof(spans));
             }
 
             if (spans[0].Snapshot.TextBuffer != this.editBuffer)
             {
                 throw new ArgumentException("The given span collection is on an invalid buffer." +
                                             "Spans must be generated against the view model's edit buffer",
-                                            "spans");
+                                            nameof(spans));
             }
         }
 
@@ -705,7 +705,7 @@ namespace Microsoft.VisualStudio.Text.Outlining
             {
                 throw new ArgumentException("The given span is on an invalid buffer." +
                                             "Spans must be generated against the view model's edit buffer",
-                                            "span");
+                                            nameof(span));
             }
         }
 
@@ -725,9 +725,9 @@ namespace Microsoft.VisualStudio.Text.Outlining
         public int Compare(ICollapsible x, ICollapsible y)
         {
             if (x == null)
-                throw new ArgumentNullException("x");
+                throw new ArgumentNullException(nameof(x));
             if (y == null)
-                throw new ArgumentNullException("y");
+                throw new ArgumentNullException(nameof(y));
 
             ITextSnapshot current = SourceBuffer.CurrentSnapshot;
             SnapshotSpan left = x.Extent.GetSpan(current);

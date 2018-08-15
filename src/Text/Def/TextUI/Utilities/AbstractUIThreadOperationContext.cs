@@ -5,10 +5,12 @@ using System.Threading;
 
 namespace Microsoft.VisualStudio.Utilities
 {
+#pragma warning disable CA1063 // Implement IDisposable Correctly
     /// <summary>
     /// Abstract base implementation of the <see cref="IUIThreadOperationContext"/> interface.
     /// </summary>
     public abstract class AbstractUIThreadOperationContext : IUIThreadOperationContext
+#pragma warning restore CA1063 // Implement IDisposable Correctly
     {
         private List<IUIThreadOperationScope> _scopes;
         private bool _allowCancellation;
@@ -137,11 +139,14 @@ namespace Microsoft.VisualStudio.Utilities
         {
         }
 
+#pragma warning disable CA1063 // Implement IDisposable Correctly
         /// <summary>
         /// Disposes this instance.
         /// </summary>
         public virtual void Dispose()
+#pragma warning restore CA1063 // Implement IDisposable Correctly
         {
+            GC.SuppressFinalize(this);
         }
 
         /// <summary>
@@ -193,7 +198,7 @@ namespace Microsoft.VisualStudio.Utilities
                 get { return _description; }
                 set
                 {
-                    if (_description != value)
+                    if (!string.Equals(_description, value, StringComparison.Ordinal))
                     {
                         _description = value;
                         _context.OnScopeChanged(this);

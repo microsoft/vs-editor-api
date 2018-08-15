@@ -30,10 +30,10 @@ namespace Microsoft.VisualStudio.Utilities.Implementation
 
     [Export(typeof(IFileExtensionRegistryService))]
     [Export(typeof(IFileExtensionRegistryService2))]
-    [Export(typeof(IFilePathRegistryService))]
+    [Export(typeof(IFileToContentTypeService))]
     [Export(typeof(IContentTypeRegistryService))]
     [Export(typeof(IContentTypeRegistryService2))]
-    internal sealed partial class ContentTypeRegistryImpl : IContentTypeRegistryService2, IFileExtensionRegistryService, IFileExtensionRegistryService2, IFilePathRegistryService
+    internal sealed partial class ContentTypeRegistryImpl : IContentTypeRegistryService2, IFileExtensionRegistryService, IFileExtensionRegistryService2, IFileToContentTypeService
     {
         [ImportMany]
         internal List<Lazy<ContentTypeDefinition, IContentTypeDefinitionMetadata>> ContentTypeDefinitions { get; set; }
@@ -60,9 +60,10 @@ namespace Microsoft.VisualStudio.Utilities.Implementation
                     }
                     else
                     {
-                        _orderedFilePathToContentTypeProductions = new List<Lazy<IFilePathToContentTypeProvider, IFilePathToContentTypeMetadata>>();
+                        _orderedFilePathToContentTypeProductions = new List<Lazy<IFilePathToContentTypeProvider, IFilePathToContentTypeMetadata>>(0);
                     }
                 }
+
                 return _orderedFilePathToContentTypeProductions;
             }
         }
@@ -256,10 +257,7 @@ namespace Microsoft.VisualStudio.Utilities.Implementation
         #region IContentTypeRegistryService Members
         public IContentType GetContentType(string typeName)
         {
-            if (string.IsNullOrWhiteSpace(typeName))
-            {
-                throw new ArgumentException(nameof(typeName));
-            }
+            Requires.NotNullOrWhiteSpace(typeName, nameof(typeName));
 
             this.BuildContentTypes();
 
@@ -287,16 +285,16 @@ namespace Microsoft.VisualStudio.Utilities.Implementation
 
         public IContentType AddContentType(string typeName, IEnumerable<string> baseTypeNames)
         {
-            if (string.IsNullOrWhiteSpace(typeName))
-            {
-                throw new ArgumentException(nameof(typeName));
-            }
+            Requires.NotNullOrWhiteSpace(typeName, nameof(typeName));
 
             // This has the side effect of building the content types.
             if (this.GetContentType(typeName) != null)
             {
                 // Cannot dynamically add a new content type if a content type with the same name already exists
-                throw new ArgumentException(String.Format(System.Globalization.CultureInfo.CurrentUICulture, Strings.ContentTypeRegistry_CannotAddExistentType, typeName));
+                throw new ArgumentException(
+                    string.Format(
+                        System.Globalization.CultureInfo.CurrentCulture,
+                        Strings.ContentTypeRegistry_CannotAddExistentType, typeName));
             }
 
             var oldMaps = Volatile.Read(ref this.maps);
@@ -312,7 +310,10 @@ namespace Microsoft.VisualStudio.Utilities.Implementation
 
                 if (type.CheckForCycle(breakCycle: false))
                 {
-                    throw new InvalidOperationException(String.Format(System.Globalization.CultureInfo.CurrentUICulture, Strings.ContentTypeRegistry_CausesCycles, type.TypeName));
+                    throw new InvalidOperationException(
+                        string.Format(
+                            System.Globalization.CultureInfo.CurrentCulture,
+                            Strings.ContentTypeRegistry_CausesCycles, type.TypeName));
                 }
 
                 var newMaps = new MapCollection(nameToContentTypeMap.Source, mimeTypeToContentTypeMap.Source, oldMaps.FileExtensionToContentTypeMap, oldMaps.FileNameToContentTypeMap);
@@ -329,10 +330,7 @@ namespace Microsoft.VisualStudio.Utilities.Implementation
 
         public void RemoveContentType(string typeName)
         {
-            if (string.IsNullOrWhiteSpace(typeName))
-            {
-                throw new ArgumentException(nameof(typeName));
-            }
+            Requires.NotNullOrWhiteSpace(typeName, nameof(typeName));
 
             this.BuildContentTypes();
 
@@ -356,21 +354,34 @@ namespace Microsoft.VisualStudio.Utilities.Implementation
                 if (IsBaseType(type, out derivedType))
                 {
                     // Check if the type is base type for another registered type
-                    throw new InvalidOperationException(String.Format(System.Globalization.CultureInfo.CurrentUICulture, Strings.ContentTypeRegistry_CannotRemoveBaseType, type.TypeName, derivedType.TypeName));
+                    throw new InvalidOperationException(
+                        string.Format(
+                            System.Globalization.CultureInfo.CurrentCulture,
+                            Strings.ContentTypeRegistry_CannotRemoveBaseType,
+                            type.TypeName,
+                            derivedType.TypeName));
                 }
 
                 // If there are file extensions using this content type we won't allow removing it
                 if (this.maps.FileExtensionToContentTypeMap.Values.Any(c => c == type))
                 {
                     // If there are file extensions using this content type we won't allow removing it
-                    throw new InvalidOperationException(String.Format(System.Globalization.CultureInfo.CurrentUICulture, Strings.ContentTypeRegistry_CannotRemoveTypeUsedByFileExtensions, type.TypeName));
+                    throw new InvalidOperationException(
+                        string.Format(
+                            System.Globalization.CultureInfo.CurrentCulture,
+                            Strings.ContentTypeRegistry_CannotRemoveTypeUsedByFileExtensions,
+                            type.TypeName));
                 }
 
                 // If there are file extensions using this content type we won't allow removing it
                 if (this.maps.FileNameToContentTypeMap.Values.Any(c => c == type))
                 {
                     // If there are file extensions using this content type we won't allow removing it
-                    throw new InvalidOperationException(String.Format(System.Globalization.CultureInfo.CurrentUICulture, Strings.ContentTypeRegistry_CannotRemoveTypeUsedByFileExtensions, type.TypeName));
+                    throw new InvalidOperationException(
+                        string.Format(
+                            System.Globalization.CultureInfo.CurrentCulture,
+                            Strings.ContentTypeRegistry_CannotRemoveTypeUsedByFileExtensions,
+                            type.TypeName));
                 }
 
                 var newMaps = new MapCollection(oldMaps.NameToContentTypeMap.Remove(typeName),
@@ -394,7 +405,7 @@ namespace Microsoft.VisualStudio.Utilities.Implementation
             var typeImpl = type as ContentTypeImpl;
             if (typeImpl == null)
             {
-                throw new ArgumentException(nameof(type));
+                throw new ArgumentNullException(nameof(type));
             }
             else if (typeImpl == UnknownContentTypeImpl)
             {
@@ -406,19 +417,16 @@ namespace Microsoft.VisualStudio.Utilities.Implementation
 
         public IContentType GetContentTypeForMimeType(string mimeType)
         {
-            if (string.IsNullOrWhiteSpace(mimeType))
-            {
-                throw new ArgumentException(nameof(mimeType));
-            }
+            Requires.NotNullOrWhiteSpace(mimeType, nameof(mimeType));
 
             this.BuildContentTypes();
 
             ContentTypeImpl contentType = null;
             if (!this.maps.MimeTypeToContentTypeMap.TryGetValue(mimeType, out contentType))
             {
-                if (mimeType.StartsWith(BaseMimePrefix))
+                if (mimeType.StartsWith(BaseMimePrefix, StringComparison.Ordinal))
                 {
-                    if (!(mimeType.StartsWith(MimePrefix) && this.maps.NameToContentTypeMap.TryGetValue(mimeType.Substring(MimePrefix.Length), out contentType)))
+                    if (!(mimeType.StartsWith(MimePrefix, StringComparison.Ordinal) && this.maps.NameToContentTypeMap.TryGetValue(mimeType.Substring(MimePrefix.Length), out contentType)))
                     {
                         this.maps.NameToContentTypeMap.TryGetValue(mimeType.Substring(BaseMimePrefix.Length), out contentType);
                     }
@@ -432,17 +440,21 @@ namespace Microsoft.VisualStudio.Utilities.Implementation
         #region IFileExtensionRegistryService Members
         public IContentType GetContentTypeForExtension(string extension)
         {
-            if (extension == null)
+            ContentTypeImpl contentType = null;
+            if (string.IsNullOrEmpty(extension))
             {
-                throw new ArgumentNullException(nameof(extension));
+                if (extension == null)
+                {
+                    throw new ArgumentNullException(nameof(extension));
+                }
+            }
+            else
+            {
+
+                this.BuildContentTypes();
+                this.maps.FileExtensionToContentTypeMap.TryGetValue(RemoveExtensionDot(extension), out contentType);
             }
 
-            this.BuildContentTypes();
-
-            ContentTypeImpl contentType = null;
-            this.maps.FileExtensionToContentTypeMap.TryGetValue(RemoveExtensionDot(extension), out contentType);
-
-            // TODO: should we return null if contentType is null?
             return contentType ?? ContentTypeRegistryImpl.UnknownContentTypeImpl;
         }
 
@@ -467,15 +479,12 @@ namespace Microsoft.VisualStudio.Utilities.Implementation
 
         public void AddFileExtension(string extension, IContentType contentType)
         {
-            if (string.IsNullOrWhiteSpace(extension))
-            {
-                throw new ArgumentException(nameof(extension));
-            }
+            Requires.NotNullOrWhiteSpace(extension, nameof(extension));
 
             var contentTypeImpl = contentType as ContentTypeImpl;
             if ((contentTypeImpl == null) || (contentTypeImpl == UnknownContentTypeImpl))
             {
-                throw new ArgumentException(nameof(contentType));
+                throw new ArgumentException(nameof(contentType) + " cannot be null or unknown");
             }
 
             this.BuildContentTypes();
@@ -489,9 +498,9 @@ namespace Microsoft.VisualStudio.Utilities.Implementation
                 {
                     if (type != contentTypeImpl)
                     {
-                        throw new InvalidOperationException
-                                    (String.Format(System.Globalization.CultureInfo.CurrentUICulture,
-                                        Strings.FileExtensionRegistry_NoMultipleContentTypes, extension));
+                        throw new InvalidOperationException(
+                            string.Format(System.Globalization.CultureInfo.CurrentCulture,
+                            Strings.FileExtensionRegistry_NoMultipleContentTypes, extension));
                     }
 
                     return;
@@ -550,17 +559,21 @@ namespace Microsoft.VisualStudio.Utilities.Implementation
         #region IFileExtensionRegistryService2 Members
         public IContentType GetContentTypeForFileName(string fileName)
         {
-            if (fileName == null)
+            ContentTypeImpl contentType = null;
+
+            if (string.IsNullOrWhiteSpace(fileName))
             {
-                throw new ArgumentNullException(nameof(fileName));
+                if (fileName == null)
+                {
+                    throw new ArgumentNullException(nameof(fileName));
+                }
+            }
+            else
+            {
+                this.BuildContentTypes();
+                this.maps.FileNameToContentTypeMap.TryGetValue(fileName, out contentType);
             }
 
-            this.BuildContentTypes();
-
-            ContentTypeImpl contentType = null;
-            this.maps.FileNameToContentTypeMap.TryGetValue(fileName, out contentType);
-
-            // TODO: should we return null if contentType is null?
             return contentType ?? ContentTypeRegistryImpl.UnknownContentTypeImpl;
         }
 
@@ -572,21 +585,16 @@ namespace Microsoft.VisualStudio.Utilities.Implementation
             }
 
             // No need to lock, we are calling locking public method.
-            var fileNameContentType = this.GetContentTypeForFileName(name);
+            var contentType = this.GetContentTypeForFileName(name);
 
             // Attempt to use extension as fallback ContentType if file name isn't recognized.
-            if (fileNameContentType == ContentTypeRegistryImpl.UnknownContentTypeImpl)
+            if (contentType == ContentTypeRegistryImpl.UnknownContentTypeImpl)
             {
                 var extension = Path.GetExtension(name);
-
-                if (!string.IsNullOrEmpty(extension))
-                {
-                    // No need to lock, we are calling locking public method.
-                    return this.GetContentTypeForExtension(extension);
-                }
+                contentType = this.GetContentTypeForExtension(extension);
             }
 
-            return fileNameContentType;
+            return contentType;
         }
 
         public IEnumerable<string> GetFileNamesForContentType(IContentType contentType)
@@ -612,13 +620,13 @@ namespace Microsoft.VisualStudio.Utilities.Implementation
         {
             if (string.IsNullOrWhiteSpace(fileName))
             {
-                throw new ArgumentException(nameof(fileName));
+                throw new ArgumentException(nameof(fileName) + " cannot be null or whitespace");
             }
 
             var contentTypeImpl = contentType as ContentTypeImpl;
             if ((contentTypeImpl == null) || (contentTypeImpl == UnknownContentTypeImpl))
             {
-                throw new ArgumentException(nameof(contentType));
+                throw new ArgumentException(nameof(contentType) + " cannot be null or unknown");
             }
 
             this.BuildContentTypes();
@@ -631,9 +639,9 @@ namespace Microsoft.VisualStudio.Utilities.Implementation
                 {
                     if (type != contentTypeImpl)
                     {
-                        throw new InvalidOperationException
-                                    (String.Format(System.Globalization.CultureInfo.CurrentUICulture,
-                                        Strings.FileExtensionRegistry_NoMultipleContentTypes, fileName));
+                        throw new InvalidOperationException(
+                            string.Format(System.Globalization.CultureInfo.CurrentCulture,
+                            Strings.FileExtensionRegistry_NoMultipleContentTypes, fileName));
                     }
 
                     return;
@@ -688,7 +696,18 @@ namespace Microsoft.VisualStudio.Utilities.Implementation
         #endregion
 
         #region IFilePathRegistryService Members
-        public IContentType GetContentTypeForPath(string filePath)
+        public IContentType GetContentTypeForFilePath(string filePath)
+        {
+            return this.InternalGetContentTypeForPath(filePath) ?? this.GetContentTypeForFileNameOrExtension(Path.GetFileName(filePath));
+        }
+
+        public IContentType GetContentTypeForFilePathOnly(string filePath)
+        {
+            return this.InternalGetContentTypeForPath(filePath) ?? ContentTypeRegistryImpl.UnknownContentTypeImpl;
+        }
+        #endregion
+
+        private IContentType InternalGetContentTypeForPath(string filePath)
         {
             if (filePath == null)
             {
@@ -696,28 +715,32 @@ namespace Microsoft.VisualStudio.Utilities.Implementation
             }
 
             string fileName = Path.GetFileName(filePath);
-            string extension = Path.GetExtension(filePath);
-            var providers = OrderedFilePathToContentTypeProductions.Where(md =>
-                (md.Metadata.FileExtension == null || md.Metadata.FileExtension.Equals(extension, StringComparison.OrdinalIgnoreCase)) &&
-                (md.Metadata.FileName == null || md.Metadata.FileName.Equals(fileName, StringComparison.OrdinalIgnoreCase)));
+            string extension = Path.GetExtension(fileName);
 
-            IContentType contentType = null;
-            foreach(var curProvider in providers)
+            for (int i = 0; (i < this.OrderedFilePathToContentTypeProductions.Count); ++i)
             {
-                if (curProvider.Value.TryGetContentTypeForFilePath(filePath, out IContentType curContentType))
+                var provider = this.OrderedFilePathToContentTypeProductions[i];
+                if (WildcardMatch(provider.Metadata.FileExtension, extension) ||
+                    ((provider.Metadata.FileName != null) && provider.Metadata.FileName.Equals(fileName, StringComparison.OrdinalIgnoreCase)))
                 {
-                    contentType = curContentType;
-                    break;
+                    if (provider.Value.TryGetContentTypeForFilePath(filePath, out IContentType contentType))
+                    {
+                        return contentType;
+                    }
                 }
             }
 
-            return contentType ?? ContentTypeRegistryImpl.UnknownContentTypeImpl;
+            return null;
         }
-        #endregion
+
+        private static bool WildcardMatch(string s1, string s2)
+        {
+            return (s1 != null) && ((s1.Equals("*", StringComparison.Ordinal)) || s1.Equals(s2, StringComparison.OrdinalIgnoreCase));
+        }
 
         private static string RemoveExtensionDot(string extension)
         {
-            if (extension.StartsWith("."))
+            if (extension.StartsWith(".", StringComparison.Ordinal))
             {
                 return extension.TrimStart('.');
             }
@@ -837,5 +860,14 @@ namespace Microsoft.VisualStudio.Utilities.Implementation
             }
             #endregion
         }
+    }
+
+    public interface IFilePathToContentTypeMetadata : IOrderable
+    {
+        [System.ComponentModel.DefaultValue(null)]
+        string FileExtension { get; }
+
+        [System.ComponentModel.DefaultValue(null)]
+        string FileName { get; }
     }
 }

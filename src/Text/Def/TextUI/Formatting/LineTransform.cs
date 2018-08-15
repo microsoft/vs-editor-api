@@ -6,6 +6,7 @@ namespace Microsoft.VisualStudio.Text.Formatting
 {
     using System;
 
+#pragma warning disable CA1066 // Type {0} should implement IEquatable<T> because it overrides Equals
     /// <summary>
     /// Represents the transform from a formatted text line to a rendered text line.
     /// </summary>
@@ -27,6 +28,7 @@ namespace Microsoft.VisualStudio.Text.Formatting
     /// corresponds to one pixel on the display.</para>
     /// </remarks>
     public struct LineTransform
+#pragma warning restore CA1066 // Type {0} should implement IEquatable<T> because it overrides Equals
     {
         private readonly double _topSpace;
         private readonly double _bottomSpace;
@@ -87,16 +89,16 @@ namespace Microsoft.VisualStudio.Text.Formatting
         public LineTransform(double topSpace, double bottomSpace, double verticalScale, double right)
         {
             if (double.IsNaN(topSpace))
-                throw new ArgumentOutOfRangeException("topSpace");
+                throw new ArgumentOutOfRangeException(nameof(topSpace));
 
             if (double.IsNaN(bottomSpace))
-                throw new ArgumentOutOfRangeException("bottomSpace");
+                throw new ArgumentOutOfRangeException(nameof(bottomSpace));
 
             if ((verticalScale <= 0.0) || double.IsNaN(verticalScale))
-                throw new ArgumentOutOfRangeException("verticalScale");
+                throw new ArgumentOutOfRangeException(nameof(verticalScale));
 
             if ((right < 0.0) || double.IsNaN(right))
-                throw new ArgumentOutOfRangeException("right");
+                throw new ArgumentOutOfRangeException(nameof(right));
 
             _topSpace = topSpace;
             _bottomSpace = bottomSpace;

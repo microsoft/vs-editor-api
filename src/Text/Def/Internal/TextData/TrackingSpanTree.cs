@@ -50,7 +50,7 @@ namespace Microsoft.VisualStudio.Text.Utilities
         public TrackingSpanTree(ITextBuffer buffer, bool keepTrackingCurrent)
         {
             if (buffer == null)
-                throw new ArgumentNullException("buffer");
+                throw new ArgumentNullException(nameof(buffer));
 
             Buffer = buffer;
             Count = 0;
@@ -77,10 +77,10 @@ namespace Microsoft.VisualStudio.Text.Utilities
         public TrackingSpanNode<T> TryAddItem(T item, ITrackingSpan trackingSpan)
         {
             if (trackingSpan == null)
-                throw new ArgumentNullException("trackingSpan");
+                throw new ArgumentNullException(nameof(trackingSpan));
 
             if (trackingSpan.TrackingMode != SpanTrackingMode.EdgeExclusive)
-                throw new ArgumentException("The tracking mode of the given tracking span must be SpanTrackingMode.EdgeExclusive", "trackingSpan");
+                throw new ArgumentException("The tracking mode of the given tracking span must be SpanTrackingMode.EdgeExclusive", nameof(trackingSpan));
 
             SnapshotSpan spanToAdd = trackingSpan.GetSpan(Buffer.CurrentSnapshot);
             TrackingSpanNode<T> node = new TrackingSpanNode<T>(item, trackingSpan);
@@ -101,7 +101,7 @@ namespace Microsoft.VisualStudio.Text.Utilities
         public bool RemoveItem(T item, ITrackingSpan trackingSpan)
         {
             if (trackingSpan == null)
-                throw new ArgumentNullException("trackingSpan");
+                throw new ArgumentNullException(nameof(trackingSpan));
 
             SnapshotSpan spanToRemove = trackingSpan.GetSpan(Buffer.CurrentSnapshot);
 
@@ -228,7 +228,7 @@ namespace Microsoft.VisualStudio.Text.Utilities
         {
             if (toVersion == null)
             {
-                throw new ArgumentNullException("toVersion");
+                throw new ArgumentNullException(nameof(toVersion));
             }
 
             if (toVersion.VersionNumber > this.advanceVersion)

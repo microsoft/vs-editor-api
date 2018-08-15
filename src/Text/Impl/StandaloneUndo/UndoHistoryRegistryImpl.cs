@@ -18,7 +18,7 @@ namespace Microsoft.VisualStudio.Text.Operations.Standalone
     internal class UndoHistoryRegistryImpl : ITextUndoHistoryRegistry
     {
         #region Private Fields
-        private Dictionary<ITextUndoHistory, int> histories;
+        internal Dictionary<ITextUndoHistory, int> histories;
         private Dictionary<WeakReferenceForDictionaryKey, ITextUndoHistory> weakContextMapping;
         private Dictionary<object, ITextUndoHistory> strongContextMapping;
         #endregion // Private Fields
@@ -50,7 +50,7 @@ namespace Microsoft.VisualStudio.Text.Operations.Standalone
         {
             if (context == null)
             {
-                throw new ArgumentNullException("context", String.Format(CultureInfo.CurrentCulture, "Strings.ArgumentCannotBeNull", "RegisterHistory", "context"));
+                throw new ArgumentNullException(nameof(context));
             }
 
             return RegisterHistory(context, false);
@@ -66,7 +66,7 @@ namespace Microsoft.VisualStudio.Text.Operations.Standalone
         {
             if (context == null)
             {
-                throw new ArgumentNullException("context", String.Format(CultureInfo.CurrentCulture, "Strings.ArgumentCannotBeNull", "RegisterHistory", "context"));
+                throw new ArgumentNullException(nameof(context));
             }
 
             ITextUndoHistory result;
@@ -118,7 +118,7 @@ namespace Microsoft.VisualStudio.Text.Operations.Standalone
         {
             if (context == null)
             {
-                throw new ArgumentNullException("context", String.Format(CultureInfo.CurrentCulture, "Strings.ArgumentCannotBeNull", "GetHistory", "context"));
+                throw new ArgumentNullException(nameof(context));
             }
 
             ITextUndoHistory result;
@@ -149,7 +149,7 @@ namespace Microsoft.VisualStudio.Text.Operations.Standalone
         {
             if (context == null)
             {
-                throw new ArgumentNullException("context", String.Format(CultureInfo.CurrentCulture, "Strings.ArgumentCannotBeNull", "TryGetHistory", "context"));
+                throw new ArgumentNullException(nameof(context));
             }
 
             ITextUndoHistory result = null;
@@ -176,12 +176,12 @@ namespace Microsoft.VisualStudio.Text.Operations.Standalone
         {
             if (context == null)
             {
-                throw new ArgumentNullException("context", String.Format(CultureInfo.CurrentCulture, "Strings.ArgumentCannotBeNull", "AttachHistory", "context"));
+                throw new ArgumentNullException(nameof(context));
             }
 
             if (history == null)
             {
-                throw new ArgumentNullException("context", String.Format(CultureInfo.CurrentCulture, "Strings.ArgumentCannotBeNull", "AttachHistory", "history"));
+                throw new ArgumentNullException(nameof(history));
             }
 
             AttachHistory(context, history, false);
@@ -197,12 +197,12 @@ namespace Microsoft.VisualStudio.Text.Operations.Standalone
         {
             if (context == null)
             {
-                throw new ArgumentNullException("context", String.Format(CultureInfo.CurrentCulture, "Strings.ArgumentCannotBeNull", "AttachHistory", "context"));
+                throw new ArgumentNullException(nameof(context));
             }
 
             if (history == null)
             {
-                throw new ArgumentNullException("context", String.Format(CultureInfo.CurrentCulture, "Strings.ArgumentCannotBeNull", "AttachHistory", "history"));
+                throw new ArgumentNullException(nameof(history));
             }
 
             if (strongContextMapping.ContainsKey(context) || weakContextMapping.ContainsKey(new WeakReferenceForDictionaryKey(context)))
@@ -237,7 +237,7 @@ namespace Microsoft.VisualStudio.Text.Operations.Standalone
         {
             if (history == null)
             {
-                throw new ArgumentNullException("context", String.Format(CultureInfo.CurrentCulture, "Strings.ArgumentCannotBeNull", "RemoveHistory", "history"));
+                throw new ArgumentNullException(nameof(history));
             }
 
             if (!histories.ContainsKey(history))

@@ -24,7 +24,7 @@ namespace Microsoft.VisualStudio.Text.Tagging
         public TagsChangedEventArgs(IMappingSpan span)
         {
             if (span == null)
-                throw new ArgumentNullException("span");
+                throw new ArgumentNullException(nameof(span));
 
             Span = span;
         }

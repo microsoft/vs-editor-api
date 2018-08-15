@@ -37,15 +37,15 @@ namespace Microsoft.VisualStudio.Text.Classification.Implementation
             // Validate.
             if (textBuffer == null)
             {
-                throw new ArgumentNullException("textBuffer");
+                throw new ArgumentNullException(nameof(textBuffer));
             }
             if (bufferTagAggregatorFactory == null)
             {
-                throw new ArgumentNullException("bufferTagAggregatorFactory");
+                throw new ArgumentNullException(nameof(bufferTagAggregatorFactory));
             }
             if (classificationTypeRegistry == null)
             {
-                throw new ArgumentNullException("classificationTypeRegistry");
+                throw new ArgumentNullException(nameof(classificationTypeRegistry));
             }
 
             _textBuffer = textBuffer;
@@ -63,15 +63,15 @@ namespace Microsoft.VisualStudio.Text.Classification.Implementation
             // Validate.
             if (textView == null)
             {
-                throw new ArgumentNullException("textView");
+                throw new ArgumentNullException(nameof(textView));
             }
             if (viewTagAggregatorFactory == null)
             {
-                throw new ArgumentNullException("viewTagAggregatorFactory");
+                throw new ArgumentNullException(nameof(viewTagAggregatorFactory));
             }
             if (classificationTypeRegistry == null)
             {
-                throw new ArgumentNullException("classificationTypeRegistry");
+                throw new ArgumentNullException(nameof(classificationTypeRegistry));
             }
 
             _textBuffer = textView.TextBuffer;
@@ -336,7 +336,7 @@ namespace Microsoft.VisualStudio.Text.Classification.Implementation
             return results;
         }
 
-        private int Compare(PointData a, PointData b)
+        private static int Compare(PointData a, PointData b)
         {
             if (a.Position == b.Position)
                 return (b.IsStart.CompareTo(a.IsStart)); // startpoints go before end points when positions are tied

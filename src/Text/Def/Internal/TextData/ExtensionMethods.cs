@@ -25,7 +25,7 @@ namespace Microsoft.VisualStudio.Text
         {
             if (startIndex < 0)
             {
-                throw new ArgumentOutOfRangeException("start");
+                throw new ArgumentOutOfRangeException(nameof(startIndex));
             }
 
             // Take advantage of performant [] operators on the ITextSnapshot

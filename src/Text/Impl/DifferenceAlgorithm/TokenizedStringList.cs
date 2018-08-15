@@ -42,7 +42,7 @@ namespace Microsoft.VisualStudio.Text.Differencing.Implementation
         protected TokenizedStringList(string original)
         {
             if (original == null)
-                throw new ArgumentNullException("original");
+                throw new ArgumentNullException(nameof(original));
 
             this.original = original;
         }

@@ -164,9 +164,9 @@ namespace Microsoft.VisualStudio.Text.Implementation
         public static StringRebuilder Create(StringRebuilder left, StringRebuilder right)
         {
             if (left == null)
-                throw new ArgumentNullException("left");
+                throw new ArgumentNullException(nameof(left));
             if (right == null)
-                throw new ArgumentNullException("right");
+                throw new ArgumentNullException(nameof(right));
 
             if (left.Length == 0)
                 return right;
@@ -203,7 +203,7 @@ namespace Microsoft.VisualStudio.Text.Implementation
         public override int GetLineNumberFromPosition(int position)
         {
             if ((position < 0) || (position > this.Length))
-                throw new ArgumentOutOfRangeException("position");
+                throw new ArgumentOutOfRangeException(nameof(position));
 
             return (position <= _left.Length)
                    ? _left.GetLineNumberFromPosition(position)
@@ -214,7 +214,7 @@ namespace Microsoft.VisualStudio.Text.Implementation
         public override void GetLineFromLineNumber(int lineNumber, out Span extent, out int lineBreakLength)
         {
             if ((lineNumber < 0) || (lineNumber > this.LineBreakCount))
-                throw new ArgumentOutOfRangeException("lineNumber");
+                throw new ArgumentOutOfRangeException(nameof(lineNumber));
 
             if (lineNumber < _left.LineBreakCount)
             {
@@ -273,7 +273,7 @@ namespace Microsoft.VisualStudio.Text.Implementation
             get
             {
                 if ((index < 0) || (index >= this.Length))
-                    throw new ArgumentOutOfRangeException("index");
+                    throw new ArgumentOutOfRangeException(nameof(index));
 
                 return (index < _left.Length)
                         ? _left[index]
@@ -284,7 +284,7 @@ namespace Microsoft.VisualStudio.Text.Implementation
         public override string GetText(Span span)
         {
             if (span.End > this.Length)
-                throw new ArgumentOutOfRangeException("span");
+                throw new ArgumentOutOfRangeException(nameof(span));
 
             if (span.End <= _left.Length)
                 return _left.GetText(span);
@@ -338,9 +338,9 @@ namespace Microsoft.VisualStudio.Text.Implementation
         public override void Write(TextWriter writer, Span span)
         {
             if (writer == null)
-                throw new ArgumentNullException("writer");
+                throw new ArgumentNullException(nameof(writer));
             if (span.End > this.Length)
-                throw new ArgumentOutOfRangeException("span");
+                throw new ArgumentOutOfRangeException(nameof(span));
 
             if (span.Start >= _left.Length)
                 _right.Write(writer, new Span(span.Start - _left.Length, span.Length));
@@ -356,7 +356,7 @@ namespace Microsoft.VisualStudio.Text.Implementation
         public override StringRebuilder GetSubText(Span span)
         {
             if (span.End > this.Length)
-                throw new ArgumentOutOfRangeException("span");
+                throw new ArgumentOutOfRangeException(nameof(span));
 
             if (span.Length == this.Length)
                 return this;

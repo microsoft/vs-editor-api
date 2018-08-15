@@ -261,10 +261,10 @@
   <data name="DuplicateSelection" xml:space="preserve">
     <value>Duplicate Selection</value>
   </data>
-  <data name="ExpandContractSelectionCommandHandlerName" xml:space="preserve">
-    <value>Expand/Contract Selection Command Handler</value>
-  </data>
   <data name="DuplicateSelectionCommandHandlerName" xml:space="preserve">
     <value>Duplicate Selection Command Handler</value>
+  </data>
+  <data name="NextIssue" xml:space="preserve">
+    <value>Next/Previous Issue</value>
   </data>
 </root>

@@ -241,15 +241,6 @@ namespace Microsoft.VisualStudio.Text.Operations.Implementation {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Expand/Contract Selection Command Handler.
-        /// </summary>
-        internal static string ExpandContractSelectionCommandHandlerName {
-            get {
-                return ResourceManager.GetString("ExpandContractSelectionCommandHandlerName", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   Looks up a localized string similar to Increase line indent.
         /// </summary>
         internal static string IncreaseLineIndent {
@@ -345,6 +336,15 @@ namespace Microsoft.VisualStudio.Text.Operations.Implementation {
         internal static string MoveSelLinesUp {
             get {
                 return ResourceManager.GetString("MoveSelLinesUp", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Next/Previous Issue.
+        /// </summary>
+        internal static string NextIssue {
+            get {
+                return ResourceManager.GetString("NextIssue", resourceCulture);
             }
         }
         

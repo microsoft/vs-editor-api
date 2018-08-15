@@ -18,7 +18,7 @@ namespace Microsoft.VisualStudio.Text.EditorPrimitives.Implementation
 
     using Microsoft.VisualStudio.Text.Editor.OptionsExtensionMethods;
     
-    internal sealed class DefaultSelectionPrimitive : Selection
+    internal sealed class DefaultSelectionPrimitive : Text.Editor.LegacySelection
     {
         private TextView _textView;
         private IEditorOptions _editorOptions;

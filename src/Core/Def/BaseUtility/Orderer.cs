@@ -13,6 +13,15 @@ namespace Microsoft.VisualStudio.Utilities
     /// </summary>
     public static class Orderer
     {
+        // This is really sad but, because we actually convert all before/after attributes to upper case, we need upper case versions
+        // of the highest and lowest priorities in order to find them. A better approach would be to use a case insensitive comparison
+        // for the map but that could cause a behavior change.
+        private readonly static string HighestUC = DefaultOrderings.Highest.ToUpperInvariant();
+        private readonly static string HighUC = DefaultOrderings.High.ToUpperInvariant();
+        private readonly static string DefaultUC = DefaultOrderings.Default.ToUpperInvariant();
+        private readonly static string LowUC = DefaultOrderings.Low.ToUpperInvariant();
+        private readonly static string LowestUC = DefaultOrderings.Lowest.ToUpperInvariant();
+
         /// <summary>
         /// Orders a list of items that are all orderable, that is, items that implement the IOrderable interface. 
         /// </summary>
@@ -26,13 +35,14 @@ namespace Microsoft.VisualStudio.Utilities
         {
             if (itemsToOrder == null)
             {
-                throw new ArgumentNullException("itemsToOrder");
+                throw new ArgumentNullException(nameof(itemsToOrder));
             }
 
 #if false && DEBUG
             Debug.WriteLine("Before ordering");
             DumpGraph(itemsToOrder);
 #endif
+
             var roots = new Queue<Node<TValue, TMetadata>>();
             var unsortedItems = new List<Node<TValue, TMetadata>>();
 
@@ -58,7 +68,7 @@ namespace Microsoft.VisualStudio.Utilities
                 {
                     var node = new Node<TValue, TMetadata>(item);
 
-                    if (node.Name != string.Empty)
+                    if (node.Name.Length != 0)
                     {
                         if (map.ContainsKey(node.Name))
                         {
@@ -81,14 +91,62 @@ namespace Microsoft.VisualStudio.Utilities
                 }
             }
 
+            // Only resolve the exported nodes by counting down. Placeholders don't need to be resolved since they have no explicit
+            // after or before (and, when created as a side-effect of resolving an exported node, are added to the end of the list).
             for (int i = unsortedItems.Count - 1; (i >= 0); --i)
             {
                 unsortedItems[i].Resolve(map, unsortedItems);   //Placeholders are added to the end of unsorted items (and do not need to be resolved).
             }
 
-            List<Node<TValue, TMetadata>> initialRoots = new List<Node<TValue, TMetadata>>();
-            foreach (Node<TValue, TMetadata> node in unsortedItems)
+            // Do the special handling for the highest and lowest placeholders. Specifically, unless something says that it is after Highest
+            // then it gets the implicit constraint that it is before Highest.
+            //
+            // Note that if you have a situation like:
+            //  if A declares it is after Highest & B declares that is is after A then, you need to put B in the "after highest" group (otherwise it
+            //  will get the before highest constraint, which will cause a cycle).
+            if (map.TryGetValue(HighestUC, out Node<TValue, TMetadata>  highest) && (highest.Before.Count != 0))
             {
+                // There are one or more nodes that explicitly state that they come after highest
+                // collect all of those nodes (and the nodes that come after them) into a single list.
+                var afterHighest = new HashSet<Node<TValue, TMetadata>>();
+                AddToAfterHighest(highest.Before, afterHighest);
+
+                // Go through all of the nodes and, unless they are explicitly in the afterHighest group, add a constraint
+                // that they are explicitly before highest.
+                for (int i = unsortedItems.Count - 1; (i >= 0); --i)
+                {
+                    var n = unsortedItems[i];
+                    if ((n != highest) && !afterHighest.Contains(n))
+                    {
+                        n.Before.Add(highest);
+                        highest.After.Add(n);
+                    }
+                }
+            }
+
+            // Give lowest the same handling as highest, inverting the logic as appropriate.
+            if (map.TryGetValue(LowestUC, out Node<TValue, TMetadata> lowest) && (lowest.After.Count != 0))
+            {
+                var beforeLowest = new HashSet<Node<TValue, TMetadata>>();
+                AddToBeforeLowest(lowest.After, beforeLowest);
+
+                for (int i = unsortedItems.Count - 1; (i >= 0); --i)
+                {
+                    var n = unsortedItems[i];
+                    if ((n != lowest) && !beforeLowest.Contains(n))
+                    {
+                        n.After.Add(lowest);
+                        lowest.Before.Add(n);
+                    }
+                }
+            }
+
+            AddPlaceHolders(map, LowestUC, LowUC, DefaultUC, HighUC, HighestUC);
+
+            List<Node<TValue, TMetadata>> initialRoots = new List<Node<TValue, TMetadata>>();
+            for (int i = unsortedItems.Count - 1; (i >= 0); --i)
+            {
+                var node = unsortedItems[i];
                 if (node.After.Count == 0)
                 {
                     initialRoots.Add(node);
@@ -96,6 +154,60 @@ namespace Microsoft.VisualStudio.Utilities
             }
 
             AddToRoots(roots, initialRoots);
+        }
+
+        private static void AddPlaceHolders<TValue, TMetadata>(Dictionary<string, Node<TValue, TMetadata>> map,
+                                                               params string[] names)
+            where TValue : class
+            where TMetadata : IOrderable
+        {
+            // Make sure there's an explicit ordering where the node for name[0] come before the node for name[1], etc.
+            //
+            // If the node for a name doesn't exist, just skip it (no one else was using it so we don't need to order it
+            // with respect to anything).
+            Node<TValue, TMetadata> previousNode = null;
+            for (int i = 0; (i < names.Length); ++i)
+            {
+                Node<TValue, TMetadata> node;
+                if (map.TryGetValue(names[i], out node))
+                {
+                    if (previousNode != null)
+                    {
+                        previousNode.Before.Add(node);
+                        node.After.Add(previousNode);
+                    }
+
+                    previousNode = node;
+                }
+            }
+        }
+
+        // We need to find all the nodes that are after Highest (or after a node that is after Highest, ad infinitum).
+        private static void AddToAfterHighest<TValue, TMetadata>(IEnumerable<Node<TValue, TMetadata>> nodes, HashSet<Node<TValue, TMetadata>> afterHighest)
+            where TValue : class
+            where TMetadata : IOrderable
+        {
+            foreach (var n in nodes)
+            {
+                if (afterHighest.Add(n) && (n.Before.Count != 0))
+                {
+                    AddToAfterHighest(n.Before, afterHighest);
+                }
+            }
+        }
+
+        // The Before/Lowest analog of AddToAfterHighest.
+        private static void AddToBeforeLowest<TValue, TMetadata>(IEnumerable<Node<TValue, TMetadata>> nodes, HashSet<Node<TValue, TMetadata>> beforeLowest)
+            where TValue : class
+            where TMetadata : IOrderable
+        {
+            foreach (var n in nodes)
+            {
+                if (beforeLowest.Add(n) && (n.After.Count != 0))
+                {
+                    AddToBeforeLowest(n.After, beforeLowest);
+                }
+            }
         }
 
         private static IList<Lazy<TValue, TMetadata>> TopologicalSort<TValue, TMetadata>(Queue<Node<TValue, TMetadata>> roots, List<Node<TValue, TMetadata>> unsortedItems)
@@ -115,7 +227,7 @@ namespace Microsoft.VisualStudio.Utilities
                     sortedItems.Add(node.Item);
                 }
 
-             	unsortedItems.Remove(node);
+                unsortedItems.Remove(node);
                 node.ClearBefore(roots);
             }
 
@@ -126,10 +238,10 @@ namespace Microsoft.VisualStudio.Utilities
             where TValue : class
             where TMetadata : IOrderable
         {
-            newRoots.Sort((l, r) => l.Name.CompareTo(r.Name));
-            foreach (Node<TValue, TMetadata> n in newRoots)
+            newRoots.Sort((l, r) => string.CompareOrdinal(l.Name, r.Name));
+            for (int i = 0; (i < newRoots.Count); ++i)
             {
-                roots.Enqueue(n);
+                roots.Enqueue(newRoots[i]);
             }
         }
 
@@ -159,11 +271,13 @@ namespace Microsoft.VisualStudio.Utilities
             //Find the cycle with the fewest inbound links from other cycles.
             int bestInwardLinkCount = int.MaxValue;
             List<Node<TValue, TMetadata>> bestCycle = null;
-            foreach (List<Node<TValue, TMetadata>> cycle in cycles)
+            for (int i = 0; (i < cycles.Count); ++i)
             {
+                var cycle = cycles[i];
                 int inwardLinkCount = 0;
-                foreach (Node<TValue, TMetadata> node in cycle)
+                for (int j = 0; (j < cycle.Count); ++j)
                 {
+                    var node = cycle[j];
                     foreach (Node<TValue, TMetadata> child in node.After)
                     {
                         if (child.LowIndex != node.LowIndex)
@@ -216,8 +330,9 @@ namespace Microsoft.VisualStudio.Utilities
             where TValue : class
             where TMetadata : IOrderable
         {
-            foreach (Node<TValue, TMetadata> n in unsortedItems)
+            for (int i = 0; (i < unsortedItems.Count); ++i)
             {
+                var n = unsortedItems[i];
                 n.Index = -1;
                 n.LowIndex = -1;
                 n.ContainedInKnownCycle = false;
@@ -227,8 +342,9 @@ namespace Microsoft.VisualStudio.Utilities
 
             Stack<Node<TValue, TMetadata>> stack = new Stack<Node<TValue, TMetadata>>(unsortedItems.Count);
             int index = 0;
-            foreach (Node<TValue, TMetadata> node in unsortedItems)
+            for (int i = 0; (i < unsortedItems.Count); ++i)
             {
+                var node = unsortedItems[i];
                 if (node.Index == -1)
                 {
                     Orderer.FindCycles(node, stack, ref index, cycles);
@@ -400,7 +516,7 @@ namespace Microsoft.VisualStudio.Utilities
                             Node<TValue, TMetadata> node;
                             if (!map.TryGetValue(name, out node))
                             {
-                                //We need place-holder  to handle the case where A comes before B and C comes after B but B is never defined.
+                                //We need place-holder to handle the case where A comes before B and C comes after B but B is never defined.
                                 //We still want C to come after A though so we need to create a "B".
                                 //
                                 //B doesn't show up in the output.

@@ -14,6 +14,7 @@ using Microsoft.VisualStudio.Text.Operations;
 
 namespace Microsoft.VisualStudio.Text.Editor
 {
+#pragma warning disable CA1710 // Identifiers should have correct suffix
     /// <summary>
     /// Represents a range of text in the buffer.
     /// </summary>
@@ -24,6 +25,7 @@ namespace Microsoft.VisualStudio.Text.Editor
     /// </para>
     /// </remarks>
     public abstract class TextRange : IEnumerable<TextPoint>
+#pragma warning restore CA1710 // Identifiers should have correct suffix
     {
         /// <summary>
         /// When implemented in a derived class, gets the start point of this text range.

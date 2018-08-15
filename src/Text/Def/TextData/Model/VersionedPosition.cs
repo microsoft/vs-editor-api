@@ -5,14 +5,19 @@
 namespace Microsoft.VisualStudio.Text
 {
     using System;
+    using System.Diagnostics.CodeAnalysis;
 
     /// <summary>
     /// Describes a location in a specific <see cref="ITextImageVersion"/>.
     /// </summary>
     public struct VersionedPosition : IEquatable<VersionedPosition>
     {
+
+#pragma warning disable CA1051 // Do not declare visible instance fields
+        [SuppressMessage("Microsoft.Security", "CA2104", Justification = "Type is readonly")]
         public readonly ITextImageVersion Version;
         public readonly int Position;
+#pragma warning restore CA1051 // Do not declare visible instance fields
 
         public readonly static VersionedPosition Invalid = new VersionedPosition();
 
@@ -82,7 +87,7 @@ namespace Microsoft.VisualStudio.Text
         {
             return (this.Version == null)
                    ? nameof(Invalid)
-                   : string.Format(System.Globalization.CultureInfo.CurrentCulture, "v{1}_{2}",
+                   : string.Format(System.Globalization.CultureInfo.CurrentCulture, "v{0}_{1}",
                                     this.Version.VersionNumber,
                                     this.Position);
         }

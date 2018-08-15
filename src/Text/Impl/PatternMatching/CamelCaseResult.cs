@@ -47,7 +47,7 @@ namespace Microsoft.VisualStudio.Text.PatternMatching.Implementation
             }
         }
 
-        private static PatternMatchKind GetCamelCaseKind(CamelCaseResult result, StringBreaks candidateHumps)
+        private static PatternMatchKind GetCamelCaseKind(CamelCaseResult result)
         {
             /* CamelCase PatternMatchKind truth table:
              * | FromStart | ToEnd | Contiguous || PatternMatchKind                |

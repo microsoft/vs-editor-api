@@ -29,15 +29,15 @@ namespace Microsoft.VisualStudio.Text.Projection
         {
             if (textBuffer == null)
             {
-                throw new ArgumentNullException("textBuffer");
+                throw new ArgumentNullException(nameof(textBuffer));
             }
             if (beforeContentType == null)
             {
-                throw new ArgumentNullException("beforeContentType");
+                throw new ArgumentNullException(nameof(beforeContentType));
             }
             if (afterContentType == null)
             {
-                throw new ArgumentNullException("afterContentType");
+                throw new ArgumentNullException(nameof(afterContentType));
             }
             this.textBuffer = textBuffer;
             this.beforeContentType = beforeContentType;

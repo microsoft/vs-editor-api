@@ -106,7 +106,9 @@ namespace Microsoft.VisualStudio.Text.Implementation
                 }
             }
 
+#pragma warning disable CA1063 // Implement IDisposable Correctly
             public void Dispose()
+#pragma warning restore CA1063 // Implement IDisposable Correctly
             {
                 if (!this.applied && !this.canceled)
                 {
@@ -207,11 +209,11 @@ namespace Microsoft.VisualStudio.Text.Implementation
                 CheckActive();
                 if (position < 0 || position > this.bufferLength)
                 {
-                    throw new ArgumentOutOfRangeException("position");
+                    throw new ArgumentOutOfRangeException(nameof(position));
                 }
                 if (text == null)
                 {
-                    throw new ArgumentNullException("text");
+                    throw new ArgumentNullException(nameof(text));
                 }
 
                 // Check for ReadOnly
@@ -233,19 +235,19 @@ namespace Microsoft.VisualStudio.Text.Implementation
                 CheckActive();
                 if (position < 0 || position > this.bufferLength)
                 {
-                    throw new ArgumentOutOfRangeException("position");
+                    throw new ArgumentOutOfRangeException(nameof(position));
                 }
                 if (characterBuffer == null)
                 {
-                    throw new ArgumentNullException("characterBuffer");
+                    throw new ArgumentNullException(nameof(characterBuffer));
                 }
                 if (startIndex < 0 || startIndex > characterBuffer.Length)
                 {
-                    throw new ArgumentOutOfRangeException("startIndex");
+                    throw new ArgumentOutOfRangeException(nameof(startIndex));
                 }
                 if (length < 0 || startIndex + length > characterBuffer.Length)
                 {
-                    throw new ArgumentOutOfRangeException("length");
+                    throw new ArgumentOutOfRangeException(nameof(length));
                 }
 
                 // Check for ReadOnly
@@ -267,15 +269,15 @@ namespace Microsoft.VisualStudio.Text.Implementation
                 CheckActive();
                 if (startPosition < 0 || startPosition > this.bufferLength)
                 {
-                    throw new ArgumentOutOfRangeException("startPosition");
+                    throw new ArgumentOutOfRangeException(nameof(startPosition));
                 }
                 if (charsToReplace < 0 || startPosition + charsToReplace > this.bufferLength)
                 {
-                    throw new ArgumentOutOfRangeException("charsToReplace");
+                    throw new ArgumentOutOfRangeException(nameof(charsToReplace));
                 }
                 if (replaceWith == null)
                 {
-                    throw new ArgumentNullException("replaceWith");
+                    throw new ArgumentNullException(nameof(replaceWith));
                 }
 
                 // Check for ReadOnly
@@ -297,11 +299,11 @@ namespace Microsoft.VisualStudio.Text.Implementation
                 CheckActive();
                 if (replaceSpan.End > this.bufferLength)
                 {
-                    throw new ArgumentOutOfRangeException("replaceSpan");
+                    throw new ArgumentOutOfRangeException(nameof(replaceSpan));
                 }
                 if (replaceWith == null)
                 {
-                    throw new ArgumentNullException("replaceWith");
+                    throw new ArgumentNullException(nameof(replaceWith));
                 }
 
                 // Check for ReadOnly
@@ -323,11 +325,11 @@ namespace Microsoft.VisualStudio.Text.Implementation
                 CheckActive();
                 if (startPosition < 0 || startPosition > this.bufferLength)
                 {
-                    throw new ArgumentOutOfRangeException("startPosition");
+                    throw new ArgumentOutOfRangeException(nameof(startPosition));
                 }
                 if (charsToDelete < 0 || startPosition + charsToDelete > this.bufferLength)
                 {
-                    throw new ArgumentOutOfRangeException("charsToDelete");
+                    throw new ArgumentOutOfRangeException(nameof(charsToDelete));
                 }
 
                 // Check for ReadOnly
@@ -349,7 +351,7 @@ namespace Microsoft.VisualStudio.Text.Implementation
                 CheckActive();
                 if (deleteSpan.End > this.bufferLength)
                 {
-                    throw new ArgumentOutOfRangeException("deleteSpan");
+                    throw new ArgumentOutOfRangeException(nameof(deleteSpan));
                 }
 
                 // Check for ReadOnly
@@ -716,7 +718,7 @@ namespace Microsoft.VisualStudio.Text.Implementation
         {
             if (newContentType == null)
             {
-                throw new ArgumentNullException("newContentType");
+                throw new ArgumentNullException(nameof(newContentType));
             }
 
             if (newContentType != this.contentType)
@@ -764,7 +766,7 @@ namespace Microsoft.VisualStudio.Text.Implementation
             ReadOnlyQueryThreadCheck();
             if ((position < 0) || (position > this.currentSnapshot.Length))
             {
-                throw new ArgumentOutOfRangeException("position");
+                throw new ArgumentOutOfRangeException(nameof(position));
             }
 
             return IsReadOnlyImplementation(position, isEdit);
@@ -780,7 +782,7 @@ namespace Microsoft.VisualStudio.Text.Implementation
             ReadOnlyQueryThreadCheck();
             if (span.End > this.currentSnapshot.Length)
             {
-                throw new ArgumentOutOfRangeException("span");
+                throw new ArgumentOutOfRangeException(nameof(span));
             }
 
             return IsReadOnlyImplementation(span, isEdit);
@@ -809,7 +811,7 @@ namespace Microsoft.VisualStudio.Text.Implementation
             ReadOnlyQueryThreadCheck();
             if (span.End > this.CurrentSnapshot.Length)
             {
-                throw new ArgumentOutOfRangeException("span");
+                throw new ArgumentOutOfRangeException(nameof(span));
             }
             return GetReadOnlyExtentsImplementation(span);
         }

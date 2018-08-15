@@ -515,7 +515,7 @@ namespace Microsoft.TeamFoundation.Diff.Copy
     /// the constructed changes.
     /// </summary>
     //*************************************************************************
-    internal class DiffChangeHelper : IDisposable
+    internal sealed class DiffChangeHelper : IDisposable
     {
         //*********************************************************************
         /// <summary>
@@ -657,6 +657,7 @@ namespace Microsoft.TeamFoundation.Diff.Copy
     /// A base for classes which compute the differences between two input sequences.
     /// </summary>
     //*************************************************************************
+#pragma warning disable CA1063 // Implement IDisposable Correctly
     public abstract class DiffFinder<T> : IDisposable
     {
         //*************************************************************************
@@ -689,12 +690,14 @@ namespace Microsoft.TeamFoundation.Diff.Copy
             get { return m_elementComparer; }
         }
 
+
         //*************************************************************************
         /// <summary>
         /// Disposes resources used by this DiffFinder
         /// </summary>
         //*************************************************************************
         public virtual void Dispose()
+#pragma warning restore CA1063 // Implement IDisposable Correctly
         {
             if (m_originalIds != null)
             {
@@ -914,7 +917,7 @@ namespace Microsoft.TeamFoundation.Diff.Copy
                     Debug.Assert(modifiedStart == modifiedEnd + 1, "modifiedStart should only be one more than modifiedEnd");
 
                     // Identical sequences - No differences
-                    changes = new IDiffChange[0];
+                    changes = Array.Empty<IDiffChange>();
                 }
 
                 return changes;
@@ -948,7 +951,9 @@ namespace Microsoft.TeamFoundation.Diff.Copy
         /// </summary>
         //*************************************************************************
         [SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly", MessageId = "Lcs")]
+#pragma warning disable CA1000 // Do not declare static members on generic types
         public static DiffFinder<T> LcsDiff
+#pragma warning restore CA1000 // Do not declare static members on generic types
         {
             get { return new LcsDiff<T>(); }
         }

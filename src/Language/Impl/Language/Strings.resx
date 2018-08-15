@@ -120,4 +120,8 @@
   <data name="CompletionCommandHandlerName" xml:space="preserve">
     <value>Completion command handler</value>
   </data>
+  <data name="SuggestionModeDefaultTooltip" xml:space="preserve">
+    <value>Suggestion mode. Allows typing delimeters without auto completing.</value>
+    <comment>Tooltip on suggestion mode completion item (visible when suggestion mode is enabled, through Ctrl+Alt+Space)</comment>
+  </data>
 </root>

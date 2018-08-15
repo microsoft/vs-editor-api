@@ -17,13 +17,14 @@ namespace Microsoft.VisualStudio.Text.Operations.Standalone
     {
         #region Private Fields
 
-        private readonly UndoHistoryImpl history;
+        private UndoHistoryImpl history;
         private readonly UndoTransactionImpl parent;
 
         private string description;
         private UndoTransactionState state;
         private List<ITextUndoPrimitive> primitives;
         private IMergeTextUndoTransactionPolicy mergePolicy;
+        internal bool _isDisposed = false;
 
         #endregion
 
@@ -31,12 +32,12 @@ namespace Microsoft.VisualStudio.Text.Operations.Standalone
         {
             if (history == null)
             {
-                throw new ArgumentNullException("history", String.Format(CultureInfo.CurrentUICulture, "Strings.ArgumentCannotBeNull", "UndoTransactionImpl", "history"));
+                throw new ArgumentNullException(nameof(history));
             }
 
-            if (String.IsNullOrEmpty(description))
+            if (string.IsNullOrEmpty(description))
             {
-                throw new ArgumentNullException("description", String.Format(CultureInfo.CurrentUICulture, "Strings.ArgumentCannotBeNull", "UndoTransactionImpl", "description"));
+                throw new ArgumentNullException(nameof(description));
             }
 
             this.history = history as UndoHistoryImpl;
@@ -363,35 +364,44 @@ namespace Microsoft.VisualStudio.Text.Operations.Standalone
             {
                 if (value == null)
                 {
-                    throw new ArgumentNullException("value");
+                    throw new ArgumentNullException(nameof(value));
                 }
 
                 this.mergePolicy = value; 
             }
         }
 
-        /// <summary>
-        /// Closes a transaction and disposes it.
-        /// </summary>
+#pragma warning disable CA1063 // Implement IDisposable Correctly
+                              /// <summary>
+                              /// Closes a transaction and disposes it.
+                              /// </summary>
         public void Dispose()
+#pragma warning restore CA1063 // Implement IDisposable Correctly
         {
-            GC.SuppressFinalize(this);
-            switch (this.State)
+            if (!_isDisposed)
             {
-                case UndoTransactionState.Open:
-                    Cancel();
-                    break;
+                _isDisposed = true;
 
-                case UndoTransactionState.Canceled:
-                case UndoTransactionState.Completed:
-                    break;
+                GC.SuppressFinalize(this);
+                switch (this.State)
+                {
+                    case UndoTransactionState.Open:
+                        Cancel();
+                        break;
 
-                case UndoTransactionState.Redoing:
-                case UndoTransactionState.Undoing:
-                case UndoTransactionState.Undone:
-                    throw new InvalidOperationException("Strings.ClosingAnOpenTransactionThatAppearsToBeUndoneOrUndoing");
+                    case UndoTransactionState.Canceled:
+                    case UndoTransactionState.Completed:
+                        break;
+
+                    case UndoTransactionState.Redoing:
+                    case UndoTransactionState.Undoing:
+                    case UndoTransactionState.Undone:
+                        throw new InvalidOperationException("Strings.ClosingAnOpenTransactionThatAppearsToBeUndoneOrUndoing");
+                }
+
+                this.history.EndTransaction(this);
             }
-            history.EndTransaction(this);
         }
+
     }
 }

@@ -95,9 +95,9 @@ namespace Microsoft.VisualStudio.Text.Tagging
         public TrackingTagSpan<T> CreateTagSpan(ITrackingSpan span, T tag)
         {
             if (span == null)
-                throw new ArgumentNullException("span");
+                throw new ArgumentNullException(nameof(span));
             if (tag == null)
-                throw new ArgumentNullException("tag");
+                throw new ArgumentNullException(nameof(tag));
 
             var tagSpan = new TrackingTagSpan<T>(span, tag);
 
@@ -127,7 +127,7 @@ namespace Microsoft.VisualStudio.Text.Tagging
         public bool RemoveTagSpan(TrackingTagSpan<T> tagSpan)
         {
             if (tagSpan == null)
-                throw new ArgumentNullException("tagSpan");
+                throw new ArgumentNullException(nameof(tagSpan));
 
             bool removed = false;
 
@@ -162,7 +162,7 @@ namespace Microsoft.VisualStudio.Text.Tagging
         public int RemoveTagSpans(Predicate<TrackingTagSpan<T>> match)
         {
             if (match == null)
-                throw new ArgumentNullException("match");
+                throw new ArgumentNullException(nameof(match));
 
             int removedCount = 0;
 
@@ -283,7 +283,7 @@ namespace Microsoft.VisualStudio.Text.Tagging
             {
                 if (tagger == null)
                 {
-                    throw new ArgumentNullException("tagger");
+                    throw new ArgumentNullException(nameof(tagger));
                 }
                 _tagger = tagger;
                 _tagger.StartBatch();

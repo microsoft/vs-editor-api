@@ -24,7 +24,7 @@ namespace Microsoft.VisualStudio.Text
         {
             if (textBuffer == null)
             {
-                throw new ArgumentNullException("textBuffer");
+                throw new ArgumentNullException(nameof(textBuffer));
             }
             TextBuffer = textBuffer;
         }

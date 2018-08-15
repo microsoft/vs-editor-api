@@ -76,7 +76,7 @@ namespace Microsoft.VisualStudio.Text.Utilities
         {
             if (text == null)
             {
-                throw new ArgumentNullException("text");
+                throw new ArgumentNullException(nameof(text));
             }
             int lines = 0;
             for (int i = 0; i < text.Length; )
@@ -106,7 +106,7 @@ namespace Microsoft.VisualStudio.Text.Utilities
         {
             if (text == null)
             {
-                throw new ArgumentNullException("text");
+                throw new ArgumentNullException(nameof(text));
             }
             int lines = 0;
             for (int i = 0; i < length; )
@@ -257,11 +257,11 @@ namespace Microsoft.VisualStudio.Text.Utilities
         {
             if (buffer == null)
             {
-                throw new ArgumentNullException("buffer");
+                throw new ArgumentNullException(nameof(buffer));
             }
             if (tag == null)
             {
-                throw new ArgumentNullException("tag");
+                throw new ArgumentNullException(nameof(tag));
             }
             string existingTag = "";
             if (!buffer.Properties.TryGetProperty<string>("tag", out existingTag))
@@ -284,7 +284,7 @@ namespace Microsoft.VisualStudio.Text.Utilities
         {
             if (buffer == null)
             {
-                throw new ArgumentNullException("buffer");
+                throw new ArgumentNullException(nameof(buffer));
             }
             string tag = "";
             buffer.Properties.TryGetProperty<string>("tag", out tag);

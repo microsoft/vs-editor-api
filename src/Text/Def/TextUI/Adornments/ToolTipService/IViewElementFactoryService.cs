@@ -11,7 +11,7 @@
     /// This is a MEF service that can be obtained via the <see cref="ImportAttribute"/> in a MEF exported class.
     /// </para>
     /// <para>
-    /// The editor supports <see cref="ClassifiedTextElement"/>s, <see cref="ImageElement"/>s, and <see cref="object"/>
+    /// The editor supports <see cref="ClassifiedTextElement"/>s, <see cref="ContainerElement"/>, <see cref="ImageElement"/>s, and <see cref="object"/>
     /// on all platforms. Text and image elements are converted to colorized text and images respectively and
     /// other objects are displayed as the <see cref="string"/> returned by <see cref="object.ToString()"/>
     /// unless an extender exports a <see cref="IViewElementFactory"/> for that type.

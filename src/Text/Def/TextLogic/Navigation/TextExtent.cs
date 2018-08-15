@@ -4,10 +4,12 @@
 //
 namespace Microsoft.VisualStudio.Text.Operations
 {
+#pragma warning disable CA1066 // Type {0} should implement IEquatable<T> because it overrides Equals
     /// <summary>
     /// Represents the extent of a word.
     /// </summary>
     public struct TextExtent
+#pragma warning restore CA1066 // Type {0} should implement IEquatable<T> because it overrides Equals
     {
         #region Private Members
 

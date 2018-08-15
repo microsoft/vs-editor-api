@@ -25,7 +25,7 @@ namespace Microsoft.VisualStudio.Text.Formatting
         public TextAndAdornmentSequenceChangedEventArgs(IMappingSpan span)
         {
             if (span == null)
-                throw new ArgumentNullException("span");
+                throw new ArgumentNullException(nameof(span));
 
             this.Span = span;
         }

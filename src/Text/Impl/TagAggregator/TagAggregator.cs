@@ -128,7 +128,7 @@ namespace Microsoft.VisualStudio.Text.Tagging.Implementation
         public IEnumerable<IMappingTagSpan<T>> GetTags(IMappingSpan span)
         {
             if (span == null)
-                throw new ArgumentNullException("span");
+                throw new ArgumentNullException(nameof(span));
 
             if (this.disposed)
                 throw new ObjectDisposedException("TagAggregator");
@@ -186,7 +186,7 @@ namespace Microsoft.VisualStudio.Text.Tagging.Implementation
         public IEnumerable<IMappingTagSpan<T>> GetAllTags(IMappingSpan span, CancellationToken cancel)
         {
             if (span == null)
-                throw new ArgumentNullException("span");
+                throw new ArgumentNullException(nameof(span));
 
             if (this.disposed)
                 throw new ObjectDisposedException("TagAggregator");

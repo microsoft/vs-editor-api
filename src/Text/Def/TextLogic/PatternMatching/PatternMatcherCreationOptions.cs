@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 
 namespace Microsoft.VisualStudio.Text.PatternMatching
@@ -11,12 +12,17 @@ namespace Microsoft.VisualStudio.Text.PatternMatching
         /// <summary>
         /// Used to tailor character comparisons to the correct culture.
         /// </summary>
+#pragma warning disable CA1051 // Do not declare visible instance fields
+        [SuppressMessage("Microsoft.Security", "CA2104", Justification = "CultureInfo is immutable")]
         public readonly CultureInfo CultureInfo;
+#pragma warning restore CA1051 // Do not declare visible instance fields
 
         /// <summary>
         /// A set of biniary options, used to control options like case-sensitivity.
         /// </summary>
+#pragma warning disable CA1051 // Do not declare visible instance fields
         public readonly PatternMatcherCreationFlags Flags;
+#pragma warning disable CA1051 // Do not declare visible instance fields
 
         /// <summary>
         /// Characters that should be considered as describing a container/contained boundary. When matching types, this can be the '.' character
@@ -25,7 +31,10 @@ namespace Microsoft.VisualStudio.Text.PatternMatching
         ///
         /// <see langword="null"/> signifies no characters are container boundaries.
         /// </summary>
+#pragma warning disable CA1051 // Do not declare visible instance fields
+        [SuppressMessage("Microsoft.Security", "CA2104", Justification = "Cannot make a breaking change")]
         public readonly IReadOnlyCollection<char> ContainerSplitCharacters;
+#pragma warning restore CA1051 // Do not declare visible instance fields
 
         /// <summary>
         /// Creates an instance of <see cref="PatternMatcherCreationOptions"/>.

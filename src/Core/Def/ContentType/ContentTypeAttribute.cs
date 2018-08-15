@@ -14,7 +14,6 @@ namespace Microsoft.VisualStudio.Utilities
     /// <seealso cref="ContentTypeDefinition"></seealso>
     public sealed class ContentTypeAttribute : MultipleBaseMetadataAttribute
     {
-        private string contentTypes;
 
         /// <summary>
         /// Initializes a new instance of <see cref="ContentTypeAttribute"/>.
@@ -26,20 +25,14 @@ namespace Microsoft.VisualStudio.Utilities
         {
             if (string.IsNullOrEmpty(name))
             {
-                throw new ArgumentNullException("name");
+                throw new ArgumentNullException(nameof(name));
             }
-            contentTypes = name;
+            ContentTypes = name;
         }
 
         /// <summary>
         /// The content type name.
         /// </summary>
-        public string ContentTypes
-        {
-            get
-            {
-                return contentTypes;
-            }
-        }
+        public string ContentTypes { get; }
     }
 }

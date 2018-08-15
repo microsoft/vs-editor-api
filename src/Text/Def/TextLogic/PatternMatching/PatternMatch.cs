@@ -4,7 +4,11 @@ using System.Linq;
 
 namespace Microsoft.VisualStudio.Text.PatternMatching
 {
+#pragma warning disable CA1815 // Override equals and operator equals on value types
+#pragma warning disable CA1036 // Override methods on comparable types
     public struct PatternMatch : IComparable<PatternMatch>
+#pragma warning restore CA1036 // Override methods on comparable types
+#pragma warning restore CA1815 // Override equals and operator equals on value types
     {
         /// <summary>
         /// True if this was a case sensitive match.

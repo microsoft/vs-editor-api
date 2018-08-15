@@ -185,7 +185,7 @@ namespace Microsoft.VisualStudio.Text.Implementation
                     if (!(safeHandle.IsClosed || safeHandle.IsInvalid))
                     {
                         BY_HANDLE_FILE_INFORMATION fi;
-                        if (GetFileInformationByHandle(safeHandle, out fi))
+                        if (NativeMethods.GetFileInformationByHandle(safeHandle, out fi))
                         {
                             if (fi.NumberOfLinks <= 1)
                             {
@@ -232,26 +232,5 @@ namespace Microsoft.VisualStudio.Text.Implementation
             temporaryPath = null;
             return new FileStream(filePath, fileMode, FileAccess.Write, FileShare.Read);
         }
-
-        [StructLayout(LayoutKind.Sequential)]
-        struct BY_HANDLE_FILE_INFORMATION
-        {
-            public uint FileAttributes;
-            public System.Runtime.InteropServices.ComTypes.FILETIME CreationTime;
-            public System.Runtime.InteropServices.ComTypes.FILETIME LastAccessTime;
-            public System.Runtime.InteropServices.ComTypes.FILETIME LastWriteTime;
-            public uint VolumeSerialNumber;
-            public uint FileSizeHigh;
-            public uint FileSizeLow;
-            public uint NumberOfLinks;
-            public uint FileIndexHigh;
-            public uint FileIndexLow;
-        }
-
-        [DllImport("kernel32.dll", SetLastError = true)]
-        static extern bool GetFileInformationByHandle(
-            Microsoft.Win32.SafeHandles.SafeFileHandle hFile,
-            out BY_HANDLE_FILE_INFORMATION lpFileInformation
-        );
     }
 }

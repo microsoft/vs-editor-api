@@ -15,6 +15,7 @@ namespace Microsoft.VisualStudio.Text
     /// </summary>
     public class NormalizedSpanCollection : ReadOnlyCollection<Span>
     {
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2104", Justification = "Type is readonly")]
         public readonly static NormalizedSpanCollection Empty = new NormalizedSpanCollection();
 
         /// <summary>
@@ -59,8 +60,10 @@ namespace Microsoft.VisualStudio.Text
         /// <para>This constructor runs in O(N) time, where N = spans.Count.</para></remarks>
         /// <exception cref="ArgumentNullException"><paramref name="normalizedSpans"/> is null.</exception>
         /// <remarks>This constructor is private so as not to expose the misleading <paramref name="ignored"/> parameter.</remarks>
+#pragma warning disable CA1801 // Parameter ignored is never used
         private NormalizedSpanCollection(IList<Span> normalizedSpans, bool ignored)
             : base(normalizedSpans)
+#pragma warning restore CA1801 // Parameter ignored is never used
         {
         }
 
@@ -93,11 +96,11 @@ namespace Microsoft.VisualStudio.Text
         {
             if (left == null)
             {
-                throw new ArgumentNullException("left");
+                throw new ArgumentNullException(nameof(left));
             }
             if (right == null)
             {
-                throw new ArgumentNullException("right");
+                throw new ArgumentNullException(nameof(right));
             }
 
             if (left.Count == 0)
@@ -109,7 +112,7 @@ namespace Microsoft.VisualStudio.Text
                 return left;
             }
 
-            List<Span> spans = new List<Span>();
+            var spans = new List<Span>();
 
             int index1 = 0;
             int index2 = 0;
@@ -163,11 +166,11 @@ namespace Microsoft.VisualStudio.Text
         {
             if (left == null)
             {
-                throw new ArgumentNullException("left");
+                throw new ArgumentNullException(nameof(left));
             }
             if (right == null)
             {
-                throw new ArgumentNullException("right");
+                throw new ArgumentNullException(nameof(right));
             }
 
             if (left.Count == 0)
@@ -179,7 +182,7 @@ namespace Microsoft.VisualStudio.Text
                 return right;
             }
 
-            List<Span> spans = new List<Span>();
+            var spans = new List<Span>();
             for (int index1 = 0, index2 = 0; (index1 < left.Count) && (index2 < right.Count); )
             {
                 Span span1 = left[index1];
@@ -220,11 +223,11 @@ namespace Microsoft.VisualStudio.Text
         {
             if (left == null)
             {
-                throw new ArgumentNullException("left");
+                throw new ArgumentNullException(nameof(left));
             }
             if (right == null)
             {
-                throw new ArgumentNullException("right");
+                throw new ArgumentNullException(nameof(right));
             }
 
             if (left.Count == 0)
@@ -236,7 +239,7 @@ namespace Microsoft.VisualStudio.Text
                 return right;
             }
 
-            List<Span> spans = new List<Span>();
+            var spans = new List<Span>();
             for (int index1 = 0, index2 = 0; (index1 < left.Count) && (index2 < right.Count) ;)
             {
                 Span span1 = left[index1];
@@ -276,11 +279,11 @@ namespace Microsoft.VisualStudio.Text
         {
             if (left == null)
             {
-                throw new ArgumentNullException("left");
+                throw new ArgumentNullException(nameof(left));
             }
             if (right == null)
             {
-                throw new ArgumentNullException("right");
+                throw new ArgumentNullException(nameof(right));
             }
 
             if (left.Count == 0)
@@ -292,7 +295,7 @@ namespace Microsoft.VisualStudio.Text
                 return left;
             }
 
-            List<Span> spans = new List<Span>();
+            var spans = new List<Span>();
 
             int index1 = 0;
             int index2 = 0;
@@ -362,9 +365,9 @@ namespace Microsoft.VisualStudio.Text
         /// <returns><c>true</c> if the two sets are equivalent, otherwise <c>false</c>.</returns>
         public static bool operator ==(NormalizedSpanCollection left, NormalizedSpanCollection right)
         {
-            if (object.ReferenceEquals(left, right))
+            if (ReferenceEquals(left, right))
                 return true;
-            if (object.ReferenceEquals(left, null) || object.ReferenceEquals(right, null))
+            if (ReferenceEquals(left, null) || ReferenceEquals(right, null))
                 return false;
 
             if (left.Count != right.Count)
@@ -398,7 +401,7 @@ namespace Microsoft.VisualStudio.Text
         {
             if (set == null)
             {
-                throw new ArgumentNullException("set");
+                throw new ArgumentNullException(nameof(set));
             }
 
             for (int index1 = 0, index2 = 0; (index1 < this.Count) && (index2 < set.Count) ;)
@@ -457,7 +460,7 @@ namespace Microsoft.VisualStudio.Text
         {
             if (set == null)
             {
-                throw new ArgumentNullException("set");
+                throw new ArgumentNullException(nameof(set));
             }
 
             for (int index1 = 0, index2 = 0; (index1 < this.Count) && (index2 < set.Count); )
@@ -586,10 +589,10 @@ namespace Microsoft.VisualStudio.Text
         {
             if (spans == null)
             {
-                throw new ArgumentNullException("spans");
+                throw new ArgumentNullException(nameof(spans));
             }
 
-            List<Span> sorted = new List<Span>(spans);
+            var sorted = new List<Span>(spans);
             if (sorted.Count <= 1)
             {
                 return sorted;

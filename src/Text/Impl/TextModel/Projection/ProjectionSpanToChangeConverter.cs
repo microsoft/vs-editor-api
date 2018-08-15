@@ -48,7 +48,7 @@ namespace Microsoft.VisualStudio.Text.Projection.Implementation
 
         private void ConstructChanges()
         {
-            IDifferenceCollection<SnapshotSpan> diffs = differ.GetDifferences();
+            var diffs = differ.GetDifferences();
 
             List<TextChange> changes = new List<TextChange>();
             int pos = this.textPosition;
@@ -56,10 +56,10 @@ namespace Microsoft.VisualStudio.Text.Projection.Implementation
             // each difference generates a text change
             foreach (Difference diff in diffs)
             {
-                pos += GetMatchSize(differ.DeletedSpans, diff.Before);
+                pos += GetMatchSize(diffs.LeftSequence, diff.Before);
                 TextChange change = TextChange.Create(pos,
-                                                      BufferFactoryService.StringRebuilderFromSnapshotSpans(differ.DeletedSpans, diff.Left),
-                                                      BufferFactoryService.StringRebuilderFromSnapshotSpans(differ.InsertedSpans, diff.Right),
+                                                      BufferFactoryService.StringRebuilderFromSnapshotSpans(diffs.LeftSequence, diff.Left),
+                                                      BufferFactoryService.StringRebuilderFromSnapshotSpans(diffs.RightSequence, diff.Right),
                                                       this.currentSnapshot);
                 changes.Add(change);
                 pos += change.OldLength;
@@ -67,7 +67,7 @@ namespace Microsoft.VisualStudio.Text.Projection.Implementation
             this.normalizedChanges = NormalizedTextChangeCollection.Create(changes);
         }
 
-        private static int GetMatchSize(ReadOnlyCollection<SnapshotSpan> spans, Match match)
+        private static int GetMatchSize(IList<SnapshotSpan> spans, Match match)
         {
             int size = 0;
             if (match != null)

@@ -4,26 +4,24 @@
 //
 namespace Microsoft.VisualStudio.Text.Editor
 {
+#pragma warning disable CA1066 // Type {0} should implement IEquatable<T> because it overrides Equals
     /// <summary>
     /// Represents a type-safe key for editor options.
     /// </summary>
     /// <typeparam name="T">The type of the option value.</typeparam>
     public struct EditorOptionKey<T>
+#pragma warning restore CA1066 // Type {0} should implement IEquatable<T> because it overrides Equals
     {
-        #region Private data
-        private string _name;
-        #endregion
-
         /// <summary>
         /// Initializes a new instance of <see cref="EditorOptionKey&lt;T&gt;"/>.
         /// </summary>
         /// <param name="name">The name of the option key.</param>
-        public EditorOptionKey(string name) { _name = name; }
+        public EditorOptionKey(string name) { this.Name = name; }
 
         /// <summary>
         /// Gets the name of this key.
         /// </summary>
-        public string Name { get { return _name; } }
+        public string Name { get; }
 
         #region Object overrides
 
@@ -36,8 +34,8 @@ namespace Microsoft.VisualStudio.Text.Editor
         {
             if (obj is EditorOptionKey<T>)
             {
-                EditorOptionKey<T> other = (EditorOptionKey<T>)obj;
-                return other.Name == this.Name;
+                var other = (EditorOptionKey<T>)obj;
+                return string.Equals(other.Name, this.Name, System.StringComparison.Ordinal);
             }
 
             return false;
@@ -66,7 +64,7 @@ namespace Microsoft.VisualStudio.Text.Editor
         /// </summary>
         public static bool operator ==(EditorOptionKey<T> left, EditorOptionKey<T> right)
         {
-            return left.Name == right.Name;
+            return string.Equals(left.Name, right.Name, System.StringComparison.Ordinal);
         }
 
         /// <summary>

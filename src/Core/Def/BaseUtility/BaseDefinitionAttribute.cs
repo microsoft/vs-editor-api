@@ -22,7 +22,7 @@ namespace Microsoft.VisualStudio.Utilities
         {
             if (string.IsNullOrEmpty(name))
             {
-                throw new ArgumentNullException("name");
+                throw new ArgumentNullException(nameof(name));
             }
             baseDefinition = name;
         }

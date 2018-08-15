@@ -110,10 +110,12 @@ namespace Microsoft.VisualStudio.Text.Operations.Standalone
             }
         }
 
+#pragma warning disable CA1822 // Mark members as static
         public bool MergeWithPreviousOnly
         {
             get { return true; }
         }
+#pragma warning restore CA1822 // Mark members as static
 
         public bool CanMerge(ITextUndoPrimitive primitive)
         {

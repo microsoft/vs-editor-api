@@ -68,5 +68,14 @@ namespace Microsoft.VisualStudio.Language.Intellisense.Implementation {
                 return ResourceManager.GetString("CompletionCommandHandlerName", resourceCulture);
             }
         }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Suggestion mode. Allows typing delimeters without auto completing..
+        /// </summary>
+        public static string SuggestionModeDefaultTooltip {
+            get {
+                return ResourceManager.GetString("SuggestionModeDefaultTooltip", resourceCulture);
+            }
+        }
     }
 }

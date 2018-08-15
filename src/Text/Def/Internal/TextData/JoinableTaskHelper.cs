@@ -6,6 +6,7 @@
 // Use at your own risk.
 //
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Threading.Tasks;
 using Microsoft.VisualStudio.Threading;
 
@@ -16,16 +17,20 @@ namespace Microsoft.VisualStudio.Utilities
     /// </summary>
     public class JoinableTaskHelper
     {
+#pragma warning disable CA1051 // Do not declare visible instance fields
+        [SuppressMessage("Microsoft.Security", "CA2104", Justification = "By design")]
         public readonly JoinableTaskContext Context;
+
+        [SuppressMessage("Microsoft.Security", "CA2104", Justification = "By design")]
         public readonly JoinableTaskCollection Collection;
+
+        [SuppressMessage("Microsoft.Security", "CA2104", Justification = "By design")]
         public readonly JoinableTaskFactory Factory;
+#pragma warning restore CA1051 // Do not declare visible instance fields
 
         public JoinableTaskHelper(JoinableTaskContext context)
         {
-            if (context == null)
-                throw new ArgumentNullException(nameof(context));
-
-            this.Context = context;
+            this.Context = context ?? throw new ArgumentNullException(nameof(context));
             this.Collection = context.CreateCollection();
             this.Factory = context.CreateFactory(this.Collection);
         }
@@ -64,15 +69,17 @@ namespace Microsoft.VisualStudio.Utilities
             }
         }
 
-        public async Task DisposeAsync()
+        public Task DisposeAsync()
         {
-            await this.Collection.JoinTillEmptyAsync();
+            return this.Collection.JoinTillEmptyAsync();
         }
 
         public void Dispose()
         {
-            this.Context.Factory.Run(async delegate {   // Not this.Factory
-                await this.DisposeAsync();
+            this.Context.Factory.Run(async delegate
+            {
+                // Not this.Factory
+                await this.DisposeAsync().ConfigureAwait(false);
             });
         }
     }

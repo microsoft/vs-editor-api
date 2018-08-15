@@ -20,15 +20,15 @@ namespace Microsoft.VisualStudio.Text.Implementation
         {
             if (anchorPoint.Snapshot == null)
             {
-                throw new ArgumentNullException("anchorPoint");
+                throw new ArgumentNullException(nameof(anchorPoint));
             }
             if (trackingMode < PointTrackingMode.Positive || trackingMode > PointTrackingMode.Negative)
             {
-                throw new ArgumentOutOfRangeException("trackingMode");
+                throw new ArgumentOutOfRangeException(nameof(trackingMode));
             }
             if (bufferGraph == null)
             {
-                throw new ArgumentNullException("bufferGraph");
+                throw new ArgumentNullException(nameof(bufferGraph));
             }
             this.anchorPoint = anchorPoint;
             this.trackingMode = trackingMode;
@@ -49,7 +49,7 @@ namespace Microsoft.VisualStudio.Text.Implementation
         {
             if (targetBuffer == null)
             {
-                throw new ArgumentNullException("targetBuffer");
+                throw new ArgumentNullException(nameof(targetBuffer));
             }
             ITextBuffer anchorBuffer = this.AnchorBuffer;
             SnapshotPoint currentPoint = this.anchorPoint.TranslateTo(anchorBuffer.CurrentSnapshot, this.trackingMode);
@@ -86,7 +86,7 @@ namespace Microsoft.VisualStudio.Text.Implementation
         public SnapshotPoint? GetPoint(ITextSnapshot targetSnapshot, PositionAffinity affinity)
         {
             if (targetSnapshot == null)
-                throw new ArgumentNullException("targetSnapshot");
+                throw new ArgumentNullException(nameof(targetSnapshot));
 
             SnapshotPoint? result = GetPoint(targetSnapshot.TextBuffer, affinity);
             if (result.HasValue && (result.Value.Snapshot != targetSnapshot))
@@ -101,7 +101,7 @@ namespace Microsoft.VisualStudio.Text.Implementation
         {
             if (match == null)
             {
-                throw new ArgumentNullException("match");
+                throw new ArgumentNullException(nameof(match));
             }
             ITextBuffer anchorBuffer = this.AnchorBuffer;
             SnapshotPoint currentPoint = this.anchorPoint.TranslateTo(anchorBuffer.CurrentSnapshot, this.trackingMode);
@@ -143,7 +143,7 @@ namespace Microsoft.VisualStudio.Text.Implementation
             // always maps down
             if (match == null)
             {
-                throw new ArgumentNullException("match");
+                throw new ArgumentNullException(nameof(match));
             }
             ITextBuffer anchorBuffer = this.AnchorBuffer;
             SnapshotPoint currentPoint = this.anchorPoint.TranslateTo(anchorBuffer.CurrentSnapshot, this.trackingMode);

@@ -7,6 +7,7 @@ using System.Collections.Generic;
 
 namespace Microsoft.VisualStudio.Text.Differencing
 {
+#pragma warning disable CA1710 // Identifiers should have correct suffix
     /// <summary>
     /// Represents a range of matches between two sequences as a pair of spans of equal length.
     /// </summary>
@@ -20,6 +21,7 @@ namespace Microsoft.VisualStudio.Text.Differencing
     /// (0, 0, 2) and (4, 4, 1)
     ///</remarks>
     public class Match : IEnumerable<Tuple<int, int>>
+#pragma warning restore CA1710 // Identifiers should have correct suffix
     {
         private Span left;
         private Span right;

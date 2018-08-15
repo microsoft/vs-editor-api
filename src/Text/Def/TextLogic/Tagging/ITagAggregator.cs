@@ -72,7 +72,7 @@ namespace Microsoft.VisualStudio.Text.Tagging
         /// <para>
         /// This is a batched version of the TagsChanged event.  One or more TagsChanged events 
         /// are accumulated and then raised as a single BatchedTagsChanged event on idle using the 
-        /// <see cref="T:System.Windows.Threading.Dispatcher.CurrentDispatcher" /> that was active when the ITagAggregator was
+        /// Dispatcher.CurrentDispatcher that was active when the ITagAggregator was
         /// created. 
         /// </para>
         /// <para>

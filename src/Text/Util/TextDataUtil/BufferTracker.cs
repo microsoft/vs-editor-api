@@ -102,7 +102,7 @@ namespace Microsoft.VisualStudio.Text.Utilities
 
                             foreach (KeyValuePair<Object, Object> pair in ((IPropertyOwner)buffer).Properties.PropertyList)
                             {
-                                if (pair.Key.ToString() != "tag")
+                                if (!string.Equals(pair.Key.ToString(), "tag", StringComparison.Ordinal))
                                 {
                                     string rhsType;
                                     if (pair.Value == null)

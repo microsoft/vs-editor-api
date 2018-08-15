@@ -32,7 +32,7 @@ namespace Microsoft.VisualStudio.Text.Implementation
                                               GuardedOperations guardedOperations)
         {
             if (stream == null)
-                throw new ArgumentNullException("stream");
+                throw new ArgumentNullException(nameof(stream));
 
             long position = stream.Position;
 

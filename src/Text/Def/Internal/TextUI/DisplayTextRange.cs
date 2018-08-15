@@ -11,10 +11,12 @@ using Microsoft.VisualStudio.Text.Formatting;
 
 namespace Microsoft.VisualStudio.Text.Editor
 {
+#pragma warning disable CA1710 // Identifiers should have correct suffix
     /// <summary>
     /// Represents a range in the <see cref="TextBuffer"/> that behaves relative to the view in which it lives.
     /// </summary>
     public abstract class DisplayTextRange : TextRange, IEnumerable<DisplayTextPoint>
+#pragma warning restore CA1710 // Identifiers should have correct suffix
     {
         /// <summary>
         /// When implemented in a derived class, gets the <see cref="TextView"/> of this range.

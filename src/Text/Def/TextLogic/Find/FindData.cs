@@ -6,15 +6,15 @@ using System;
 
 namespace Microsoft.VisualStudio.Text.Operations
 {
+#pragma warning disable CA1066 // Type {0} should implement IEquatable<T> because it overrides Equals
     /// <summary>
     /// Represents the set of data used in a search by the <see cref="ITextSearchService"/>.
     /// </summary>
     public struct FindData
+#pragma warning restore CA1066 // Type {0} should implement IEquatable<T> because it overrides Equals
     {
         private string _searchString;
         private ITextSnapshot _textSnapshotToSearch;
-        private FindOptions _findOptions;
-        private ITextStructureNavigator _textStructureNavigator;
 
         /// <summary>
         /// Initializes a new instance of <see cref="FindData"/> with the specified search pattern, text snapshot,
@@ -30,22 +30,17 @@ namespace Microsoft.VisualStudio.Text.Operations
         {
             if (searchPattern == null)
             {
-                throw new ArgumentNullException("searchPattern");
+                throw new ArgumentNullException(nameof(searchPattern));
             }
             if (searchPattern.Length == 0)
             {
-                throw new ArgumentOutOfRangeException("searchPattern");
-            }
-
-            if (textSnapshot == null)
-            {
-                throw new ArgumentNullException("textSnapshot");
+                throw new ArgumentOutOfRangeException(nameof(searchPattern));
             }
 
             _searchString = searchPattern;
-            _textSnapshotToSearch = textSnapshot;
-            _findOptions = findOptions;
-            _textStructureNavigator = textStructureNavigator;
+            _textSnapshotToSearch = textSnapshot ?? throw new ArgumentNullException(nameof(textSnapshot));
+            FindOptions = findOptions;
+            TextStructureNavigator = textStructureNavigator;
         }
 
         /// <summary>
@@ -63,8 +58,8 @@ namespace Microsoft.VisualStudio.Text.Operations
         {
             _searchString = null;
             _textSnapshotToSearch = textSnapshot;
-            _findOptions = FindOptions.None;
-            _textStructureNavigator = null;
+            FindOptions = FindOptions.None;
+            TextStructureNavigator = null;
         }
 
         /// <summary>
@@ -79,11 +74,11 @@ namespace Microsoft.VisualStudio.Text.Operations
             {
                 if (value == null)
                 {
-                    throw new ArgumentNullException("value");
+                    throw new ArgumentNullException(nameof(value));
                 }
                 if (value.Length == 0)
                 {
-                    throw new ArgumentOutOfRangeException("value");
+                    throw new ArgumentOutOfRangeException(nameof(value));
                 }
                 _searchString = value;
             }
@@ -100,10 +95,10 @@ namespace Microsoft.VisualStudio.Text.Operations
             {
                 FindData other = (FindData)obj;
 
-                return (_searchString == other._searchString) &&
-                       (_findOptions == other._findOptions) &&
+                return (string.Equals(_searchString, other._searchString, StringComparison.Ordinal)) &&
+                       (FindOptions == other.FindOptions) &&
                        object.ReferenceEquals(_textSnapshotToSearch, other._textSnapshotToSearch) &&
-                       object.ReferenceEquals(_textStructureNavigator, other._textStructureNavigator);
+                       object.ReferenceEquals(TextStructureNavigator, other.TextStructureNavigator);
             }
             return false;
         }
@@ -151,11 +146,7 @@ namespace Microsoft.VisualStudio.Text.Operations
         /// <summary>
         /// Gets or sets the options that are used for the search.
         /// </summary>
-        public FindOptions FindOptions
-        {
-            get { return _findOptions; }
-            set { _findOptions = value; }
-        }
+        public FindOptions FindOptions { get; set; }
 
         /// <summary>
         /// Gets or sets the <see cref="ITextSnapshot"/> on which to perform the search.
@@ -166,21 +157,13 @@ namespace Microsoft.VisualStudio.Text.Operations
             get { return _textSnapshotToSearch; }
             set
             {
-                if (value == null)
-                {
-                    throw new ArgumentNullException("value");
-                }
-                _textSnapshotToSearch = value;
+                _textSnapshotToSearch = value ?? throw new ArgumentNullException(nameof(value));
             }
         }
 
         /// <summary>
         /// Gets or sets the <see cref="ITextStructureNavigator"/> to use in determining word boundaries.
         /// </summary>
-        public ITextStructureNavigator TextStructureNavigator
-        {
-            get { return _textStructureNavigator; }
-            set { _textStructureNavigator = value; }
-        }
+        public ITextStructureNavigator TextStructureNavigator { get; set; }
     }
 }

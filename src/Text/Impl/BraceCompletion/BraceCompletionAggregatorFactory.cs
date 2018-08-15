@@ -26,7 +26,7 @@ namespace Microsoft.VisualStudio.Text.BraceCompletion.Implementation
         internal IContentTypeRegistryService ContentTypeRegistryService { get; private set; }
         internal ITextBufferUndoManagerProvider UndoManager { get; private set; }
         internal IEditorOperationsFactoryService EditorOperationsFactoryService { get; private set; }
-        internal GuardedOperations GuardedOperations { get; private set; }
+        internal IGuardedOperations GuardedOperations { get; private set; }
 
         #endregion
 
@@ -40,7 +40,7 @@ namespace Microsoft.VisualStudio.Text.BraceCompletion.Implementation
             IContentTypeRegistryService contentTypeRegistryService,
             ITextBufferUndoManagerProvider undoManager,
             IEditorOperationsFactoryService editorOperationsFactoryService,
-            GuardedOperations guardedOperations)
+            IGuardedOperations guardedOperations)
         {
             SessionProviders = sessionProviders;
             ContextProviders = contextProviders;

@@ -19,10 +19,9 @@ namespace Microsoft.VisualStudio.Text.Operations.Implementation
     {
         // Think twice before adding any fields here! These objects are long-lived and consume considerable space.
         // Unusual cases should be handled by the GeneralAfterTextBufferChangedUndoPrimitive class below.
-        protected ITextUndoHistory _undoHistory;
-        protected int _oldCaretIndex;
-        protected byte _oldCaretAffinityByte;
-        protected bool _canUndo;
+        private readonly ITextUndoHistory _undoHistory;
+        public readonly SelectionState State;
+        private bool _canUndo;
 
         /// <summary>
         /// Constructs a BeforeTextBufferChangeUndoPrimitive.
@@ -39,86 +38,20 @@ namespace Microsoft.VisualStudio.Text.Operations.Implementation
         {
             if (textView == null)
             {
-                throw new ArgumentNullException("textView");
+                throw new ArgumentNullException(nameof(textView));
             }
             if (undoHistory == null)
             {
-                throw new ArgumentNullException("undoHistory");
+                throw new ArgumentNullException(nameof(undoHistory));
             }
 
-            // Store the ITextView for these changes in the ITextUndoHistory properties so we can retrieve it later.
-            if (!undoHistory.Properties.ContainsProperty(typeof(ITextView)))
-            {
-                undoHistory.Properties[typeof(ITextView)] = textView;
-            }
-
-            CaretPosition caret = textView.Caret.Position;
-
-            IMapEditToData map = BeforeTextBufferChangeUndoPrimitive.GetMap(textView);
-
-            int oldCaretIndex = BeforeTextBufferChangeUndoPrimitive.MapToData(map, caret.BufferPosition);
-            int oldCaretVirtualSpaces = caret.VirtualBufferPosition.VirtualSpaces;
-
-            VirtualSnapshotPoint anchor = textView.Selection.AnchorPoint;
-            int oldSelectionAnchorIndex = BeforeTextBufferChangeUndoPrimitive.MapToData(map, anchor.Position);
-            int oldSelectionAnchorVirtualSpaces = anchor.VirtualSpaces;
-
-            VirtualSnapshotPoint active = textView.Selection.ActivePoint;
-            int oldSelectionActiveIndex = BeforeTextBufferChangeUndoPrimitive.MapToData(map, active.Position);
-            int oldSelectionActiveVirtualSpaces = active.VirtualSpaces;
-
-            TextSelectionMode oldSelectionMode = textView.Selection.Mode;
-
-            if (oldCaretVirtualSpaces != 0 ||
-                oldSelectionAnchorIndex != oldCaretIndex ||
-                oldSelectionAnchorVirtualSpaces != 0 ||
-                oldSelectionActiveIndex != oldCaretIndex ||
-                oldSelectionActiveVirtualSpaces != 0 ||
-                oldSelectionMode != TextSelectionMode.Stream)
-            {
-                return new GeneralBeforeTextBufferChangeUndoPrimitive
-                            (undoHistory, oldCaretIndex, caret.Affinity, oldCaretVirtualSpaces, oldSelectionAnchorIndex,
-                             oldSelectionAnchorVirtualSpaces, oldSelectionActiveIndex, oldSelectionActiveVirtualSpaces, oldSelectionMode);
-            }
-            else
-            {
-                return new BeforeTextBufferChangeUndoPrimitive(undoHistory, oldCaretIndex, caret.Affinity);
-            }
+            return new BeforeTextBufferChangeUndoPrimitive(textView, undoHistory);
         }
 
-        //Get the map -- if any -- used to map points in the view's edit buffer to the data buffer. The map is needed because the undo history
-        //typically lives on the data buffer, but is used by the view on the edit buffer and a view (if any) on the data buffer. If there isn't
-        //a contract that guarantees that the contents of the edit and databuffers are the same, undoing an action on the edit buffer view and
-        //then undoing it on the data buffer view will cause cause the undo to try and restore caret/selection (in the data buffer) the coorinates
-        //saved in the edit buffer. This isn't good.
-        internal static IMapEditToData GetMap(ITextView view)
-        {
-            IMapEditToData map = null;
-            if (view.TextViewModel.EditBuffer != view.TextViewModel.DataBuffer)
-            {
-                view.Properties.TryGetProperty(typeof(IMapEditToData), out map);
-            }
-
-            return map;
-        }
-
-        //Map point from a position in the edit buffer to a position in the data buffer (== if there is no map, otherwise ask the map).
-        internal static int MapToData(IMapEditToData map, int point)
-        {
-            return (map != null) ? map.MapEditToData(point) : point;
-        }
-
-        //Map point from a position in the data buffer to a position in the edit buffer (== if there is no map, otherwise ask the map).
-        internal static int MapToEdit(IMapEditToData map, int point)
-        {
-            return (map != null) ? map.MapDataToEdit(point) : point;
-        }
-
-        protected BeforeTextBufferChangeUndoPrimitive(ITextUndoHistory undoHistory, int caretIndex, PositionAffinity caretAffinity)
+        private BeforeTextBufferChangeUndoPrimitive(ITextView textView, ITextUndoHistory undoHistory)
         {
             _undoHistory = undoHistory;
-            _oldCaretIndex = caretIndex;
-            _oldCaretAffinityByte = (byte)caretAffinity;
+            this.State = new SelectionState(textView);
             _canUndo = true;
         }
 
@@ -192,34 +125,18 @@ namespace Microsoft.VisualStudio.Text.Operations.Implementation
             Debug.Assert(view == null || !view.IsClosed, "Attempt to undo/redo on a closed view?  This shouldn't happen.");
             if (view != null && !view.IsClosed)
             {
-                UndoMoveCaretAndSelect(view, BeforeTextBufferChangeUndoPrimitive.GetMap(view));
+                this.State.Restore(view);
                 view.Caret.EnsureVisible();
             }
 
             _canUndo = false;
         }
 
-        /// <summary>
-        /// Move the caret and restore the selection as part of the Undo operation.
-        /// </summary>
-        protected virtual void UndoMoveCaretAndSelect(ITextView view, IMapEditToData map)
-        {
-            SnapshotPoint newCaret = new SnapshotPoint(view.TextSnapshot, MapToEdit(map, _oldCaretIndex));
-
-            view.Caret.MoveTo(new VirtualSnapshotPoint(newCaret), (PositionAffinity)_oldCaretAffinityByte);
-            view.Selection.Clear();
-        }
-
-        protected virtual int OldCaretVirtualSpaces
-        {
-            get { return 0; }
-        }
-
         public override bool CanMerge(ITextUndoPrimitive older)
         {
             if (older == null)
             {
-                throw new ArgumentNullException("older");
+                throw new ArgumentNullException(nameof(older));
             }
 
             AfterTextBufferChangeUndoPrimitive olderPrimitive = older as AfterTextBufferChangeUndoPrimitive;
@@ -229,70 +146,9 @@ namespace Microsoft.VisualStudio.Text.Operations.Implementation
                 return false;
             }
 
-            return (olderPrimitive.CaretIndex == _oldCaretIndex) && (olderPrimitive.CaretVirtualSpace == OldCaretVirtualSpaces);
+            return olderPrimitive.State.Matches(this.State);
         }
 
         #endregion
-    }
-
-    /// <summary>
-    /// The UndoPrimitive to take place on the Undo stack before a text buffer change. This is the general
-    /// version of the primitive that handles all cases, including those involving selections and virtual space.
-    /// </summary>
-    internal class GeneralBeforeTextBufferChangeUndoPrimitive : BeforeTextBufferChangeUndoPrimitive
-    {
-        private int _oldCaretVirtualSpaces;
-        private int _oldSelectionAnchorIndex;
-        private int _oldSelectionAnchorVirtualSpaces;
-        private int _oldSelectionActiveIndex;
-        private int _oldSelectionActiveVirtualSpaces;
-        private TextSelectionMode _oldSelectionMode;
-
-        public GeneralBeforeTextBufferChangeUndoPrimitive(ITextUndoHistory undoHistory,
-                                                          int oldCaretIndex,
-                                                          PositionAffinity oldCaretAffinity,
-                                                          int oldCaretVirtualSpaces,
-                                                          int oldSelectionAnchorIndex,
-                                                          int oldSelectionAnchorVirtualSpaces,
-                                                          int oldSelectionActiveIndex,
-                                                          int oldSelectionActiveVirtualSpaces,
-                                                          TextSelectionMode oldSelectionMode)
-            : base(undoHistory, oldCaretIndex, oldCaretAffinity)
-        {
-            _oldCaretVirtualSpaces = oldCaretVirtualSpaces;
-            _oldSelectionAnchorIndex = oldSelectionAnchorIndex;
-            _oldSelectionAnchorVirtualSpaces = oldSelectionAnchorVirtualSpaces;
-            _oldSelectionActiveIndex = oldSelectionActiveIndex;
-            _oldSelectionActiveVirtualSpaces = oldSelectionActiveVirtualSpaces;
-            _oldSelectionMode = oldSelectionMode;
-        }
-
-        /// <summary>
-        /// Move the caret and restore the selection as part of the Undo operation.
-        /// </summary>
-        protected override void UndoMoveCaretAndSelect(ITextView view, IMapEditToData map)
-        {
-            SnapshotPoint newCaret = new SnapshotPoint(view.TextSnapshot, BeforeTextBufferChangeUndoPrimitive.MapToEdit(map, _oldCaretIndex));
-            SnapshotPoint newAnchor = new SnapshotPoint(view.TextSnapshot, BeforeTextBufferChangeUndoPrimitive.MapToEdit(map, _oldSelectionAnchorIndex));
-            SnapshotPoint newActive = new SnapshotPoint(view.TextSnapshot, BeforeTextBufferChangeUndoPrimitive.MapToEdit(map, _oldSelectionActiveIndex));
-
-            view.Caret.MoveTo(new VirtualSnapshotPoint(newCaret, _oldCaretVirtualSpaces), (PositionAffinity)_oldCaretAffinityByte);
-
-            view.Selection.Mode = _oldSelectionMode;
-
-            var virtualAnchor = new VirtualSnapshotPoint(newAnchor, _oldSelectionAnchorVirtualSpaces);
-            var virtualActive = new VirtualSnapshotPoint(newActive, _oldSelectionActiveVirtualSpaces);
-
-            // Buffer may have been changed by one of the listeners on the caret move event.
-            virtualAnchor = virtualAnchor.TranslateTo(view.TextSnapshot);
-            virtualActive = virtualActive.TranslateTo(view.TextSnapshot);
-
-            view.Selection.Select(virtualAnchor, virtualActive);
-        }
-
-        protected override int OldCaretVirtualSpaces
-        {
-            get { return _oldCaretVirtualSpaces; }
-        }
     }
 }

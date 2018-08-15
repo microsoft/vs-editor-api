@@ -25,7 +25,7 @@ namespace Microsoft.VisualStudio.Text.Find.Implementation
     ///     Once we've searched a section of the buffer we don't search it again unless it is modified.
     ///     Even if we get multiple, nearly simultaneous requests to search a section of the buffer, we only search it once.
     /// </remarks>
-    internal class BackgroundSearch<T> : IDisposable where T : ITag
+    internal sealed class BackgroundSearch<T> : IDisposable where T : ITag
     {
         private ITextBuffer _buffer;
         private readonly ITextSearchService2 _textSearchService;
@@ -429,6 +429,7 @@ namespace Microsoft.VisualStudio.Text.Find.Implementation
         public void Dispose()
         {
             _isDisposed = true;
+            GC.SuppressFinalize(this);
         }
 
         #endregion

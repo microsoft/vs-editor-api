@@ -123,6 +123,7 @@ namespace Microsoft.VisualStudio.Text.Projection.Implementation
             this.sourceBuffer = sourceBuffer;
             this.sourceSnapshot = sourceBuffer.CurrentSnapshot;
 
+            Debug.Assert(sourceBuffer is BaseBuffer);
             BaseBuffer baseSourceBuffer = (BaseBuffer)sourceBuffer;
 
             this.eventHook = new WeakEventHook(this, baseSourceBuffer);
@@ -219,11 +220,11 @@ namespace Microsoft.VisualStudio.Text.Projection.Implementation
                     {
                         if ((spansToElide.Count > 0) && (spansToElide[spansToElide.Count - 1].End > this.elBuffer.sourceSnapshot.Length))
                         {
-                            throw new ArgumentOutOfRangeException("spansToElide");
+                            throw new ArgumentOutOfRangeException(nameof(spansToElide));
                         }
                         if ((spansToExpand.Count > 0) && (spansToExpand[spansToExpand.Count - 1].End > this.elBuffer.sourceSnapshot.Length))
                         {
-                            throw new ArgumentOutOfRangeException("spansToExpand");
+                            throw new ArgumentOutOfRangeException(nameof(spansToExpand));
                         }
                         ElisionSourceSpansChangedEventArgs args = this.elBuffer.ApplySpanChanges(spansToElide, spansToExpand);
                         if (args != null)
@@ -251,7 +252,7 @@ namespace Microsoft.VisualStudio.Text.Projection.Implementation
         {
             if (spansToElide == null)
             {
-                throw new ArgumentNullException("spansToElide");
+                throw new ArgumentNullException(nameof(spansToElide));
             }
             return ModifySpans(spansToElide, null);
         }
@@ -260,7 +261,7 @@ namespace Microsoft.VisualStudio.Text.Projection.Implementation
         {
             if (spansToExpand == null)
             {
-                throw new ArgumentNullException("spansToExpand");
+                throw new ArgumentNullException(nameof(spansToExpand));
             }
             return ModifySpans(null, spansToExpand);
         }

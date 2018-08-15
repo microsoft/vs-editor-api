@@ -29,10 +29,12 @@ namespace Microsoft.VisualStudio.Utilities
         IProgress<ProgressInfo> Progress { get; }
     }
 
+#pragma warning disable CA1815 // Override equals and operator equals on value types
     /// <summary>
     /// Represents an update of a progress.
     /// </summary>
     public struct ProgressInfo
+#pragma warning restore CA1815 // Override equals and operator equals on value types
     {
         /// <summary>
         /// A number of already completed items.

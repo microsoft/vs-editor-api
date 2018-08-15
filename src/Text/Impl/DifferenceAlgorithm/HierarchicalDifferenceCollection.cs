@@ -46,11 +46,11 @@ namespace Microsoft.VisualStudio.Text.Differencing.Implementation
                                                 StringDifferenceOptions options)
         {
             if (differenceCollection == null)
-                throw new ArgumentNullException("differenceCollection");
+                throw new ArgumentNullException(nameof(differenceCollection));
             if (left == null)
-                throw new ArgumentNullException("left");
+                throw new ArgumentNullException(nameof(left));
             if (right == null)
-                throw new ArgumentNullException("right");
+                throw new ArgumentNullException(nameof(right));
             if (!object.ReferenceEquals(left, differenceCollection.LeftSequence))
                 throw new ArgumentException("left must equal differenceCollection.LeftSequence");
             if (!object.ReferenceEquals(right, differenceCollection.RightSequence))

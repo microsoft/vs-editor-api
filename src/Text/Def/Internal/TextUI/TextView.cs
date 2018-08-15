@@ -149,7 +149,7 @@ namespace Microsoft.VisualStudio.Text.Editor
         /// <summary>
         /// When implemented in a derived class, gets the <see cref="Selection"/>. of this view. 
         /// </summary>
-        public abstract Selection Selection
+        public abstract LegacySelection Selection
         {
             get;
         }

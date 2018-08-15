@@ -48,17 +48,17 @@ namespace Microsoft.VisualStudio.Text.Implementation
         {
             if (filePath == null)
             {
-                throw new ArgumentNullException("filePath");
+                throw new ArgumentNullException(nameof(filePath));
             }
 
             if (contentType == null)
             {
-                throw new ArgumentNullException("contentType");
+                throw new ArgumentNullException(nameof(contentType));
             }
 
             if (encoding == null)
             {
-                throw new ArgumentNullException("encoding");
+                throw new ArgumentNullException(nameof(encoding));
             }
 
             var fallbackDetector = new FallbackDetector(encoding.DecoderFallback);
@@ -191,12 +191,12 @@ namespace Microsoft.VisualStudio.Text.Implementation
         {
             if (textBuffer == null)
             {
-                throw new ArgumentNullException("textBuffer");
+                throw new ArgumentNullException(nameof(textBuffer));
             }
 
             if (filePath == null)
             {
-                throw new ArgumentNullException("filePath");
+                throw new ArgumentNullException(nameof(filePath));
             }
 
             TextDocument textDocument = new TextDocument(textBuffer, filePath, DateTime.UtcNow, this, Encoding.UTF8);
@@ -209,7 +209,7 @@ namespace Microsoft.VisualStudio.Text.Implementation
         {
             if (textBuffer == null)
             {
-                throw new ArgumentNullException("textBuffer");
+                throw new ArgumentNullException(nameof(textBuffer));
             }
 
             textDocument = null;

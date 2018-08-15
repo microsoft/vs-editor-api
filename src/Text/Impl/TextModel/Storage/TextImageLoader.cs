@@ -6,7 +6,6 @@
 // Use at your own risk.
 //
 using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Threading;
 using Microsoft.VisualStudio.Text.Utilities;
@@ -17,7 +16,7 @@ namespace Microsoft.VisualStudio.Text.Implementation
     {
         public const int BlockSize = 16384;
 
-        internal static StringRebuilder Load(TextReader reader, long fileSize, string id,
+        internal static StringRebuilder Load(TextReader reader, long fileSize,
                                              out bool hasConsistentLineEndings, out int longestLineLength,
                                              int blockSize = 0,
                                              int minCompressedBlockSize = TextImageLoader.BlockSize)                                             // Exposed for unit tests
@@ -52,8 +51,7 @@ namespace Microsoft.VisualStudio.Text.Implementation
                     if (read == 0)
                         break;
 
-                    var lineBreaks = LineBreakManager.CreateLineBreakEditor(read);
-                    TextImageLoader.ParseBlock(buffer, read, lineBreaks, ref lineEnding, ref currentLineLength, ref longestLineLength);
+                    var lineBreaks = TextImageLoader.ParseBlock(buffer, read, ref lineEnding, ref currentLineLength, ref longestLineLength);
 
                     char[] bufferForStringBuilder = buffer;
                     if (read < (buffer.Length / 2))
@@ -64,7 +62,7 @@ namespace Microsoft.VisualStudio.Text.Implementation
                     }
                     else
                     {
-                        // We're using most of bufferForStringRebuilder so allocate a new block for the next chunk.
+                        // We're using most of buffer so allocate a new block for the next chunk.
                         buffer = new char[blockSize];
                     }
 
@@ -76,7 +74,6 @@ namespace Microsoft.VisualStudio.Text.Implementation
                 }
 
                 longestLineLength = Math.Max(longestLineLength, currentLineLength);
-                hasConsistentLineEndings = lineEnding != LineEndingState.Inconsistent;
             }
             finally
             {
@@ -85,6 +82,8 @@ namespace Microsoft.VisualStudio.Text.Implementation
                     TextImageLoader.ReleaseBuffer(buffer);
                 }
             }
+
+            hasConsistentLineEndings = lineEnding != LineEndingState.Inconsistent;
 
             return content;
         }
@@ -110,9 +109,12 @@ namespace Microsoft.VisualStudio.Text.Implementation
             return read;
         }
 
-        private static void ParseBlock(char[] buffer, int length, ILineBreaksEditor lineBreaks,
-                                       ref LineEndingState lineEnding, ref int currentLineLength, ref int longestLineLength)
+        private static ILineBreaks ParseBlock(char[] buffer, int length,
+                                              ref LineEndingState lineEnding, ref int currentLineLength, ref int longestLineLength)
         {
+            // Note that the lineBreaks created here will (internally) use the pooled list of line breaks.
+            IPooledLineBreaksEditor lineBreaks = LineBreakManager.CreatePooledLineBreakEditor(length);
+
             int index = 0;
             while (index < length)
             {
@@ -161,6 +163,10 @@ namespace Microsoft.VisualStudio.Text.Implementation
                     index += breakLength;
                 }
             }
+
+            lineBreaks.ReleasePooledLineBreaks();
+
+            return lineBreaks;
         }
 
         internal enum LineEndingState

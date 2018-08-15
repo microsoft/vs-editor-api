@@ -55,9 +55,9 @@ namespace Microsoft.VisualStudio.Text.Tagging
         public MappingTagSpan(IMappingSpan span, T tag)
         {
             if (span == null)
-                throw new ArgumentNullException("span");
+                throw new ArgumentNullException(nameof(span));
             if (tag == null)
-                throw new ArgumentNullException("tag");
+                throw new ArgumentNullException(nameof(tag));
 
             Span = span;
             Tag = tag;

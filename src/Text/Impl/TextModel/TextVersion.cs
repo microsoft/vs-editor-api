@@ -8,6 +8,7 @@
 namespace Microsoft.VisualStudio.Text.Implementation
 {
     using System;
+    using System.Globalization;
 
     /// <summary>
     /// An internal implementation of ITextVersion
@@ -131,7 +132,7 @@ namespace Microsoft.VisualStudio.Text.Implementation
             // Forward fidelity is implicit
             if (trackingMode == SpanTrackingMode.Custom)
             {
-                throw new ArgumentOutOfRangeException("trackingMode");
+                throw new ArgumentOutOfRangeException(nameof(trackingMode));
             }
             return new ForwardFidelityTrackingSpan(this, new Span(start, length), trackingMode);
         }
@@ -146,7 +147,7 @@ namespace Microsoft.VisualStudio.Text.Implementation
             // Forward fidelity is implicit
             if (trackingMode == SpanTrackingMode.Custom)
             {
-                throw new ArgumentOutOfRangeException("trackingMode");
+                throw new ArgumentOutOfRangeException(nameof(trackingMode));
             }
             return new ForwardFidelityTrackingSpan(this, span, trackingMode);
         }
@@ -155,7 +156,7 @@ namespace Microsoft.VisualStudio.Text.Implementation
         {
             if (trackingMode == SpanTrackingMode.Custom)
             {
-                throw new ArgumentOutOfRangeException("trackingMode");
+                throw new ArgumentOutOfRangeException(nameof(trackingMode));
             }
             if (trackingFidelity == TrackingFidelityMode.Forward)
             {
@@ -171,7 +172,7 @@ namespace Microsoft.VisualStudio.Text.Implementation
         {
             if (behavior == null)
             {
-                throw new ArgumentNullException("behavior");
+                throw new ArgumentNullException(nameof(behavior));
             }
             if (trackingFidelity != TrackingFidelityMode.Forward)
             {
@@ -183,7 +184,7 @@ namespace Microsoft.VisualStudio.Text.Implementation
 
         public override string ToString()
         {
-            return String.Format("V{0} (r{1})", VersionNumber, ReiteratedVersionNumber);
+            return String.Format(CultureInfo.CurrentCulture, "V{0} (r{1})", this.VersionNumber, ReiteratedVersionNumber);
         }
     }
 }

@@ -40,6 +40,15 @@ namespace Microsoft.VisualStudio.Text.Editor
         /// <summary>
         /// The offset with respect to the bottom of the view to the bottom of the text on the line.
         /// </summary>
-        TextBottom
+        TextBottom,
+
+        /// <summary>
+        /// The offset is with respect to the BaseLine of the line containing bufferPosition.
+        /// </summary>
+        /// <remarks>
+        /// If this positioning mode is used (and only this positioning mode), then bufferPosition can be default(SnapshotPoint).
+        /// If a default(SnapshotPoint) is used or one is given but that line is not visible, then the view will pick an appropriate line to use.
+        /// </remarks>
+        Baseline
     }
 }

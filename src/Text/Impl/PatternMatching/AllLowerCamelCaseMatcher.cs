@@ -1,9 +1,8 @@
 ﻿// Copyright (c) Microsoft.  All Rights Reserved.  Licensed under the Apache License, Version 2.0.  See License.txt in the project root for license information.
 
 using System;
-using System.Collections.Generic;
 using System.Collections.Immutable;
-using Microsoft.VisualStudio.Text;
+using System.Globalization;
 using Microsoft.VisualStudio.Text.Utilities;
 using TextSpan = Microsoft.VisualStudio.Text.Span;
 
@@ -66,8 +65,8 @@ namespace Microsoft.VisualStudio.Text.PatternMatching.Implementation
                 return GetKind(result.Value);
             }
 
-            private PatternMatchKind GetKind(CamelCaseResult result)
-                => PatternMatcher.GetCamelCaseKind(result, _candidateHumps);
+            private static PatternMatchKind GetKind(CamelCaseResult result)
+                => PatternMatcher.GetCamelCaseKind(result);
 
             private CamelCaseResult? TryMatch(
                 int patternIndex, int candidateHumpIndex, bool? contiguous, int chunkOffset)
@@ -99,7 +98,7 @@ namespace Microsoft.VisualStudio.Text.PatternMatching.Implementation
                     }
 
                     var candidateHump = _candidateHumps[humpIndex];
-                    if (char.ToLower(_candidate[candidateHump.Start]) == patternCharacter)
+                    if (char.ToLower(_candidate[candidateHump.Start], CultureInfo.CurrentCulture) == patternCharacter)
                     {
                         // Found a hump in the candidate string that matches the current pattern
                         // character we're on.  i.e. we matched the c in cofipro against the C in 
@@ -204,7 +203,7 @@ namespace Microsoft.VisualStudio.Text.PatternMatching.Implementation
             /// If 'weight' is better than 'bestWeight' and matchSpanToAdd is not null, then
             /// matchSpanToAdd will be added to matchedSpansInReverse.
             /// </summary>
-            private bool UpdateBestResultIfBetter(
+            private static bool UpdateBestResultIfBetter(
                 CamelCaseResult result, ref CamelCaseResult? bestResult, TextSpan? matchSpanToAdd)
             {
                 if (matchSpanToAdd != null)
@@ -234,7 +233,7 @@ namespace Microsoft.VisualStudio.Text.PatternMatching.Implementation
                 return GetKind(result) == PatternMatchKind.CamelCaseExact;
             }
 
-            private bool IsBetter(CamelCaseResult result, CamelCaseResult? currentBestResult)
+            private static bool IsBetter(CamelCaseResult result, CamelCaseResult? currentBestResult)
             {
                 if (currentBestResult == null)
                 {
@@ -245,12 +244,12 @@ namespace Microsoft.VisualStudio.Text.PatternMatching.Implementation
                 return GetKind(result) < GetKind(currentBestResult.Value);
             }
 
-            private bool LowercaseSubstringsMatch(
+            private static bool LowercaseSubstringsMatch(
                 string s1, int start1, string s2, int start2, int length)
             {
                 for (var i = 0; i < length; i++)
                 {
-                    if (char.ToLower(s1[start1 + i]) != char.ToLower(s2[start2 + i]))
+                    if (char.ToLower(s1[start1 + i], CultureInfo.CurrentCulture) != char.ToLower(s2[start2 + i], CultureInfo.CurrentCulture))
                     {
                         return false;
                     }

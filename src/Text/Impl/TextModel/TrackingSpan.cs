@@ -21,15 +21,15 @@ namespace Microsoft.VisualStudio.Text.Implementation
         {
             if (version == null)
             {
-                throw new ArgumentNullException("version");
+                throw new ArgumentNullException(nameof(version));
             }
             if (span.End > version.Length)
             {
-                throw new ArgumentOutOfRangeException("span");
+                throw new ArgumentOutOfRangeException(nameof(span));
             }
             if (trackingMode < SpanTrackingMode.EdgeExclusive || trackingMode > SpanTrackingMode.Custom)
             {
-                throw new ArgumentOutOfRangeException("trackingMode");
+                throw new ArgumentOutOfRangeException(nameof(trackingMode));
             }
 
             this.trackingMode = trackingMode;
@@ -50,7 +50,7 @@ namespace Microsoft.VisualStudio.Text.Implementation
         {
             if (version == null)
             {
-                throw new ArgumentNullException("version");
+                throw new ArgumentNullException(nameof(version));
             }
             if (version.TextBuffer != this.TextBuffer)
             {
@@ -63,7 +63,7 @@ namespace Microsoft.VisualStudio.Text.Implementation
         {
             if (snapshot == null)
             {
-                throw new ArgumentNullException("snapshot");
+                throw new ArgumentNullException(nameof(snapshot));
             }
             if (snapshot.TextBuffer != this.TextBuffer)
             {

@@ -7,10 +7,12 @@ namespace Microsoft.VisualStudio.Text.Editor
     using System;
     using System.Collections.Generic;
 
+#pragma warning disable CA1710 // Identifiers should have correct suffix
     /// <summary>
     /// Set of text view roles.
     /// </summary>
     public interface ITextViewRoleSet : IEnumerable<string>
+#pragma warning restore CA1710 // Identifiers should have correct suffix
     {
         /// <summary>
         /// Compute whether the given text view role is a member of the set.

@@ -6,12 +6,14 @@ namespace Microsoft.VisualStudio.Text
 {
     using System;
 
+#pragma warning disable CA1066 // Type {0} should implement IEquatable<T> because it overrides Equals
     /// <summary>
     /// An immutable integer interval that describes a range of values from <see cref="Start"/> to <see cref="End"/> that is closed on 
     /// the left and open on the right: [Start .. End). A zpan is usually applied to an <see cref="ITextSnapshot"/> to denote a span of text,
     /// but it is independent of any particular text buffer or snapshot. 
     /// </summary>
     public struct Span
+#pragma warning restore CA1066 // Type {0} should implement IEquatable<T> because it overrides Equals
     {
         #region Private Members
 
@@ -34,11 +36,11 @@ namespace Microsoft.VisualStudio.Text
         {
             if (start < 0)
             {
-                throw new ArgumentOutOfRangeException("start");
+                throw new ArgumentOutOfRangeException(nameof(start));
             }
             if (start + length < start)
             {
-                throw new ArgumentOutOfRangeException("length");
+                throw new ArgumentOutOfRangeException(nameof(length));
             }
             this.start = start;
             this.length = length;

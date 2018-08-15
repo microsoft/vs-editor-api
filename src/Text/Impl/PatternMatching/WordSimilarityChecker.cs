@@ -123,7 +123,7 @@ namespace Microsoft.VisualStudio.Text.PatternMatching.Implementation
                 return false;
             }
 
-            if (_lastAreSimilarResult.CandidateText == candidateText)
+            if (string.Equals(_lastAreSimilarResult.CandidateText, candidateText, StringComparison.Ordinal))
             {
                 similarityWeight = _lastAreSimilarResult.SimilarityWeight;
                 return _lastAreSimilarResult.AreSimilar;

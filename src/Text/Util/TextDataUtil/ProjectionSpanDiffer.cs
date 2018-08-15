@@ -5,6 +5,7 @@
 namespace Microsoft.VisualStudio.Text.Utilities
 {
     using System;
+    using System.Collections;
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
     using Microsoft.VisualStudio.Text.Differencing;
@@ -12,41 +13,14 @@ namespace Microsoft.VisualStudio.Text.Utilities
 
     internal class ProjectionSpanDiffer
     {
-        private IDifferenceService diffService;
+        private readonly IDifferenceService diffService;
 
-        private ReadOnlyCollection<SnapshotSpan> inputDeletedSnapSpans;
-        private ReadOnlyCollection<SnapshotSpan> inputInsertedSnapSpans;
-        private bool computed;
+        private readonly ReadOnlyCollection<SnapshotSpan> inputDeletedSnapSpans;
+        private readonly ReadOnlyCollection<SnapshotSpan> inputInsertedSnapSpans;
 
         // exposed to unit tests
         internal List<SnapshotSpan>[] deletedSurrogates;
         internal List<SnapshotSpan>[] insertedSurrogates;
-
-        public static ProjectionSpanDifference DiffSourceSpans(IDifferenceService diffService, 
-                                                               IProjectionSnapshot left, 
-                                                               IProjectionSnapshot right)
-        {
-            if (left == null)
-            {
-                throw new ArgumentNullException("left");
-            }
-            if (right == null)
-            {
-                throw new ArgumentNullException("right");
-            }
-
-            if (!object.ReferenceEquals(left.TextBuffer, right.TextBuffer))
-            {
-                throw new ArgumentException("left does not belong to the same text buffer as right");
-            }
-
-            ProjectionSpanDiffer differ = new ProjectionSpanDiffer
-                                                (diffService,
-                                                 left.GetSourceSpans(),
-                                                 right.GetSourceSpans());
-
-            return new ProjectionSpanDifference(differ.GetDifferences(), differ.InsertedSpans, differ.DeletedSpans);
-        }
 
         public ProjectionSpanDiffer(IDifferenceService diffService,
                                     ReadOnlyCollection<SnapshotSpan> deletedSnapSpans,
@@ -57,34 +31,31 @@ namespace Microsoft.VisualStudio.Text.Utilities
             this.inputInsertedSnapSpans = insertedSnapSpans;
         }
 
-        public ReadOnlyCollection<SnapshotSpan> DeletedSpans { get; private set; }
-        public ReadOnlyCollection<SnapshotSpan> InsertedSpans { get; private set; }
+        private IDifferenceCollection<SnapshotSpan> differences;
 
         public IDifferenceCollection<SnapshotSpan> GetDifferences()
         {
-            if (!this.computed)
+            if (this.differences == null)
             {
                 DecomposeSpans();
-                this.computed = true;
+
+                var deletedSpans = new List<SnapshotSpan>();
+                var insertedSpans = new List<SnapshotSpan>();
+
+                for (int s = 0; s < deletedSurrogates.Length; ++s)
+                {
+                    deletedSpans.AddRange(deletedSurrogates[s]);
+                }
+
+                for (int s = 0; s < insertedSurrogates.Length; ++s)
+                {
+                    insertedSpans.AddRange(insertedSurrogates[s]);
+                }
+
+                differences = this.diffService.DifferenceSequences(deletedSpans, insertedSpans);
             }
 
-            var deletedSpans = new List<SnapshotSpan>();
-            var insertedSpans = new List<SnapshotSpan>();
-
-            DeletedSpans = deletedSpans.AsReadOnly();
-            InsertedSpans = insertedSpans.AsReadOnly();
-
-            for (int s = 0; s < deletedSurrogates.Length; ++s)
-            {
-                deletedSpans.AddRange(deletedSurrogates[s]);
-            }
-
-            for (int s = 0; s < insertedSurrogates.Length; ++s)
-            {
-                insertedSpans.AddRange(insertedSurrogates[s]);
-            }
-
-            return this.diffService.DifferenceSequences(deletedSpans, insertedSpans);
+            return differences;
         }
 
         #region Internal (for testing) helpers
@@ -277,11 +248,10 @@ namespace Microsoft.VisualStudio.Text.Utilities
             }
         }
 
-        private int Comparison(Thing left, Thing right)
+        private static int Comparison(Thing left, Thing right)
         {
             return left.span.Start - right.span.Start;
         }
         #endregion
-
     }
 }

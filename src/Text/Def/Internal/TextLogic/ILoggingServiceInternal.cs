@@ -12,7 +12,7 @@ using System;
 namespace Microsoft.VisualStudio.Text.Utilities
 {
     /// <summary>
-    /// Allows code in src/Platform to log events.
+    /// Allows code in VS-Platform to log events.
     /// </summary>
     /// <remarks>
     /// For example, the VS Provider of this inserts data points into the telemetry data stream.

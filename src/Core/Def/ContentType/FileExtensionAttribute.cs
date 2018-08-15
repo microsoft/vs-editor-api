@@ -11,7 +11,6 @@ namespace Microsoft.VisualStudio.Utilities
     /// </summary>
     public sealed class FileExtensionAttribute : SingletonBaseMetadataAttribute
     {
-        private string fileExtension;
 
         /// <summary>
         /// Constructs a new instance of the attribute.
@@ -22,20 +21,14 @@ namespace Microsoft.VisualStudio.Utilities
         {
             if (string.IsNullOrWhiteSpace(fileExtension))
             {
-                throw new ArgumentNullException("fileExtension");
+                throw new ArgumentNullException(nameof(fileExtension));
             }
-            this.fileExtension = fileExtension;
+            this.FileExtension = fileExtension;
         }
 
         /// <summary>
         /// Gets the file extension.
         /// </summary>
-        public string FileExtension
-        {
-            get 
-            { 
-                return this.fileExtension;
-            }
-        }
+        public string FileExtension { get; }
     }
 }

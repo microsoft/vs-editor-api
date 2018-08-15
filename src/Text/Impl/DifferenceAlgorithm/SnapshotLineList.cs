@@ -27,7 +27,7 @@ namespace Microsoft.VisualStudio.Text.Differencing.Implementation
         public SnapshotLineList(SnapshotSpan snapshotSpan, Func<ITextSnapshotLine, string> getLineTextCallback, StringDifferenceOptions options)
         {
             if (getLineTextCallback == null)
-                throw new ArgumentNullException("getLineTextCallback");
+                throw new ArgumentNullException(nameof(getLineTextCallback));
             if ((options.DifferenceType & StringDifferenceTypes.Line) == 0)
                 throw new InvalidOperationException("This collection can only be used for line differencing");
 
@@ -96,7 +96,7 @@ namespace Microsoft.VisualStudio.Text.Differencing.Implementation
         SnapshotSpan GetSpanOfIndex(int index)
         {
             if (index < 0 || index >= _lineSpan.Length)
-                throw new ArgumentOutOfRangeException("index");
+                throw new ArgumentOutOfRangeException(nameof(index));
 
             ITextSnapshotLine line = _snapshotSpan.Snapshot.GetLineFromLineNumber(_lineSpan.Start + index);
             SnapshotSpan? lineSpan = line.ExtentIncludingLineBreak.Intersection(_snapshotSpan);

@@ -6,13 +6,13 @@ namespace Microsoft.VisualStudio.Text
 {
     using Microsoft.VisualStudio.Text.Differencing;
 
+#pragma warning disable CA1066 // Type {0} should implement IEquatable<T> because it overrides Equals
     /// <summary>
     /// Options applicable to text editing transactions.
     /// </summary>
     public struct EditOptions
+#pragma warning restore CA1066 // Type {0} should implement IEquatable<T> because it overrides Equals
     {
-        private bool computeMinimalChange;
-        private StringDifferenceOptions differenceOptions;
 
         #region Common EditOptions values
 
@@ -35,8 +35,8 @@ namespace Microsoft.VisualStudio.Text
         /// </summary>
         public EditOptions(StringDifferenceOptions differenceOptions)
         {
-            this.computeMinimalChange = true;
-            this.differenceOptions = differenceOptions;
+            this.ComputeMinimalChange = true;
+            this.DifferenceOptions = differenceOptions;
         }
 
         /// <summary>
@@ -44,17 +44,14 @@ namespace Microsoft.VisualStudio.Text
         /// </summary>
         public EditOptions(bool computeMinimalChange, StringDifferenceOptions differenceOptions)
         {
-            this.computeMinimalChange = computeMinimalChange;
-            this.differenceOptions = differenceOptions;
+            this.ComputeMinimalChange = computeMinimalChange;
+            this.DifferenceOptions = differenceOptions;
         }
 
         /// <summary>
         /// True if this edit computes minimal change using the differencing option <see cref="StringDifferenceOptions"/>, false otherwise.
         /// </summary>
-        public bool ComputeMinimalChange
-        {
-            get { return this.computeMinimalChange; }
-        }
+        public bool ComputeMinimalChange { get; }
 
         /// <summary>
         /// The differencing options for this edit, if <see cref="ComputeMinimalChange" /> is true.
@@ -63,10 +60,7 @@ namespace Microsoft.VisualStudio.Text
         /// <see cref="StringDifferenceOptions.IgnoreTrimWhiteSpace" /> will be
         /// ignored.
         /// </remarks>
-        public StringDifferenceOptions DifferenceOptions
-        { 
-            get { return differenceOptions; }
-        }
+        public StringDifferenceOptions DifferenceOptions { get; }
 
         #region Overridden methods and operators
 
@@ -81,7 +75,7 @@ namespace Microsoft.VisualStudio.Text
             }
             else
             {
-                return differenceOptions.ToString();
+                return DifferenceOptions.ToString();
             }
         }
 
@@ -96,7 +90,7 @@ namespace Microsoft.VisualStudio.Text
             }
             else
             {
-                return differenceOptions.GetHashCode();
+                return DifferenceOptions.GetHashCode();
             }
         }
 
@@ -114,7 +108,7 @@ namespace Microsoft.VisualStudio.Text
                 if (!this.ComputeMinimalChange)
                     return true;
 
-                return other.differenceOptions == this.differenceOptions;
+                return other.DifferenceOptions == this.DifferenceOptions;
             }
             else
             {

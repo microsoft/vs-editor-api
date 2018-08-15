@@ -167,7 +167,7 @@ namespace Microsoft.VisualStudio.Text.EditorPrimitives.Implementation
                             newChar = char.ToUpper(newChar, CultureInfo.CurrentCulture);
                         }
 
-                        if (!textEdit.Replace(i, 1, newChar.ToString()))
+                        if (!textEdit.Replace(i, 1, newChar.ToString(CultureInfo.CurrentCulture)))
                         {
                             textEdit.Cancel();
                             return false; // break out early if any edit fails to reduce the time of the failure case
@@ -296,7 +296,7 @@ namespace Microsoft.VisualStudio.Text.EditorPrimitives.Implementation
         {
             if (string.IsNullOrEmpty(newText))
             {
-                throw new ArgumentNullException("newText");
+                throw new ArgumentNullException(nameof(newText));
             }
 
             int startPoint = _startPoint.CurrentPosition;

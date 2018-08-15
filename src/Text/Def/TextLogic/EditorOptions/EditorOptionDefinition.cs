@@ -68,8 +68,8 @@ namespace Microsoft.VisualStudio.Text.Editor
         /// <returns><c>true</c> if the two objects are the same, otherwise <c>false</c>.</returns>
         public override bool Equals(object obj)
         {
-            EditorOptionDefinition other = obj as EditorOptionDefinition;
-            return other != null && other.Name == this.Name;
+            var other = obj as EditorOptionDefinition;
+            return other != null && string.Equals(other.Name, this.Name, StringComparison.Ordinal);
         }
 
         /// <summary>
@@ -97,12 +97,12 @@ namespace Microsoft.VisualStudio.Text.Editor
         /// <summary>
         /// Gets the name of the option.
         /// </summary>
-        public sealed override string Name { get { return Key.Name; } }
+        public sealed override string Name { get { return this.Key.Name; } }
 
         /// <summary>
         /// Gets the default value of the option.
         /// </summary>
-        public sealed override object DefaultValue { get { return Default; } }
+        public sealed override object DefaultValue { get { return this.Default; } }
 
         /// <summary>Determines whether the proposed value is valid.
         /// </summary>
@@ -113,10 +113,8 @@ namespace Microsoft.VisualStudio.Text.Editor
         /// The implementer of this method may modify the value.</remarks>
         public sealed override bool IsValid(ref object proposedValue)
         {
-            if (proposedValue is T)
+            if (proposedValue is T value)
             {
-                T value = (T)proposedValue;
-
                 var result = IsValid(ref value);
                 proposedValue = value;
 

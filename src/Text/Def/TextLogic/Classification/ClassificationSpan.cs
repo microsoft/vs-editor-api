@@ -29,7 +29,7 @@ namespace Microsoft.VisualStudio.Text.Classification
         {
             if (classification == null)
             {
-                throw new ArgumentNullException("classification");
+                throw new ArgumentNullException(nameof(classification));
             }
             this.span = span;
             this.classification = classification;

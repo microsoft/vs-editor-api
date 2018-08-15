@@ -554,10 +554,8 @@ namespace Microsoft.VisualStudio.Text.Projection.Implementation
             {
                 foreach (object spanToInsert in this.RawSpansToInsert)
                 {
-                    if (spanToInsert == null)
-                    {
-                        throw new ArgumentNullException("spansToInsert");
-                    }
+                    Requires.NotNull(spanToInsert, nameof(spanToInsert));
+
                     ITrackingSpan trackingSpanToInsert = spanToInsert as ITrackingSpan;
                     if (trackingSpanToInsert != null)
                     {
@@ -731,15 +729,15 @@ namespace Microsoft.VisualStudio.Text.Projection.Implementation
             {
                 if (position < 0 || position > this.projBuffer.sourceSpans.Count)
                 {
-                    throw new ArgumentOutOfRangeException("position");
+                    throw new ArgumentOutOfRangeException(nameof(position));
                 }
                 if (spansToReplace < 0 || position + spansToReplace > this.projBuffer.sourceSpans.Count)
                 {
-                    throw new ArgumentOutOfRangeException("spansToReplace");
+                    throw new ArgumentOutOfRangeException(nameof(spansToReplace));
                 }
                 if (spansToInsert == null)
                 {
-                    throw new ArgumentNullException("spansToInsert");
+                    throw new ArgumentNullException(nameof(spansToInsert));
                 }
 
                 this.spanManager = new SpanManager(this.projBuffer, position, spansToReplace, spansToInsert, true, (this.projBuffer.bufferOptions & ProjectionBufferOptions.WritableLiteralSpans) != 0);
@@ -1596,12 +1594,15 @@ namespace Microsoft.VisualStudio.Text.Projection.Implementation
             }
         }
 
+#pragma warning disable CA1801 // Review unused parameters
         private StringRebuilder InsertionLiesInCustomSpan(ITextSnapshot afterSourceSnapshot, 
                                                  int spanPosition, 
                                                  ITextChange incomingChange,
                                                  HashSet<SnapshotPoint> urPoints, 
                                                  int accumulatedDelta)
         {
+#pragma warning disable CA1801 // Review unused parameters
+
             // just evaluate the new span and see if it overlaps the insertion.
             ITrackingSpan sourceTrackingSpan = this.sourceSpans[spanPosition];
             SnapshotSpan afterSpan = sourceTrackingSpan.GetSpan(afterSourceSnapshot);

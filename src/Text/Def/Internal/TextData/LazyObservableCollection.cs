@@ -157,7 +157,7 @@ namespace Microsoft.VisualStudio.Text.Utilities
             TWrapper wrapperObj = value as TWrapper;
             if ((value != null) && (wrapperObj == null))
             {
-                throw new ArgumentException(string.Format(CultureInfo.CurrentCulture, "value is not of type {0}", typeof(TWrapper).FullName), "value");
+                throw new ArgumentException(string.Format(CultureInfo.CurrentCulture, "value is not of type {0}", typeof(TWrapper).FullName), nameof(value));
             }
 
             return this.Contains(wrapperObj);
@@ -173,7 +173,7 @@ namespace Microsoft.VisualStudio.Text.Utilities
             TWrapper wrapperObj = value as TWrapper;
             if ((value != null) && (wrapperObj == null))
             {
-                throw new ArgumentException(string.Format(CultureInfo.CurrentCulture, "value is not of type {0}", typeof(TWrapper).FullName), "value");
+                throw new ArgumentException(string.Format(CultureInfo.CurrentCulture, "value is not of type {0}", typeof(TWrapper).FullName), nameof(value));
             }
 
             return this.IndexOf(wrapperObj);
@@ -234,7 +234,7 @@ namespace Microsoft.VisualStudio.Text.Utilities
         {
             if ((array.Length - index) < this.Count)
             {
-                throw new ArgumentException("Array not big enough", "array");
+                throw new ArgumentException("Array not big enough", nameof(array));
             }
 
             int i = index;
@@ -395,10 +395,12 @@ namespace Microsoft.VisualStudio.Text.Utilities
         ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
         #region IDisposable Members
 
+#pragma warning disable CA1063 // Implement IDisposable Correctly
         /// <summary>
         /// Disposes and releases all wrappers created.  Also releases all references to the underlying object
         /// </summary>
         public void Dispose()
+#pragma warning restore CA1063 // Implement IDisposable Correctly
         {
             if (_disposed) return;
             _disposed = true;
@@ -560,7 +562,7 @@ namespace Microsoft.VisualStudio.Text.Utilities
             }
 
             // Also notify consumers of the change to the 'Count' property.
-            this.RaisePropertyChanged("Count");
+            this.RaisePropertyChanged(nameof(Count));
         }
 
         private void RaisePropertyChanged(string propertyName)

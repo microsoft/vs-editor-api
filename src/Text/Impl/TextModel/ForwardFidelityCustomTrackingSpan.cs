@@ -19,7 +19,7 @@ namespace Microsoft.VisualStudio.Text.Implementation
         {
             if (behavior == null)
             {
-                throw new ArgumentNullException("behavior");
+                throw new ArgumentNullException(nameof(behavior));
             }
             this.behavior = behavior;
             this.customState = customState;

@@ -17,6 +17,7 @@ namespace Microsoft.VisualStudio.Text.Projection.Implementation
     using Microsoft.VisualStudio.Text.Differencing;
     using Microsoft.VisualStudio.Text.Utilities;
     using System.Collections.ObjectModel;
+    using System.Globalization;
 
     internal abstract class BaseProjectionBuffer : BaseBuffer, IProjectionBufferBase
     {
@@ -184,7 +185,7 @@ namespace Microsoft.VisualStudio.Text.Projection.Implementation
         #endregion
 
         #region Debug support
-        [Conditional("_DEBUG")]
+        [Conditional("DEBUG")]
         protected void DumpPendingChanges(List<Tuple<ITextBuffer, List<TextChange>>> pendingSourceChanges)
         {
             if (BufferGroup.Tracing)
@@ -203,7 +204,7 @@ namespace Microsoft.VisualStudio.Text.Projection.Implementation
             }
         }
 
-        [Conditional("_DEBUG")]
+        [Conditional("DEBUG")]
         protected void DumpPendingContentChangedEventArgs()
         {
             if (BufferGroup.Tracing)
@@ -213,7 +214,7 @@ namespace Microsoft.VisualStudio.Text.Projection.Implementation
                 {
                     sb.Append(TextUtilities.GetTag(args.Before.TextBuffer));
                     sb.Append(" V");
-                    sb.AppendLine(args.After.Version.VersionNumber.ToString());
+                    sb.AppendLine(args.After.Version.VersionNumber.ToString(CultureInfo.InvariantCulture));
                     foreach (var change in args.Changes)
                     {
                         sb.AppendLine(change.ToString());

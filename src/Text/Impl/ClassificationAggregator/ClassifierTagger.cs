@@ -70,7 +70,9 @@ namespace Microsoft.VisualStudio.Text.Classification.Implementation
 
         #region IDisposable members
 
+#pragma warning disable CA1063 // Implement IDisposable Correctly
         public void Dispose()
+#pragma warning restore CA1063 // Implement IDisposable Correctly
         {
             foreach(var classifier in Classifiers)
             {

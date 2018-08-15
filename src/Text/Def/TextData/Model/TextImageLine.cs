@@ -5,6 +5,7 @@
 namespace Microsoft.VisualStudio.Text
 {
     using System;
+    using System.Diagnostics.CodeAnalysis;
 
     /// <summary>
     /// Immutable information about a line of text from an <see cref="ITextImage"/>.
@@ -36,12 +37,17 @@ namespace Microsoft.VisualStudio.Text
         /// <summary>
         /// The <see cref="ITextImage"/> in which the line appears.
         /// </summary>
+        [SuppressMessage("Microsoft.Security", "CA2104", Justification = "Type is readonly")]
+#pragma warning disable CA1051 // Do not declare visible instance fields
         public readonly ITextImage Image;
+#pragma warning restore CA1051 // Do not declare visible instance fields
 
         /// <summary>
         /// The extent of the line, excluding any line break characters.
         /// </summary>
+#pragma warning disable CA1051 // Do not declare visible instance fields
         public readonly Span Extent;
+#pragma warning restore CA1051 // Do not declare visible instance fields
 
         /// <summary>
         /// The extent of the line, including any line break characters.
@@ -51,7 +57,9 @@ namespace Microsoft.VisualStudio.Text
         /// <summary>
         /// The 0-origin line number of the line.
         /// </summary>
+#pragma warning disable CA1051 // Do not declare visible instance fields
         public readonly int LineNumber;
+#pragma warning restore CA1051 // Do not declare visible instance fields
 
         /// <summary>
         /// The position of the first character in the line.
@@ -87,7 +95,9 @@ namespace Microsoft.VisualStudio.Text
         /// <summary>
         /// Length of line break characters (always falls in the range [0..2]).
         /// </summary>
+#pragma warning disable CA1051 // Do not declare visible instance fields
         public readonly int LineBreakLength;
+#pragma warning restore CA1051 // Do not declare visible instance fields
 
         /// <summary>
         /// The text of the line, excluding any line break characters.

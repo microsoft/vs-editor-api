@@ -8,16 +8,14 @@
 namespace Microsoft.VisualStudio.Text.BufferUndoManager.Implementation
 {
     using System;
-    using System.Text;
+    using System.Diagnostics;
     using Microsoft.VisualStudio.Text;
     using Microsoft.VisualStudio.Text.Operations;
-    using System.Collections.Generic;
-    using System.Diagnostics;
-    
+
     /// <summary>
     /// The UndoPrimitive for a text buffer change operation.
     /// </summary>
-    public class TextBufferChangeUndoPrimitive : TextUndoPrimitive
+    public class TextBufferChangeUndoPrimitive : TextUndoPrimitive, IEditOnlyTextUndoPrimitive
     {
         #region Private Data Members
 
@@ -26,9 +24,9 @@ namespace Microsoft.VisualStudio.Text.BufferUndoManager.Implementation
         private readonly ITextUndoHistory _undoHistory;
         private WeakReference _weakBufferReference;
 
-        private readonly INormalizedTextChangeCollection _textChanges;
-        private int? _beforeVersion;
-        private int? _afterVersion;
+        public INormalizedTextChangeCollection Changes { get; }
+        public int? BeforeReiteratedVersionNumber { get; private set; }
+        public int? AfterReiteratedVersionNumber { get; private set; }
 #if DEBUG
         private int _bufferLengthAfterChange;
 #endif
@@ -52,17 +50,17 @@ namespace Microsoft.VisualStudio.Text.BufferUndoManager.Implementation
             // Verify input parameters
             if (undoHistory == null)
             {
-                throw new ArgumentNullException("undoHistory");
+                throw new ArgumentNullException(nameof(undoHistory));
             }
 
             if (textVersion == null)
             {
-                throw new ArgumentNullException("textVersion");
+                throw new ArgumentNullException(nameof(textVersion));
             }
 
-            _textChanges = textVersion.Changes;
-            _beforeVersion = textVersion.ReiteratedVersionNumber;
-            _afterVersion = textVersion.Next.VersionNumber;
+            this.Changes = textVersion.Changes;
+            this.BeforeReiteratedVersionNumber = textVersion.ReiteratedVersionNumber;
+            this.AfterReiteratedVersionNumber = textVersion.Next.VersionNumber;
             Debug.Assert(textVersion.Next.VersionNumber == textVersion.Next.ReiteratedVersionNumber,
                 "Creating a TextBufferChangeUndoPrimitive for a change that has previously been undone?  This is probably wrong.");
 
@@ -124,14 +122,14 @@ namespace Microsoft.VisualStudio.Text.BufferUndoManager.Implementation
             {
                 AttachedToNewBuffer = false;
 
-                _beforeVersion = TextBuffer.CurrentSnapshot.Version.VersionNumber;
-                _afterVersion = null;
+                this.BeforeReiteratedVersionNumber = TextBuffer.CurrentSnapshot.Version.VersionNumber;
+                this.AfterReiteratedVersionNumber = null;
             }
 
             bool editCanceled = false;
-            using (ITextEdit edit = TextBuffer.CreateEdit(EditOptions.None, _afterVersion, typeof(TextBufferChangeUndoPrimitive)))
+            using (ITextEdit edit = TextBuffer.CreateEdit(EditOptions.None, this.AfterReiteratedVersionNumber, UndoTag.Tag))
             {
-                foreach (ITextChange textChange in _textChanges)
+                foreach (ITextChange textChange in this.Changes)
                 {
                     if (!edit.Replace(new Span(textChange.OldPosition, textChange.OldLength), textChange.NewText))
                     {
@@ -157,9 +155,9 @@ namespace Microsoft.VisualStudio.Text.BufferUndoManager.Implementation
                 throw new OperationCanceledException("Redo failed due to readonly regions or canceled edit.");
             }
 
-            if (_afterVersion == null)
+            if (this.AfterReiteratedVersionNumber == null)
             {
-                _afterVersion = TextBuffer.CurrentSnapshot.Version.VersionNumber;
+                this.AfterReiteratedVersionNumber = TextBuffer.CurrentSnapshot.Version.VersionNumber;
             }
 
 #if DEBUG
@@ -195,14 +193,14 @@ namespace Microsoft.VisualStudio.Text.BufferUndoManager.Implementation
             {
                 AttachedToNewBuffer = false;
 
-                _beforeVersion = null;
-                _afterVersion = TextBuffer.CurrentSnapshot.Version.VersionNumber;
+                this.BeforeReiteratedVersionNumber = null;
+                this.AfterReiteratedVersionNumber = TextBuffer.CurrentSnapshot.Version.VersionNumber;
             }
 
             bool editCanceled = false;
-            using (ITextEdit edit = TextBuffer.CreateEdit(EditOptions.None, _beforeVersion, typeof(TextBufferChangeUndoPrimitive)))
+            using (ITextEdit edit = TextBuffer.CreateEdit(EditOptions.None, this.BeforeReiteratedVersionNumber, UndoTag.Tag))
             {
-                foreach (ITextChange textChange in _textChanges)
+                foreach (ITextChange textChange in this.Changes)
                 {
                     if (!edit.Replace(new Span(textChange.NewPosition, textChange.NewLength), textChange.OldText))
                     {
@@ -228,9 +226,9 @@ namespace Microsoft.VisualStudio.Text.BufferUndoManager.Implementation
                 throw new OperationCanceledException("Undo failed due to readonly regions or canceled edit.");
             }
 
-            if (_beforeVersion == null)
+            if (this.BeforeReiteratedVersionNumber == null)
             {
-                _beforeVersion = TextBuffer.CurrentSnapshot.Version.VersionNumber;
+                this.BeforeReiteratedVersionNumber = TextBuffer.CurrentSnapshot.Version.VersionNumber;
             }
 
             _canUndo = false;
@@ -283,5 +281,10 @@ namespace Microsoft.VisualStudio.Text.BufferUndoManager.Implementation
             }
         }
         #endregion
+
+        internal class UndoTag : IUndoEditTag
+        {
+            public static readonly UndoTag Tag = new UndoTag();
+        }
     }
 }

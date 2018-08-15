@@ -48,12 +48,12 @@ namespace Microsoft.VisualStudio.Text.Operations.Implementation
             // Validate
             if (newTransaction == null)
             {
-                throw new ArgumentNullException("newTransaction");
+                throw new ArgumentNullException(nameof(newTransaction));
             }
 
             if (oldTransaction == null)
             {
-                throw new ArgumentNullException("oldTransaction");
+                throw new ArgumentNullException(nameof(oldTransaction));
             }
 
             TextTransactionMergePolicy oldPolicy = oldTransaction.MergePolicy as TextTransactionMergePolicy;
@@ -71,7 +71,7 @@ namespace Microsoft.VisualStudio.Text.Operations.Implementation
             }
 
             // Only merge text transactions that have the same description
-            if (newTransaction.Description != oldTransaction.Description)
+            if (!string.Equals(newTransaction.Description, oldTransaction.Description, StringComparison.Ordinal))
             {
                 return false;
             }
@@ -92,9 +92,9 @@ namespace Microsoft.VisualStudio.Text.Operations.Implementation
         public void PerformTransactionMerge(ITextUndoTransaction existingTransaction, ITextUndoTransaction newTransaction)
         {
             if (existingTransaction == null)
-                throw new ArgumentNullException("existingTransaction");
+                throw new ArgumentNullException(nameof(existingTransaction));
             if (newTransaction == null)
-                throw new ArgumentNullException("newTransaction");
+                throw new ArgumentNullException(nameof(newTransaction));
 
             // Remove trailing AfterTextBufferChangeUndoPrimitive from previous transaction and skip copying
             // initial BeforeTextBufferChangeUndoPrimitive from newTransaction, as they are unnecessary.
@@ -128,7 +128,7 @@ namespace Microsoft.VisualStudio.Text.Operations.Implementation
         {
             if (other == null)
             {
-                throw new ArgumentNullException("other");
+                throw new ArgumentNullException(nameof(other));
             }
 
             // Only merge transaction if they are both a text transaction

@@ -7,6 +7,7 @@ using System.Collections.Generic;
 
 namespace Microsoft.VisualStudio.Text.Differencing
 {
+#pragma warning disable CA1710 // Identifiers should have correct suffix
     /// <summary>
     /// A tokenized representation of a string into abutting and non-overlapping segments.
     /// </summary>
@@ -17,6 +18,7 @@ namespace Microsoft.VisualStudio.Text.Differencing
     /// as ILists.</para>
     /// </remarks>
     public interface ITokenizedStringList : IList<string>
+#pragma warning restore CA1710 // Identifiers should have correct suffix
     {
         /// <summary>
         /// The original string that was tokenized.

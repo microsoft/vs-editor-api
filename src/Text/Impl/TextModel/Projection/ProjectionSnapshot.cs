@@ -17,6 +17,7 @@ namespace Microsoft.VisualStudio.Text.Projection.Implementation
     using Microsoft.VisualStudio.Text.Utilities;
 
     using Strings = Microsoft.VisualStudio.Text.Implementation.Strings;
+    using System.Globalization;
 
     internal partial class ProjectionSnapshot : BaseProjectionSnapshot, IProjectionSnapshot
     {
@@ -192,7 +193,7 @@ namespace Microsoft.VisualStudio.Text.Projection.Implementation
         {
             if (textBuffer == null)
             {
-                throw new ArgumentNullException("textBuffer");
+                throw new ArgumentNullException(nameof(textBuffer));
             }
             foreach (ITextSnapshot snappy in this.sourceSnapshotMap.Keys)
             {
@@ -208,7 +209,7 @@ namespace Microsoft.VisualStudio.Text.Projection.Implementation
         {
             if (textBuffer == null)
             {
-                throw new ArgumentNullException("textBuffer");
+                throw new ArgumentNullException(nameof(textBuffer));
             }
             foreach (ITextSnapshot snappy in this.sourceSnapshotMap.Keys)
             {
@@ -233,7 +234,7 @@ namespace Microsoft.VisualStudio.Text.Projection.Implementation
         {
             if (match == null)
             {
-                throw new ArgumentNullException("match");
+                throw new ArgumentNullException(nameof(match));
             }
             foreach (ITextSnapshot snappy in this.sourceSnapshotMap.Keys)
             {
@@ -263,11 +264,11 @@ namespace Microsoft.VisualStudio.Text.Projection.Implementation
         {
             if (startSpanIndex < 0 || startSpanIndex > this.SpanCount)
             {
-                throw new ArgumentOutOfRangeException("startSpanIndex");
+                throw new ArgumentOutOfRangeException(nameof(startSpanIndex));
             }
             if (count < 0 || startSpanIndex + count > this.SpanCount)
             {
-                throw new ArgumentOutOfRangeException("count");
+                throw new ArgumentOutOfRangeException(nameof(count));
             }
 
             // better using iterator or explicit successor func eventually
@@ -290,7 +291,7 @@ namespace Microsoft.VisualStudio.Text.Projection.Implementation
         {
             if (span.End > this.Length)
             {
-                throw new ArgumentOutOfRangeException("span");
+                throw new ArgumentOutOfRangeException(nameof(span));
             }
 
             FrugalList<SnapshotSpan> mappedSpans = new FrugalList<SnapshotSpan>();
@@ -464,7 +465,7 @@ namespace Microsoft.VisualStudio.Text.Projection.Implementation
         {
             if (position < 0 || position > this.totalLength)
             {
-                throw new ArgumentOutOfRangeException("position");
+                throw new ArgumentOutOfRangeException(nameof(position));
             }
             ReadOnlyCollection<SnapshotPoint> points = this.MapInsertionPointToSourceSnapshots(position, this.projectionBuffer.literalBuffer);  // should this be conditional on writable literal buffer?
             if (points.Count == 1)
@@ -485,11 +486,11 @@ namespace Microsoft.VisualStudio.Text.Projection.Implementation
         {
             if (position < 0 || position > this.Length)
             {
-                throw new ArgumentOutOfRangeException("position");
+                throw new ArgumentOutOfRangeException(nameof(position));
             }
             if (affinity < PositionAffinity.Predecessor || affinity > PositionAffinity.Successor)
             {
-                throw new ArgumentOutOfRangeException("affinity");
+                throw new ArgumentOutOfRangeException(nameof(affinity));
             }
 
             int rover = affinity == PositionAffinity.Predecessor ? FindLowestSpanIndexOfPosition(position)
@@ -508,7 +509,7 @@ namespace Microsoft.VisualStudio.Text.Projection.Implementation
         {
             if (affinity < PositionAffinity.Predecessor || affinity > PositionAffinity.Successor)
             {
-                throw new ArgumentOutOfRangeException("affinity");
+                throw new ArgumentOutOfRangeException(nameof(affinity));
             }
 
             List<InvertedSource> orderedSources;
@@ -576,7 +577,7 @@ namespace Microsoft.VisualStudio.Text.Projection.Implementation
         {
             if (position < 0 || position > this.Length)
             {
-                throw new ArgumentOutOfRangeException("position");
+                throw new ArgumentOutOfRangeException(nameof(position));
             }
 
             int rover = FindLowestSpanIndexOfPosition(position);
@@ -740,7 +741,7 @@ namespace Microsoft.VisualStudio.Text.Projection.Implementation
                                    "{0,12} {1,10} {2,4} {3,12} {4}\r\n",
                                    new Span(cumulativeLength, sourceSpan.Length),
                                    TextUtilities.GetTagOrContentType(sourceSpan.Snapshot.TextBuffer),
-                                   "V" + sourceSpan.Snapshot.Version.VersionNumber.ToString(),
+                                   "V" + sourceSpan.Snapshot.Version.VersionNumber.ToString(CultureInfo.InvariantCulture),
                                    sourceSpan.Span,
                                    TextUtilities.Escape(sourceSpan.GetText()));
                 cumulativeLength += sourceSpan.Length;

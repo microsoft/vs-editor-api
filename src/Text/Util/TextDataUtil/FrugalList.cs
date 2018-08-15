@@ -20,6 +20,7 @@ namespace Microsoft.VisualStudio.Text.Utilities
     }
 #endif
 
+#pragma warning disable CA1710 // Identifiers should have correct suffix
     /// <summary>
     /// <para>
     /// This implementation is intended for lists that are usually empty or have a single element.
@@ -36,6 +37,7 @@ namespace Microsoft.VisualStudio.Text.Utilities
     /// </summary>
     /// <typeparam name="T">The type of the list element.</typeparam>
     public class FrugalList<T> : IList<T>, IReadOnlyList<T>
+#pragma warning restore CA1710 // Identifiers should have correct suffix
     {
         const int InitialTailSize = 2;                  // initial size of array list
 
@@ -65,7 +67,7 @@ namespace Microsoft.VisualStudio.Text.Utilities
         {
             if (elements == null)
             {
-                throw new ArgumentNullException("elements");
+                throw new ArgumentNullException(nameof(elements));
             }
             switch (elements.Count)
             {
@@ -106,7 +108,7 @@ namespace Microsoft.VisualStudio.Text.Utilities
         {
             if (list == null)
             {
-                throw new ArgumentNullException("list");
+                throw new ArgumentNullException(nameof(list));
             }
 
             for (int i = 0; i < list.Count; ++i)
@@ -124,7 +126,7 @@ namespace Microsoft.VisualStudio.Text.Utilities
         {
             if (match == null)
             {
-                throw new ArgumentNullException("match");
+                throw new ArgumentNullException(nameof(match));
             }
             int removed = 0;
             for (int i = Count - 1; i >= 0; --i)
@@ -180,7 +182,7 @@ namespace Microsoft.VisualStudio.Text.Utilities
         {
             if (index < 0 || index > this.Count)
             {
-                throw new ArgumentOutOfRangeException("index");
+                throw new ArgumentOutOfRangeException(nameof(index));
             }
             if (index == 0)
             {
@@ -214,7 +216,7 @@ namespace Microsoft.VisualStudio.Text.Utilities
         {
             if (index < 0 || index >= Count)
             {
-                throw new ArgumentOutOfRangeException("index");
+                throw new ArgumentOutOfRangeException(nameof(index));
             }
 
             int count = Count;
@@ -249,13 +251,15 @@ namespace Microsoft.VisualStudio.Text.Utilities
             }
         }
 
+        // Analyzer has a bug where it is giving a false positive in this location.
+#pragma warning disable CA1065 // Do not raise exceptions in unexpected locations
         public T this[int index]
         {
             get
             {
                 if (index < 0 || index >= Count)
                 {
-                    throw new ArgumentOutOfRangeException("index");
+                    throw new ArgumentOutOfRangeException(nameof(index));
                 }
 
                 if (index == 0)
@@ -271,7 +275,7 @@ namespace Microsoft.VisualStudio.Text.Utilities
             {
                 if (index < 0 || index >= Count)
                 {
-                    throw new ArgumentOutOfRangeException("index");
+                    throw new ArgumentOutOfRangeException(nameof(index));
                 }
 
                 if (index == 0)
@@ -284,6 +288,7 @@ namespace Microsoft.VisualStudio.Text.Utilities
                 }
             }
         }
+#pragma warning restore CA1065 // Do not raise exceptions in unexpected locations
 
         public void Clear()
         {
@@ -312,7 +317,7 @@ namespace Microsoft.VisualStudio.Text.Utilities
         {
             if (array == null)
             {
-                throw new ArgumentNullException("array");
+                throw new ArgumentNullException(nameof(array));
             }
             int count = Count;
             if (count > 0)

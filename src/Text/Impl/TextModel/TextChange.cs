@@ -53,7 +53,7 @@ namespace Microsoft.VisualStudio.Text.Implementation
         {
             if (oldPosition < 0)
             {
-                throw new ArgumentOutOfRangeException("oldPosition");
+                throw new ArgumentOutOfRangeException(nameof(oldPosition));
             }
 
             _oldPosition = oldPosition;
@@ -106,7 +106,7 @@ namespace Microsoft.VisualStudio.Text.Implementation
             {
                 if (value < 0)
                 {
-                    throw new ArgumentOutOfRangeException("value");
+                    throw new ArgumentOutOfRangeException(nameof(value));
                 }
                 _oldPosition = value;
             }
@@ -119,7 +119,7 @@ namespace Microsoft.VisualStudio.Text.Implementation
             {
                 if (value < 0)
                 {
-                    throw new ArgumentOutOfRangeException("value");
+                    throw new ArgumentOutOfRangeException(nameof(value));
                 }
                 _newPosition = value;
             }
@@ -226,7 +226,7 @@ namespace Microsoft.VisualStudio.Text.Implementation
         internal void RecordMasterChangeOffset(int masterChangeOffset)
         {
             if (masterChangeOffset < 0)
-                throw new ArgumentOutOfRangeException("masterChangeOffset", "MasterChangeOffset should be non-negative.");
+                throw new ArgumentOutOfRangeException(nameof(masterChangeOffset), "MasterChangeOffset should be non-negative.");
             if (_masterChangeOffset != -1)
                 throw new InvalidOperationException("MasterChangeOffset has already been set.");
 

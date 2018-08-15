@@ -55,7 +55,7 @@ namespace Microsoft.VisualStudio.Text.Tagging
         public TagSpan(SnapshotSpan span, T tag)
         {
             if (tag == null)
-                throw new ArgumentNullException("tag");
+                throw new ArgumentNullException(nameof(tag));
 
             Span = span;
             Tag = tag;

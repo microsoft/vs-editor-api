@@ -6,6 +6,7 @@ namespace Microsoft.VisualStudio.Text.Utilities
 {
     using System;
     using System.Collections.Generic;
+    using System.Globalization;
     using Microsoft.VisualStudio.Text.Projection;
 
     internal class MappingSpanSnapshot : IMappingSpan
@@ -41,7 +42,7 @@ namespace Microsoft.VisualStudio.Text.Utilities
         public NormalizedSnapshotSpanCollection GetSpans(ITextBuffer targetBuffer)
         {
             if (targetBuffer == null)
-                throw new ArgumentNullException("targetBuffer");
+                throw new ArgumentNullException(nameof(targetBuffer));
 
             if (_unmappable)
                 return NormalizedSnapshotSpanCollection.Empty;
@@ -76,7 +77,7 @@ namespace Microsoft.VisualStudio.Text.Utilities
         public NormalizedSnapshotSpanCollection GetSpans(ITextSnapshot targetSnapshot)
         {
             if (targetSnapshot == null)
-                throw new ArgumentNullException("targetSnapshot");
+                throw new ArgumentNullException(nameof(targetSnapshot));
             if (_unmappable)
                 return NormalizedSnapshotSpanCollection.Empty;
 
@@ -203,7 +204,7 @@ namespace Microsoft.VisualStudio.Text.Utilities
 
         public override string ToString()
         {
-            return String.Format("MappingSpanSnapshot anchored at {0}", _anchor);
+            return string.Format(CultureInfo.CurrentCulture, "MappingSpanSnapshot anchored at {0}", _anchor);
         }
     }
 }

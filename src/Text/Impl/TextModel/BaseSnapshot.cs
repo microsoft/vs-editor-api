@@ -9,6 +9,7 @@ namespace Microsoft.VisualStudio.Text.Implementation
 {
     using System;
     using System.Collections.Generic;
+    using System.Globalization;
     using System.IO;
     using System.Text;
     using Microsoft.VisualStudio.Utilities;
@@ -185,9 +186,11 @@ namespace Microsoft.VisualStudio.Text.Implementation
 
         public override string ToString()
         {
-            return String.Format("version: {0} lines: {1} length: {2} \r\n content: {3}",
+            return string.Format(
+                CultureInfo.InvariantCulture,
+                "version: {0} lines: {1} length: {2} \r\n content: {3}",
                 Version.VersionNumber, LineCount, Length,
-                Microsoft.VisualStudio.Text.Utilities.TextUtilities.Escape(this.GetText(0, Math.Min(40, this.Length))));
+                Utilities.TextUtilities.Escape(this.GetText(0, Math.Min(40, this.Length))));
         }
 
 #if _DEBUG

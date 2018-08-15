@@ -82,7 +82,7 @@ namespace Microsoft.VisualStudio.Text.EditorPrimitives.Implementation
         {
             if (!object.ReferenceEquals(this.TextBuffer, otherPoint.TextBuffer))
             {
-                throw new ArgumentException("The other point must have the same TextBuffer as this one", "otherPoint");
+                throw new ArgumentException("The other point must have the same TextBuffer as this one", nameof(otherPoint));
             }
             return TextView.GetTextRange(this, otherPoint);
         }
@@ -184,7 +184,7 @@ namespace Microsoft.VisualStudio.Text.EditorPrimitives.Implementation
         {
             if (text == null)
             {
-                throw new ArgumentNullException("text");
+                throw new ArgumentNullException(nameof(text));
             }
 
             return _bufferPoint.InsertText(text);

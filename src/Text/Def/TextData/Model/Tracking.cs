@@ -3,7 +3,6 @@
 //  Licensed under the MIT License. See License.txt in the project root for license information.
 //
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 
 namespace Microsoft.VisualStudio.Text
@@ -20,15 +19,15 @@ namespace Microsoft.VisualStudio.Text
         {
             if (trackingMode < PointTrackingMode.Positive || trackingMode > PointTrackingMode.Negative)
             {
-                throw new ArgumentOutOfRangeException("trackingMode");
+                throw new ArgumentOutOfRangeException(nameof(trackingMode));
             }
             if (currentVersion == null)
             {
-                throw new ArgumentNullException("currentVersion");
+                throw new ArgumentNullException(nameof(currentVersion));
             }
             if (targetVersion == null)
             {
-                throw new ArgumentNullException("targetVersion");
+                throw new ArgumentNullException(nameof(targetVersion));
             }
             if (targetVersion.TextBuffer != currentVersion.TextBuffer)
             {
@@ -36,11 +35,11 @@ namespace Microsoft.VisualStudio.Text
             }
             if (targetVersion.VersionNumber < currentVersion.VersionNumber)
             {
-                throw new ArgumentOutOfRangeException("targetVersion");
+                throw new ArgumentOutOfRangeException(nameof(targetVersion));
             }
             if (currentPosition < 0 || currentPosition > currentVersion.Length)
             {
-                throw new ArgumentOutOfRangeException("currentPosition");
+                throw new ArgumentOutOfRangeException(nameof(currentPosition));
             }
 
             // track forward in time
@@ -64,15 +63,15 @@ namespace Microsoft.VisualStudio.Text
         {
             if (trackingMode < PointTrackingMode.Positive || trackingMode > PointTrackingMode.Negative)
             {
-                throw new ArgumentOutOfRangeException("trackingMode");
+                throw new ArgumentOutOfRangeException(nameof(trackingMode));
             }
             if (currentVersion == null)
             {
-                throw new ArgumentNullException("currentVersion");
+                throw new ArgumentNullException(nameof(currentVersion));
             }
             if (targetVersion == null)
             {
-                throw new ArgumentNullException("targetVersion");
+                throw new ArgumentNullException(nameof(targetVersion));
             }
             if (targetVersion.Identifier != currentVersion.Identifier)
             {
@@ -80,11 +79,11 @@ namespace Microsoft.VisualStudio.Text
             }
             if (targetVersion.VersionNumber < currentVersion.VersionNumber)
             {
-                throw new ArgumentOutOfRangeException("targetVersion");
+                throw new ArgumentOutOfRangeException(nameof(targetVersion));
             }
             if (currentPosition < 0 || currentPosition > currentVersion.Length)
             {
-                throw new ArgumentOutOfRangeException("currentPosition");
+                throw new ArgumentOutOfRangeException(nameof(currentPosition));
             }
 
             // track forward in time
@@ -226,15 +225,15 @@ namespace Microsoft.VisualStudio.Text
         {
             if (trackingMode < PointTrackingMode.Positive || trackingMode > PointTrackingMode.Negative)
             {
-                throw new ArgumentOutOfRangeException("trackingMode");
+                throw new ArgumentOutOfRangeException(nameof(trackingMode));
             }
             if (currentVersion == null)
             {
-                throw new ArgumentNullException("currentVersion");
+                throw new ArgumentNullException(nameof(currentVersion));
             }
             if (targetVersion == null)
             {
-                throw new ArgumentNullException("targetVersion");
+                throw new ArgumentNullException(nameof(targetVersion));
             }
             if (targetVersion.TextBuffer != currentVersion.TextBuffer)
             {
@@ -242,11 +241,11 @@ namespace Microsoft.VisualStudio.Text
             }
             if (targetVersion.VersionNumber > currentVersion.VersionNumber)
             {
-                throw new ArgumentOutOfRangeException("targetVersion");
+                throw new ArgumentOutOfRangeException(nameof(targetVersion));
             }
             if (currentPosition < 0 || currentPosition > currentVersion.Length)
             {
-                throw new ArgumentOutOfRangeException("currentPosition");
+                throw new ArgumentOutOfRangeException(nameof(currentPosition));
             }
 
             // track backwards in time
@@ -278,15 +277,15 @@ namespace Microsoft.VisualStudio.Text
         {
             if (trackingMode < PointTrackingMode.Positive || trackingMode > PointTrackingMode.Negative)
             {
-                throw new ArgumentOutOfRangeException("trackingMode");
+                throw new ArgumentOutOfRangeException(nameof(trackingMode));
             }
             if (currentVersion == null)
             {
-                throw new ArgumentNullException("currentVersion");
+                throw new ArgumentNullException(nameof(currentVersion));
             }
             if (targetVersion == null)
             {
-                throw new ArgumentNullException("targetVersion");
+                throw new ArgumentNullException(nameof(targetVersion));
             }
             if (targetVersion.Identifier != currentVersion.Identifier)
             {
@@ -294,11 +293,11 @@ namespace Microsoft.VisualStudio.Text
             }
             if (targetVersion.VersionNumber > currentVersion.VersionNumber)
             {
-                throw new ArgumentOutOfRangeException("targetVersion");
+                throw new ArgumentOutOfRangeException(nameof(targetVersion));
             }
             if (currentPosition < 0 || currentPosition > currentVersion.Length)
             {
-                throw new ArgumentOutOfRangeException("currentPosition");
+                throw new ArgumentOutOfRangeException(nameof(currentPosition));
             }
 
             // track backwards in time
@@ -402,15 +401,15 @@ namespace Microsoft.VisualStudio.Text
         {
             if (trackingMode < SpanTrackingMode.EdgeExclusive || trackingMode > SpanTrackingMode.Custom)
             {
-                throw new ArgumentOutOfRangeException("trackingMode");
+                throw new ArgumentOutOfRangeException(nameof(trackingMode));
             }
             if (currentVersion == null)
             {
-                throw new ArgumentNullException("currentVersion");
+                throw new ArgumentNullException(nameof(currentVersion));
             }
             if (targetVersion == null)
             {
-                throw new ArgumentNullException("targetVersion");
+                throw new ArgumentNullException(nameof(targetVersion));
             }
             if (targetVersion.TextBuffer != currentVersion.TextBuffer)
             {
@@ -418,11 +417,11 @@ namespace Microsoft.VisualStudio.Text
             }
             if (span.End > currentVersion.Length)
             {
-                throw new ArgumentOutOfRangeException("span");
+                throw new ArgumentOutOfRangeException(nameof(span));
             }
             if (targetVersion.VersionNumber < currentVersion.VersionNumber)
             {
-                throw new ArgumentOutOfRangeException("targetVersion");
+                throw new ArgumentOutOfRangeException(nameof(targetVersion));
             }
 
             int resultStart =
@@ -444,15 +443,15 @@ namespace Microsoft.VisualStudio.Text
         {
             if (trackingMode < SpanTrackingMode.EdgeExclusive || trackingMode > SpanTrackingMode.Custom)
             {
-                throw new ArgumentOutOfRangeException("trackingMode");
+                throw new ArgumentOutOfRangeException(nameof(trackingMode));
             }
             if (currentVersion == null)
             {
-                throw new ArgumentNullException("currentVersion");
+                throw new ArgumentNullException(nameof(currentVersion));
             }
             if (targetVersion == null)
             {
-                throw new ArgumentNullException("targetVersion");
+                throw new ArgumentNullException(nameof(targetVersion));
             }
             if (targetVersion.Identifier != currentVersion.Identifier)
             {
@@ -460,11 +459,11 @@ namespace Microsoft.VisualStudio.Text
             }
             if (span.End > currentVersion.Length)
             {
-                throw new ArgumentOutOfRangeException("span");
+                throw new ArgumentOutOfRangeException(nameof(span));
             }
             if (targetVersion.VersionNumber < currentVersion.VersionNumber)
             {
-                throw new ArgumentOutOfRangeException("targetVersion");
+                throw new ArgumentOutOfRangeException(nameof(targetVersion));
             }
 
             int resultStart =
@@ -489,15 +488,15 @@ namespace Microsoft.VisualStudio.Text
         {
             if (trackingMode < SpanTrackingMode.EdgeExclusive || trackingMode > SpanTrackingMode.Custom)
             {
-                throw new ArgumentOutOfRangeException("trackingMode");
+                throw new ArgumentOutOfRangeException(nameof(trackingMode));
             }
             if (currentVersion == null)
             {
-                throw new ArgumentNullException("currentVersion");
+                throw new ArgumentNullException(nameof(currentVersion));
             }
             if (targetVersion == null)
             {
-                throw new ArgumentNullException("targetVersion");
+                throw new ArgumentNullException(nameof(targetVersion));
             }
             if (targetVersion.TextBuffer != currentVersion.TextBuffer)
             {
@@ -505,11 +504,11 @@ namespace Microsoft.VisualStudio.Text
             }
             if (span.End > currentVersion.Length)
             {
-                throw new ArgumentOutOfRangeException("span");
+                throw new ArgumentOutOfRangeException(nameof(span));
             }
             if (targetVersion.VersionNumber > currentVersion.VersionNumber)
             {
-                throw new ArgumentOutOfRangeException("targetVersion");
+                throw new ArgumentOutOfRangeException(nameof(targetVersion));
             }
 
             int resultStart =
@@ -533,15 +532,15 @@ namespace Microsoft.VisualStudio.Text
         {
             if (trackingMode < SpanTrackingMode.EdgeExclusive || trackingMode > SpanTrackingMode.Custom)
             {
-                throw new ArgumentOutOfRangeException("trackingMode");
+                throw new ArgumentOutOfRangeException(nameof(trackingMode));
             }
             if (currentVersion == null)
             {
-                throw new ArgumentNullException("currentVersion");
+                throw new ArgumentNullException(nameof(currentVersion));
             }
             if (targetVersion == null)
             {
-                throw new ArgumentNullException("targetVersion");
+                throw new ArgumentNullException(nameof(targetVersion));
             }
             if (targetVersion.Identifier != currentVersion.Identifier)
             {
@@ -549,11 +548,11 @@ namespace Microsoft.VisualStudio.Text
             }
             if (span.End > currentVersion.Length)
             {
-                throw new ArgumentOutOfRangeException("span");
+                throw new ArgumentOutOfRangeException(nameof(span));
             }
             if (targetVersion.VersionNumber > currentVersion.VersionNumber)
             {
-                throw new ArgumentOutOfRangeException("targetVersion");
+                throw new ArgumentOutOfRangeException(nameof(targetVersion));
             }
 
             int resultStart =

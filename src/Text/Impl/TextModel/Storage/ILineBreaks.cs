@@ -32,4 +32,16 @@ namespace Microsoft.VisualStudio.Text.Implementation
         /// </summary>
         void Add(int start, int length);
     }
+
+    public interface IPooledLineBreaksEditor : ILineBreaksEditor
+    {
+        /// <summary>
+        ///  If the internal list of line breaks has excess capacity, copy it to a correctly sized list and return the oversized
+        ///  list to a pool that can be reused.
+        /// </summary>
+        /// <remarks>
+        /// This method should be called when using calling <see cref="LineBreakManager.CreatePooledLineBreakEditor(int)"/>.
+        /// </remarks>
+        void ReleasePooledLineBreaks();
+    }
 }

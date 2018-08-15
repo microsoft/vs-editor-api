@@ -91,7 +91,7 @@ namespace Microsoft.VisualStudio.Text.Projection.Implementation
         {
             if (textBuffer == null)
             {
-                throw new ArgumentNullException("textBuffer");
+                throw new ArgumentNullException(nameof(textBuffer));
             }
             return this.sourceSnapshot.TextBuffer == textBuffer ? this.sourceSnapshot : null;
         }
@@ -100,7 +100,7 @@ namespace Microsoft.VisualStudio.Text.Projection.Implementation
         {
             if (textBuffer == null)
             {
-                throw new ArgumentNullException("textBuffer");
+                throw new ArgumentNullException(nameof(textBuffer));
             }
 
             if (this.sourceSnapshot.TextBuffer == textBuffer)
@@ -121,7 +121,7 @@ namespace Microsoft.VisualStudio.Text.Projection.Implementation
         {
             if (match == null)
             {
-                throw new ArgumentNullException("match");
+                throw new ArgumentNullException(nameof(match));
             }
 
             if (match(this.sourceSnapshot.TextBuffer))
@@ -142,11 +142,11 @@ namespace Microsoft.VisualStudio.Text.Projection.Implementation
         {
             if (startSpanIndex < 0)
             {
-                throw new ArgumentOutOfRangeException("startSpanIndex");
+                throw new ArgumentOutOfRangeException(nameof(startSpanIndex));
             }
             if (count < 0 || startSpanIndex + count > SpanCount)
             {
-                throw new ArgumentOutOfRangeException("count");
+                throw new ArgumentOutOfRangeException(nameof(count));
             }
             return new ReadOnlyCollection<SnapshotSpan>(this.content.GetSourceSpans(this.sourceSnapshot, startSpanIndex, count));
         }
@@ -162,7 +162,7 @@ namespace Microsoft.VisualStudio.Text.Projection.Implementation
         {
             if (position < 0 || position > this.totalLength)
             {
-                throw new ArgumentOutOfRangeException("position");
+                throw new ArgumentOutOfRangeException(nameof(position));
             }
             FrugalList<SnapshotPoint> points = this.content.MapInsertionPointToSourceSnapshots(this, position);
             if (points.Count == 1)
@@ -183,11 +183,11 @@ namespace Microsoft.VisualStudio.Text.Projection.Implementation
         {
             if (position < 0 || position > this.totalLength)
             {
-                throw new ArgumentOutOfRangeException("position");
+                throw new ArgumentOutOfRangeException(nameof(position));
             }
             if (affinity < PositionAffinity.Predecessor || affinity > PositionAffinity.Successor)
             {
-                throw new ArgumentOutOfRangeException("affinity");
+                throw new ArgumentOutOfRangeException(nameof(affinity));
             }
             return this.content.MapToSourceSnapshot(this.sourceSnapshot, position, affinity);
         }
@@ -200,7 +200,7 @@ namespace Microsoft.VisualStudio.Text.Projection.Implementation
             }
             if (affinity < PositionAffinity.Predecessor || affinity > PositionAffinity.Successor)
             {
-                throw new ArgumentOutOfRangeException("affinity");
+                throw new ArgumentOutOfRangeException(nameof(affinity));
             }
             return this.content.MapFromSourceSnapshot(this, point.Position);
         }
@@ -209,7 +209,7 @@ namespace Microsoft.VisualStudio.Text.Projection.Implementation
         {
             if (span.End > this.totalLength)
             {
-                throw new ArgumentOutOfRangeException("span");
+                throw new ArgumentOutOfRangeException(nameof(span));
             }
             FrugalList<SnapshotSpan> result = new FrugalList<SnapshotSpan>();
             if (fillIn)

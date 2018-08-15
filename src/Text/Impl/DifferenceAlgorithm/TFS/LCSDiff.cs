@@ -6,10 +6,8 @@
 // Use at your own risk.
 //
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Text;
 
 //*************************************************************************
 // The code from this point on is a soure-port of the TFS diff algorithm, to be available
@@ -54,7 +52,6 @@ namespace Microsoft.TeamFoundation.Diff.Copy
             {
                 m_reverseHistory = null;
             }
-            GC.SuppressFinalize(this);
         }
 
         //*************************************************************************
@@ -138,7 +135,7 @@ namespace Microsoft.TeamFoundation.Diff.Copy
                     Debug.Assert(modifiedStart == modifiedEnd + 1, "modifiedStart should only be one more than modifiedEnd");
 
                     // Identical sequences - No differences
-                    changes = new IDiffChange[0];
+                    changes = Array.Empty<IDiffChange>();
                 }
 
                 return changes;
@@ -162,7 +159,7 @@ namespace Microsoft.TeamFoundation.Diff.Copy
                 // Second Half:  (midOriginal + 1, minModified + 1) to (originalEnd, modifiedEnd)
                 // NOTE: ComputeDiff() is inclusive, therefore the second range starts on the next point
                 IDiffChange[] leftChanges  = ComputeDiffRecursive(originalStart, midOriginal, modifiedStart, midModified, out quitEarly);
-                IDiffChange[] rightChanges = new IDiffChange[0];
+                IDiffChange[] rightChanges = Array.Empty<IDiffChange>();
 
                 if (!quitEarly)
                 {
@@ -671,7 +668,7 @@ namespace Microsoft.TeamFoundation.Diff.Copy
         /// <param name="right">The right changes</param>
         /// <returns>The concatenated list</returns>
         //*************************************************************************
-        private IDiffChange[] ConcatenateChanges(IDiffChange[] left, IDiffChange[] right)
+        private static IDiffChange[] ConcatenateChanges(IDiffChange[] left, IDiffChange[] right)
         {
             IDiffChange mergedChange;
 
@@ -713,7 +710,7 @@ namespace Microsoft.TeamFoundation.Diff.Copy
         /// null otherwise</param>
         /// <returns>True if the two changes overlap</returns>
         //*************************************************************************
-        private bool ChangesOverlap(IDiffChange left, IDiffChange right, out IDiffChange mergedChange)
+        private static bool ChangesOverlap(IDiffChange left, IDiffChange right, out IDiffChange mergedChange)
         {
             Debug.Assert(left.OriginalStart <= right.OriginalStart, "Left change is not less than or equal to right change");
             Debug.Assert(left.ModifiedStart <= right.ModifiedStart, "Left change is not less than or equal to right change");
@@ -760,10 +757,11 @@ namespace Microsoft.TeamFoundation.Diff.Copy
         /// <param name="numDiagonals">The total number of diagonals.</param>
         /// <returns>The clipped diagonal index.</returns>
         //*************************************************************************
-        private int ClipDiagonalBound(int diagonal,
-                                      int numDifferences,
-                                      int diagonalBaseIndex,
-                                      int numDiagonals)
+        private static int ClipDiagonalBound(
+            int diagonal,
+            int numDifferences,
+            int diagonalBaseIndex,
+            int numDiagonals)
         {
             if (diagonal >= 0 && diagonal < numDiagonals)
             {

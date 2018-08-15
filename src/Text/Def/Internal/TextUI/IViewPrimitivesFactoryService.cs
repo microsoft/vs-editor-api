@@ -52,16 +52,16 @@ namespace Microsoft.VisualStudio.Text.Editor
         DisplayTextRange CreateDisplayTextRange(TextView textView, TextRange textRange);
 
         /// <summary>
-        /// Creates a <see cref="Selection"/> primitive.
+        /// Creates a <see cref="LegacySelection"/> primitive.
         /// </summary>
         /// <param name="textView">The <see cref="ITextView"/> on which to base this primitive.</param>
-        /// <returns>The <see cref="Selection"/> primitive for the given <see cref="ITextView"/>.</returns>
+        /// <returns>The <see cref="LegacySelection"/> primitive for the given <see cref="ITextView"/>.</returns>
         /// <remarks>
         /// <para>
         /// This method always returns the same object if the same <see cref="ITextView"/> is passed in.
         /// </para>
         /// </remarks>
-        Selection CreateSelection(TextView textView);
+        LegacySelection CreateSelection(TextView textView);
 
         /// <summary>
         /// Creates a <see cref="Caret"/> primitive.

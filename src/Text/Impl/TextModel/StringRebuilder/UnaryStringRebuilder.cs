@@ -57,7 +57,7 @@ namespace Microsoft.VisualStudio.Text.Implementation
         public override int GetLineNumberFromPosition(int position)
         {
             if ((position < 0) || (position > this.Length))
-                throw new ArgumentOutOfRangeException("position");
+                throw new ArgumentOutOfRangeException(nameof(position));
 
             //Convert position to a position relative to the start of _text.
             if (position == this.Length)
@@ -87,7 +87,7 @@ namespace Microsoft.VisualStudio.Text.Implementation
         public override void GetLineFromLineNumber(int lineNumber, out Span extent, out int lineBreakLength)
         {
             if ((lineNumber < 0) || (lineNumber > this.LineBreakCount))
-                throw new ArgumentOutOfRangeException("lineNumber");
+                throw new ArgumentOutOfRangeException(nameof(lineNumber));
 
             int absoluteLineNumber = _lineBreakSpanStart + lineNumber;
 
@@ -122,7 +122,7 @@ namespace Microsoft.VisualStudio.Text.Implementation
         protected char GetChar(char[] content, int index)
         {
             if ((index < 0) || (index >= this.Length))
-                throw new ArgumentOutOfRangeException("index");
+                throw new ArgumentOutOfRangeException(nameof(index));
 
             #if DEBUG
             Interlocked.Increment(ref _totalCharactersReturned);
@@ -134,7 +134,7 @@ namespace Microsoft.VisualStudio.Text.Implementation
         protected string GetText(char[] content, Span span)
         {
             if (span.End > this.Length)
-                throw new ArgumentOutOfRangeException("span");
+                throw new ArgumentOutOfRangeException(nameof(span));
 
             #if DEBUG
             Interlocked.Add(ref _totalCharactersReturned, span.Length);
@@ -146,19 +146,19 @@ namespace Microsoft.VisualStudio.Text.Implementation
         protected void CopyTo(char[] content, int sourceIndex, char[] destination, int destinationIndex, int count)
         {
             if (sourceIndex < 0)
-                throw new ArgumentOutOfRangeException("sourceIndex");
+                throw new ArgumentOutOfRangeException(nameof(sourceIndex));
             if (destination == null)
-                throw new ArgumentNullException("destination");
+                throw new ArgumentNullException(nameof(destination));
             if (destinationIndex < 0)
-                throw new ArgumentOutOfRangeException("destinationIndex");
+                throw new ArgumentOutOfRangeException(nameof(destinationIndex));
             if (count < 0)
-                throw new ArgumentOutOfRangeException("count");
+                throw new ArgumentOutOfRangeException(nameof(count));
 
             if ((sourceIndex + count > this.Length) || (sourceIndex + count < 0))
-                throw new ArgumentOutOfRangeException("count");
+                throw new ArgumentOutOfRangeException(nameof(count));
 
             if ((destinationIndex + count > destination.Length) || (destinationIndex + count < 0))
-                throw new ArgumentOutOfRangeException("count");
+                throw new ArgumentOutOfRangeException(nameof(count));
 
             #if DEBUG
             Interlocked.Add(ref _totalCharactersCopied, count);
@@ -170,9 +170,9 @@ namespace Microsoft.VisualStudio.Text.Implementation
         protected void Write(char[] content, TextWriter writer, Span span)
         {
             if (writer == null)
-                throw new ArgumentNullException("writer");
+                throw new ArgumentNullException(nameof(writer));
             if (span.End > this.Length)
-                throw new ArgumentOutOfRangeException("span");
+                throw new ArgumentOutOfRangeException(nameof(span));
 
             writer.Write(content, span.Start + _textSpanStart, span.Length);
         }

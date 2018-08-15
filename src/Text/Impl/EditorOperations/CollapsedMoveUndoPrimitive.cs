@@ -126,17 +126,17 @@ namespace Microsoft.VisualStudio.Text.Operations.Implementation
         {
             if (textView == null)
             {
-                throw new ArgumentNullException("textView");
+                throw new ArgumentNullException(nameof(textView));
             }
 
             if (outliningManager == null)
             {
-                throw new ArgumentNullException("outliningManager");
+                throw new ArgumentNullException(nameof(outliningManager));
             }
 
             if (collaspedSpans == null)
             {
-                throw new ArgumentNullException("collaspedSpans");
+                throw new ArgumentNullException(nameof(collaspedSpans));
             }
 
             _outliningManager = outliningManager;
