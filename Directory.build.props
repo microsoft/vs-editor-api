@@ -1,9 +1,10 @@
 <Project>
   <PropertyGroup>
-     <RootDirectory>$(MSBuildThisFileDirectory)</RootDirectory>
-     <OutDir>$(RootDirectory)\bin\$(Configuration)\$(MSBuildProjectName)\</OutDir>
-     <BaseIntermediateOutputPath>$(RootDirectory)\obj\$(Configuration)\$(MSBuildProjectName)\</BaseIntermediateOutputPath>
-     <IntermediateOutputPath>$(RootDirectory)\obj\$(Configuration)\$(MSBuildProjectName)\</IntermediateOutputPath>
+    <RootDirectory>$(MSBuildThisFileDirectory)</RootDirectory>
+    <OutDir>$(RootDirectory)\bin\$(Configuration)\$(MSBuildProjectName)\</OutDir>
+    <BaseIntermediateOutputPath>$(RootDirectory)\obj\$(Configuration)\$(MSBuildProjectName)\</BaseIntermediateOutputPath>
+    <IntermediateOutputPath>$(RootDirectory)\obj\$(Configuration)\$(MSBuildProjectName)\</IntermediateOutputPath>
+    <LangVersion>latest</LangVersion>
   </PropertyGroup>
 
   <PropertyGroup>

@@ -4,7 +4,7 @@ using Microsoft.VisualStudio.Text.Utilities;
 
 namespace Microsoft.VisualStudio.Text.Implementation
 {
-    public static class LineBreakManager
+    internal static class LineBreakManager
     {
         public readonly static ILineBreaks Empty = new ShortLineBreaksEditor(Array.Empty<ushort>());
 
