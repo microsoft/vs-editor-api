@@ -49,11 +49,6 @@
       <DesignTime>True</DesignTime>
       <DependentUpon>Strings.resx</DependentUpon>
     </Compile>
-    <Compile Update="Text\Impl\BraceCompletion\Strings.Designer.cs">
-      <AutoGen>True</AutoGen>
-      <DesignTime>True</DesignTime>
-      <DependentUpon>Strings.resx</DependentUpon>
-    </Compile>
     <Compile Update="Text\Impl\ClassificationType\Strings.Designer.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
@@ -92,11 +87,6 @@
       <LastGenOutput>Strings.Designer.cs</LastGenOutput>
       <CustomToolNamespace>Microsoft.VisualStudio.Text.Implementation</CustomToolNamespace>
     </EmbeddedResource>
-    <EmbeddedResource Update="Text\Impl\BraceCompletion\Strings.resx">
-      <Generator>ResXFileCodeGenerator</Generator>
-      <LastGenOutput>Strings.Designer.cs</LastGenOutput>
-      <CustomToolNamespace>Microsoft.VisualStudio.Text.BraceCompletion.Implementation</CustomToolNamespace>
-    </EmbeddedResource>
     <EmbeddedResource Update="Text\Impl\ClassificationType\Strings.resx">
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>Strings.Designer.cs</LastGenOutput>
@@ -128,12 +118,15 @@
     <Compile Remove="Core\Def\**\*" />
     <Compile Remove="Language\Def\**\*" />
     <Compile Remove="Text\Def\Text*\**\*" />
+    <Compile Remove="Text\Impl\BraceCompletion\**" />
     <EmbeddedResource Remove="Core\Def\**\*" />
     <EmbeddedResource Remove="Language\Def\**\*" />
     <EmbeddedResource Remove="Text\Def\Text*\**\*" />
+    <EmbeddedResource Remove="Text\Impl\BraceCompletion\**" />
     <None Remove="Core\Def\**\*" />
     <None Remove="Language\Def\**\*" />
     <None Remove="Text\Def\Text*\**\*" />
+    <None Remove="Text\Impl\BraceCompletion\**" />
   </ItemGroup>
 
   <ItemGroup>
