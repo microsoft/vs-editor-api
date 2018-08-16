@@ -6,7 +6,9 @@
     using Microsoft.VisualStudio.Threading;
     using Microsoft.VisualStudio.Utilities;
 
-    [Export(typeof(ITextViewCreationListener))]
+    // TODO: re-enable this as part of
+    // https://devdiv.visualstudio.com/DevDiv/Xamarin%20VS%20for%20Mac/_workitems/edit/617427
+    // [Export(typeof(ITextViewCreationListener))]
     [ContentType("any")]
     [TextViewRole(PredefinedTextViewRoles.Editable)]
     [TextViewRole(PredefinedTextViewRoles.EmbeddedPeekTextView)]
