@@ -218,7 +218,7 @@
 
         private async Task<IList<Exception>> ComputeContentAndUpdateAsync(QuickInfoSessionState initialState, bool allowUpdate, CancellationToken cancellationToken)
         {
-            //IntellisenseUtilities.ThrowIfNotOnMainThread(this.JoinableTaskContext);
+            IntellisenseUtilities.ThrowIfNotOnMainThread(this.JoinableTaskContext);
 
             // Alert subscribers on the UI thread.
             this.TransitionTo(QuickInfoSessionState.Calculating, allowUpdate);
@@ -372,7 +372,7 @@
         private void ComputeApplicableToSpan(IEnumerable<ITrackingSpan> applicableToSpans)
         {
             // Requires UI thread for access to BufferGraph.
-            //IntellisenseUtilities.ThrowIfNotOnMainThread(this.JoinableTaskContext);
+            IntellisenseUtilities.ThrowIfNotOnMainThread(this.JoinableTaskContext);
 
             ITrackingSpan newApplicableToSpan = Volatile.Read(ref this.applicableToSpan);
 
@@ -414,7 +414,7 @@
             IList<Exception> failures)
         {
 #pragma warning restore 618
-            //IntellisenseUtilities.ThrowIfNotOnMainThread(joinableTaskContext);
+            IntellisenseUtilities.ThrowIfNotOnMainThread(joinableTaskContext);
 
             int i = 0;
             var sourcesList = new List<OrderedSource>();
@@ -448,7 +448,7 @@
 
         private Collection<ITextBuffer> GetBuffersForTriggerPoint()
         {
-            //IntellisenseUtilities.ThrowIfNotOnMainThread(this.JoinableTaskContext);
+            IntellisenseUtilities.ThrowIfNotOnMainThread(this.JoinableTaskContext);
 
             return this.TextView.BufferGraph.GetTextBuffers(
                 buffer => this.GetTriggerPoint(buffer.CurrentSnapshot) != null);
@@ -456,7 +456,7 @@
 
         protected void TransitionTo(QuickInfoSessionState newState, bool allowUpdate = false)
         {
-            //IntellisenseUtilities.ThrowIfNotOnMainThread(this.JoinableTaskContext);
+            IntellisenseUtilities.ThrowIfNotOnMainThread(this.JoinableTaskContext);
 
             var oldState = this.State;
             bool isValid = false;

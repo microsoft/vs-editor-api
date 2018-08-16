@@ -8,7 +8,7 @@
     using System.Threading.Tasks;
     using Microsoft.Internal.VisualStudio.Language.Intellisense;
     using Microsoft.VisualStudio.Language.Intellisense;
-    //using Microsoft.VisualStudio.Language.Utilities;
+    using Microsoft.VisualStudio.Language.Utilities;
     using Microsoft.VisualStudio.Text;
     using Microsoft.VisualStudio.Text.Adornments;
     using Microsoft.VisualStudio.Text.Editor;
@@ -94,7 +94,7 @@
 
         private void OnDismissed(object sender, EventArgs e)
         {
-            //IntellisenseUtilities.ThrowIfNotOnMainThread(this.JoinableTaskContext);
+            IntellisenseUtilities.ThrowIfNotOnMainThread(this.JoinableTaskContext);
 
             this.JoinableTaskContext.Factory.RunAsync(async delegate
             {
@@ -137,7 +137,7 @@
 
         private bool ContentRequestsKeepOpen()
         {
-            //IntellisenseUtilities.ThrowIfNotOnMainThread(this.JoinableTaskContext);
+            IntellisenseUtilities.ThrowIfNotOnMainThread(this.JoinableTaskContext);
 
             if (this.HasInteractiveContent)
             {

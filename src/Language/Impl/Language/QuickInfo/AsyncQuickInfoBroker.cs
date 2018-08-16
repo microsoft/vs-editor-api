@@ -8,7 +8,7 @@
     using System.Threading;
     using System.Threading.Tasks;
     using Microsoft.Internal.VisualStudio.Language.Intellisense;
-    //using Microsoft.VisualStudio.Language.Utilities;
+    using Microsoft.VisualStudio.Language.Utilities;
     using Microsoft.VisualStudio.Text;
     using Microsoft.VisualStudio.Text.Adornments;
     using Microsoft.VisualStudio.Text.Editor;
@@ -234,7 +234,7 @@
         // Listens for the session being dismissed so that we can remove it from the view's property bag.
         private void OnStateChanged(object sender, QuickInfoSessionStateChangedEventArgs e)
         {
-            //IntellisenseUtilities.ThrowIfNotOnMainThread(this.joinableTaskContext);
+            IntellisenseUtilities.ThrowIfNotOnMainThread(this.joinableTaskContext);
 
             if (e.NewState == QuickInfoSessionState.Dismissed)
             {
@@ -252,7 +252,7 @@
         private ITrackingPoint PointToViewBuffer(ITextView textView, ITrackingPoint trackingPoint)
         {
             // Requires UI thread for BufferGraph.
-            //IntellisenseUtilities.ThrowIfNotOnMainThread(this.joinableTaskContext);
+            IntellisenseUtilities.ThrowIfNotOnMainThread(this.joinableTaskContext);
 
             if ((trackingPoint == null) || (textView.TextBuffer == trackingPoint.TextBuffer))
             {
