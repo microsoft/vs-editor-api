@@ -303,7 +303,7 @@ namespace Microsoft.VisualStudio.Utilities.Implementation
                 var nameToContentTypeMap = new PseudoBuilder<string, ContentTypeImpl>(oldMaps.NameToContentTypeMap);
                 var mimeTypeToContentTypeMap = new PseudoBuilder<string, ContentTypeImpl>(oldMaps.MimeTypeToContentTypeMap);
 
-                var type = AddContentTypeFromMetadata(typeName, null, baseTypeNames,
+                var type = AddContentTypeFromMetadata(typeName, typeName, baseTypeNames,
                                                       nameToContentTypeMap, mimeTypeToContentTypeMap);
 
                 type.ProcessBaseTypes(nameToContentTypeMap, mimeTypeToContentTypeMap);
