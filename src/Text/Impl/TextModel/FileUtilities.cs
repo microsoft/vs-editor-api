@@ -184,16 +184,25 @@ namespace Microsoft.VisualStudio.Text.Implementation
                     var safeHandle = originalFileStream.SafeFileHandle;
                     if (!(safeHandle.IsClosed || safeHandle.IsInvalid))
                     {
-                        BY_HANDLE_FILE_INFORMATION fi;
-                        if (NativeMethods.GetFileInformationByHandle(safeHandle, out fi))
+                        try
                         {
-                            if (fi.NumberOfLinks <= 1)
+                            BY_HANDLE_FILE_INFORMATION fi;
+                            if (NativeMethods.GetFileInformationByHandle(safeHandle, out fi))
                             {
-                                // The file we're trying to write to doesn't have any hard links ... clear out the originalFileStream
-                                // as a clue.
-                                originalFileStream.Dispose();
-                                originalFileStream = null;
+                                if (fi.NumberOfLinks <= 1)
+                                {
+                                    // The file we're trying to write to doesn't have any hard links ... clear out the originalFileStream
+                                    // as a clue.
+                                    originalFileStream.Dispose();
+                                    originalFileStream = null;
+                                }
                             }
+                        }
+                        catch (EntryPointNotFoundException)
+                        {
+                            // The code is being executed on a non-Windows platform, assume all is good
+                            originalFileStream.Dispose();
+                            originalFileStream = null;
                         }
                     }
                 }
