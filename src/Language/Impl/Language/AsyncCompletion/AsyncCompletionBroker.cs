@@ -112,7 +112,7 @@ namespace Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion.Implement
             return null;
         }
 
-        public IAsyncCompletionSession TriggerCompletion(ITextView textView, SnapshotPoint triggerLocation, char typedChar, CancellationToken token)
+        public IAsyncCompletionSession TriggerCompletion(ITextView textView, CompletionTrigger trigger, SnapshotPoint triggerLocation, CancellationToken token)
         {
             var session = GetSession(textView);
             if (session != null)
@@ -136,11 +136,14 @@ namespace Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion.Implement
             GetCommitManagersAndChars(textView.BufferGraph, textView.Roles, textView, triggerLocation, GetCommitManagerProviders, telemetry,
                 out var managersWithBuffers, out var potentialCommitChars);
 
-            GetCompletionSources(textView.TextBuffer, textView.Roles, textView, textView.BufferGraph, triggerLocation, GetItemSourceProviders, telemetry, typedChar, token,
+            GetCompletionSources(textView.TextBuffer, textView.Roles, textView, textView.BufferGraph, trigger, triggerLocation, GetItemSourceProviders, telemetry, token,
                 out var sourcesWithLocations, out var applicableToSpan);
 
             // No source declared an appropriate ApplicableToSpan
             if (applicableToSpan == default)
+                return null;
+            // No source wishes to participate
+            if (!sourcesWithLocations.Any())
                 return null;
              
             if (_contentTypeComparer == null)
@@ -223,14 +226,14 @@ namespace Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion.Implement
         private void GetCompletionSources(
             ITextBuffer editBuffer,
             ITextViewRoleSet roles,
-            ITextView textViewForGetOrCreate, /* This name conveys that we're using ITextView only to init the MEF part. this is subject to change. */
+            ITextView textViewForGetOrCreate, /* This name conveys that we're supposed to use ITextView only to init the MEF part. this is subject to change. */
             IBufferGraph bufferGraph,
+            CompletionTrigger trigger,
             SnapshotPoint triggerLocation,
             Func<IContentType, ITextViewRoleSet, IReadOnlyList<Lazy<IAsyncCompletionSourceProvider, IOrderableContentTypeAndOptionalTextViewRoleMetadata>>> getImports,
             CompletionSessionTelemetry telemetry,
-            char typedChar,
             CancellationToken token,
-            out IList<(IAsyncCompletionSource Source, SnapshotPoint Point)> sourcesWithLocations,
+            out List<(IAsyncCompletionSource Source, SnapshotPoint Point)> sourcesWithLocations,
             out SnapshotSpan applicableToSpan)
         {
             var sourcesWithData = MetadataUtilities<IAsyncCompletionSourceProvider, IOrderableContentTypeAndOptionalTextViewRoleMetadata>
@@ -238,7 +241,9 @@ namespace Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion.Implement
 
             var applicableToSpanBuilder = default(SnapshotSpan);
             bool applicableToSpanExists = false;
-            var sourcesWithLocationsBuider = new List<(IAsyncCompletionSource, SnapshotPoint)>(sourcesWithData.Count());
+            bool anySourceParticipates = false;
+            bool anySourceExclusive = false;
+            var sourcesWithLocationsBuider = new List<(IAsyncCompletionSource, SnapshotPoint, CompletionParticipation)>(sourcesWithData.Count());
 
             foreach (var (buffer, point, import) in sourcesWithData)
             {
@@ -253,25 +258,36 @@ namespace Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion.Implement
                 if (source == null)
                     continue;
 
-                applicableToSpanExists |= GuardedOperations.CallExtensionPoint(
+                GuardedOperations.CallExtensionPoint(
                     errorSource: source,
                     call: () =>
                     {
-                        // We want to iterate through all sources and add them to collection
-                        sourcesWithLocationsBuider.Add((source, point));
-                        // Get the span only if we haven't received one yet
-                        if (!applicableToSpanExists)
-                            return source.TryGetApplicableToSpan(typedChar, point, out applicableToSpanBuilder, token);
-                        else
-                            return false; // applicableToSpanExists is already true, so it doesn't matter what we return here
-                    },
-                    valueOnThrow: false);
+                        // Iterate through all sources and add them to collection
+                        CompletionStartData startData;
+                        startData = source.InitializeCompletion(trigger, point, token);
+
+                        if (!applicableToSpanExists && startData.ApplicableToSpan != default)
+                        {
+                            applicableToSpanExists = true;
+                            applicableToSpanBuilder = startData.ApplicableToSpan;
+                        }
+                        if (startData.Participation == CompletionParticipation.ProvidesItems)
+                        {
+                            anySourceParticipates = true;
+                        }
+                        else if (startData.Participation == CompletionParticipation.ExclusivelyProvidesItems)
+                        {
+                            anySourceParticipates = true;
+                            anySourceExclusive = true;
+                        }
+                        sourcesWithLocationsBuider.Add((source, point, startData.Participation));
+                    });
 
                 telemetry.UiStopwatch.Stop();
                 telemetry.RecordObtainingSourceSpan(source, telemetry.UiStopwatch.ElapsedMilliseconds);
             }
 
-            // Assume that sources are ordered. If this source is the first one to provide span, map it to the view's edit buffer and use it for completion,
+            // Map the applicable to span to the view's edit buffer and use it for completion,
             if (applicableToSpanExists)
             {
                 var mappingSpan = bufferGraph.CreateMappingSpan(applicableToSpanBuilder, SpanTrackingMode.EdgeInclusive);
@@ -279,7 +295,18 @@ namespace Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion.Implement
             }
 
             // Copying temporary values because we can't access out&ref params in lambdas
-            sourcesWithLocations = sourcesWithLocationsBuider;
+            if (anySourceExclusive)
+            {
+                sourcesWithLocations = sourcesWithLocationsBuider.Where(n => n.Item3 == CompletionParticipation.ExclusivelyProvidesItems).Select(n => (n.Item1, n.Item2)).ToList();
+            }
+            else if (anySourceParticipates)
+            {
+                sourcesWithLocations = sourcesWithLocationsBuider.Where(n => n.Item3 == CompletionParticipation.ProvidesItems).Select(n => (n.Item1, n.Item2)).ToList();
+            }
+            else
+            {
+                sourcesWithLocations = new List<(IAsyncCompletionSource Source, SnapshotPoint Point)>();
+            }
             applicableToSpan = applicableToSpanBuilder;
         }
 

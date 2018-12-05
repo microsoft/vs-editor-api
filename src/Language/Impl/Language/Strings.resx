@@ -121,7 +121,7 @@
     <value>Completion command handler</value>
   </data>
   <data name="SuggestionModeDefaultTooltip" xml:space="preserve">
-    <value>Suggestion mode. Allows typing delimeters without auto completing.</value>
-    <comment>Tooltip on suggestion mode completion item (visible when suggestion mode is enabled, through Ctrl+Alt+Space)</comment>
+    <value>Suggestion mode item which allows you to provide a name not present in the completion list.</value>
+    <comment>Tooltip on the suggestion mode completion item (visible when suggestion mode is enabled, through Ctrl+Alt+Space)</comment>
   </data>
 </root>

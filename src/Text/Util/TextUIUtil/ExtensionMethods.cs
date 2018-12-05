@@ -30,8 +30,22 @@ namespace Microsoft.VisualStudio.Text.MultiSelection
             var newInsertion = view.NormalizePoint(region.InsertionPoint.TranslateTo(snapshot));
             var newActive = view.NormalizePoint(region.ActivePoint.TranslateTo(snapshot));
             var newAnchor = view.NormalizePoint(region.AnchorPoint.TranslateTo(snapshot));
+            PositionAffinity positionAffinity;
 
-            return new Selection(newInsertion, newAnchor, newActive, region.InsertionPointAffinity);
+            if (region.Extent.Length == 0)
+            {
+                // Selection is just a caret, respect the caret's prefered affinity.
+                positionAffinity = region.InsertionPointAffinity;
+            }
+            else
+            {
+                // Selection is non-zero length, adjust affinity so that it is always toward the body of the selection.
+                // This attempts to ensure that the caret is always on the same line as the body of the selection in
+                // word wrap scenarios.
+                positionAffinity = newAnchor < newActive ? PositionAffinity.Predecessor : PositionAffinity.Successor;
+            }
+
+            return new Selection(newInsertion, newAnchor, newActive, positionAffinity);
         }
 
         /// <summary>

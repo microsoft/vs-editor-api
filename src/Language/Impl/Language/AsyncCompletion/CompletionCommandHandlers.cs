@@ -20,34 +20,36 @@ namespace Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion.Implement
     [TextViewRole(PredefinedTextViewRoles.Interactive)]
     [Export(typeof(ICommandHandler))]
     internal sealed class CompletionCommandHandler :
-        ICommandHandler<DownKeyCommandArgs>,
-        ICommandHandler<PageDownKeyCommandArgs>,
-        ICommandHandler<PageUpKeyCommandArgs>,
-        ICommandHandler<UpKeyCommandArgs>,
         IChainedCommandHandler<BackspaceKeyCommandArgs>,
         IDynamicCommandHandler<BackspaceKeyCommandArgs>,
-        ICommandHandler<EscapeKeyCommandArgs>,
-        IDynamicCommandHandler<EscapeKeyCommandArgs>,
-        ICommandHandler<InvokeCompletionListCommandArgs>,
         ICommandHandler<CommitUniqueCompletionListItemCommandArgs>,
-        ICommandHandler<InsertSnippetCommandArgs>,
-        ICommandHandler<SurroundWithCommandArgs>,
-        ICommandHandler<ToggleCompletionModeCommandArgs>,
+        ICommandHandler<CutCommandArgs>,
         IChainedCommandHandler<DeleteKeyCommandArgs>,
         IDynamicCommandHandler<DeleteKeyCommandArgs>,
-        ICommandHandler<WordDeleteToEndCommandArgs>,
-        ICommandHandler<WordDeleteToStartCommandArgs>,
-        ICommandHandler<SaveCommandArgs>,
-        ICommandHandler<SelectAllCommandArgs>,
-        ICommandHandler<RenameCommandArgs>,
-        ICommandHandler<UndoCommandArgs>,
+        ICommandHandler<DownKeyCommandArgs>,
+        ICommandHandler<EscapeKeyCommandArgs>,
+        IDynamicCommandHandler<EscapeKeyCommandArgs>,
+        ICommandHandler<InsertSnippetCommandArgs>,
+        ICommandHandler<InvokeCompletionListCommandArgs>,
+        ICommandHandler<PageDownKeyCommandArgs>,
+        ICommandHandler<PageUpKeyCommandArgs>,
+        ICommandHandler<PasteCommandArgs>,
         ICommandHandler<RedoCommandArgs>,
+        ICommandHandler<RenameCommandArgs>,
         IChainedCommandHandler<ReturnKeyCommandArgs>,
         IDynamicCommandHandler<ReturnKeyCommandArgs>,
+        ICommandHandler<SaveCommandArgs>,
+        ICommandHandler<SelectAllCommandArgs>,
+        ICommandHandler<SurroundWithCommandArgs>,
         IChainedCommandHandler<TabKeyCommandArgs>,
         IDynamicCommandHandler<TabKeyCommandArgs>,
+        ICommandHandler<ToggleCompletionModeCommandArgs>,
         IChainedCommandHandler<TypeCharCommandArgs>,
-        IDynamicCommandHandler<TypeCharCommandArgs>
+        IDynamicCommandHandler<TypeCharCommandArgs>,
+        ICommandHandler<UndoCommandArgs>,
+        ICommandHandler<UpKeyCommandArgs>,
+        ICommandHandler<WordDeleteToEndCommandArgs>,
+        ICommandHandler<WordDeleteToStartCommandArgs>
     {
         [Import]
         private IAsyncCompletionBroker Broker;
@@ -65,7 +67,7 @@ namespace Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion.Implement
 
         /// <summary>
         /// Helper method that returns command state for commands
-        /// that are always available - unless the completion feature is available.
+        /// which are available as long as the completion feature is available.
         /// </summary>
         private CommandState GetCommandStateIfCompletionIsAvailable(IContentType contentType, ITextView textView)
         {
@@ -75,13 +77,10 @@ namespace Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion.Implement
         }
 
         /// <summary>
-        /// Helper method that returns command state
-        /// for commands that are available IF AND ONLY IF completion is active,
+        /// Helper method that returns command state for commands
+        /// which are available IF AND ONLY IF completion is active,
         /// even if the commands would be otherwise unavailable.
         /// </summary>
-        /// <remarks>
-        /// For commands whose availability is not influenced by completion, use <see cref="CommandState.Unspecified"/>
-        /// </remarks>
         private CommandState GetCommandStateIfCompletionIsActive(ITextView textView)
         {
             return Broker.IsCompletionActive(textView)
@@ -90,8 +89,8 @@ namespace Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion.Implement
         }
 
         /// <summary>
-        /// Helper method that returns command state for commands that are available when completion is
-        /// either currently active, or available.
+        /// Helper method that returns command state for commands
+        /// which are available when completion is either currently active, or available.
         /// This is used by commands that may trigger completion session on a specified buffer, or interact with an active completion session on another buffer
         /// </summary>
         private CommandState GetCommandStateIfCompletionIsActiveOrAvailable(IContentType contentType, ITextView textView)
@@ -108,14 +107,13 @@ namespace Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion.Implement
         private CommandState GetCommandStateForSuggestionModeToggle(IContentType contentType, ITextView textView)
         {
             var isAvailable = CompletionAvailability.IsAvailable(contentType, textView);
-            var isChecked = CompletionUtilities.IsDebuggerTextView(textView)
-                ? CompletionUtilities.GetSuggestionModeOption(textView)
-                : CompletionUtilities.GetSuggestionModeInDebuggerCompletionOption(textView);
+            var isChecked = CompletionUtilities.GetSuggestionModeOption(textView);
             return new CommandState(isAvailable, isChecked);
         }
 
         /// <summary>
-        /// Realizes the virtual space and updates session's applicable to span
+        /// Realizes the virtual space and updates session's applicable to span.
+        /// We invoke this method after the session has triggered, because we don't want to act if there would be no completion.
         /// </summary>
         private void RealizeVirtualSpaceUpdateApplicableToSpan(IAsyncCompletionSessionOperations session, ITextView textView)
         {
@@ -131,32 +129,40 @@ namespace Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion.Implement
             editorOperations?.InsertText("");
 
             // ApplicableToSpan just grew to include the realized white space.
-            // We know that ApplicableToSpan was zero length, so let's recreate a zero length span at the caret location
+            // We know that ApplicableToSpan was zero length, so let's recreate a zero length span at the caret location.
+            // This method executed synchronously, and therefore we know that it is safe to modify the applicable to span.
             session.ApplicableToSpan = textView.TextSnapshot.CreateTrackingSpan(
                 start: textView.Caret.Position.BufferPosition.Position,
                 length: 0,
-                trackingMode: SpanTrackingMode.EdgePositive);
+                trackingMode: SpanTrackingMode.EdgeInclusive);
         }
 
         // ----- Command handlers:
 
         CommandState IChainedCommandHandler<BackspaceKeyCommandArgs>.GetCommandState(BackspaceKeyCommandArgs args, Func<CommandState> nextCommandHandler)
-           => CommandState.Unspecified;
+           => nextCommandHandler();
 
         bool IDynamicCommandHandler<BackspaceKeyCommandArgs>.CanExecuteCommand(BackspaceKeyCommandArgs args)
-            => Broker.IsCompletionActive(args.TextView);
+            => Broker.IsCompletionActive(args.TextView) || Broker.IsCompletionSupported(args.SubjectBuffer.ContentType);
 
         void IChainedCommandHandler<BackspaceKeyCommandArgs>.ExecuteCommand(BackspaceKeyCommandArgs args, Action nextCommandHandler, CommandExecutionContext executionContext)
         {
+            var snapshotBeforeEdit = args.TextView.TextSnapshot;
             // Execute other commands in the chain to see the change in the buffer.
             nextCommandHandler();
 
             var session = Broker.GetSession(args.TextView);
+            var location = args.TextView.Caret.Position.BufferPosition;
+            var trigger = new CompletionTrigger(CompletionTriggerReason.Backspace, snapshotBeforeEdit);
+
             if (session != null)
             {
-                var trigger = new InitialTrigger(InitialTriggerReason.Deletion);
-                var location = args.TextView.Caret.Position.BufferPosition;
                 session.OpenOrUpdate(trigger, location, executionContext.OperationContext.UserCancellationToken);
+            }
+            else
+            {
+                var newSession = Broker.TriggerCompletion(args.TextView, trigger, location, executionContext.OperationContext.UserCancellationToken);
+                newSession?.OpenOrUpdate(trigger, location, executionContext.OperationContext.UserCancellationToken);
             }
         }
 
@@ -185,14 +191,15 @@ namespace Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion.Implement
             if (!GetCommandStateIfCompletionIsAvailable(args.SubjectBuffer.ContentType, args.TextView).IsAvailable)
                 return false;
 
-            var trigger = new InitialTrigger(InitialTriggerReason.Invoke);
+            var trigger = new CompletionTrigger(CompletionTriggerReason.Invoke, args.TextView.TextSnapshot);
             var location = args.TextView.Caret.Position.BufferPosition;
-            var session = Broker.TriggerCompletion(args.TextView, location, default, executionContext.OperationContext.UserCancellationToken);
+            var session = Broker.TriggerCompletion(args.TextView, trigger, location, executionContext.OperationContext.UserCancellationToken);
+
             if (session is IAsyncCompletionSessionOperations sessionInternal)
             {
                 RealizeVirtualSpaceUpdateApplicableToSpan(sessionInternal, args.TextView);
                 location = args.TextView.Caret.Position.BufferPosition; // Buffer may have changed. Update the location.
-                sessionInternal.OpenOrUpdate(trigger, location, executionContext.OperationContext.UserCancellationToken);
+                session.OpenOrUpdate(trigger, location, executionContext.OperationContext.UserCancellationToken);
                 return true;
             }
             return false;
@@ -206,9 +213,11 @@ namespace Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion.Implement
             if (!GetCommandStateIfCompletionIsAvailable(args.SubjectBuffer.ContentType, args.TextView).IsAvailable)
                 return false;
 
-            var trigger = new InitialTrigger(InitialTriggerReason.InvokeAndCommitIfUnique);
+            var snapshotBeforeEdit = args.TextView.TextSnapshot;
+            var trigger = new CompletionTrigger(CompletionTriggerReason.InvokeAndCommitIfUnique, args.TextView.TextSnapshot);
             var location = args.TextView.Caret.Position.BufferPosition;
-            var session = Broker.TriggerCompletion(args.TextView, location, default, executionContext.OperationContext.UserCancellationToken);
+            var session = Broker.TriggerCompletion(args.TextView, trigger, location, executionContext.OperationContext.UserCancellationToken);
+
             if (session is IAsyncCompletionSessionOperations sessionInternal)
             {
                 RealizeVirtualSpaceUpdateApplicableToSpan(sessionInternal, args.TextView);
@@ -254,22 +263,29 @@ namespace Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion.Implement
         }
 
         CommandState IChainedCommandHandler<DeleteKeyCommandArgs>.GetCommandState(DeleteKeyCommandArgs args, Func<CommandState> nextCommandHandler)
-            => CommandState.Unspecified;
+            => nextCommandHandler();
 
         bool IDynamicCommandHandler<DeleteKeyCommandArgs>.CanExecuteCommand(DeleteKeyCommandArgs args)
-            => Broker.IsCompletionActive(args.TextView);
+            => Broker.IsCompletionActive(args.TextView) || Broker.IsCompletionSupported(args.SubjectBuffer.ContentType);
 
         void IChainedCommandHandler<DeleteKeyCommandArgs>.ExecuteCommand(DeleteKeyCommandArgs args, Action nextCommandHandler, CommandExecutionContext executionContext)
         {
+            var snapshotBeforeEdit = args.TextView.TextSnapshot;
             // Execute other commands in the chain to see the change in the buffer.
             nextCommandHandler();
 
             var session = Broker.GetSession(args.TextView);
+            var location = args.TextView.Caret.Position.BufferPosition;
+            var trigger = new CompletionTrigger(CompletionTriggerReason.Deletion, snapshotBeforeEdit);
+
             if (session != null)
             {
-                var trigger = new InitialTrigger(InitialTriggerReason.Deletion);
-                var location = args.TextView.Caret.Position.BufferPosition;
                 session.OpenOrUpdate(trigger, location, executionContext.OperationContext.UserCancellationToken);
+            }
+            else
+            {
+                var newSession = Broker.TriggerCompletion(args.TextView, trigger, location, executionContext.OperationContext.UserCancellationToken);
+                newSession?.OpenOrUpdate(trigger, location, executionContext.OperationContext.UserCancellationToken);
             }
         }
 
@@ -336,8 +352,27 @@ namespace Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion.Implement
             return false;
         }
 
+        CommandState ICommandHandler<CutCommandArgs>.GetCommandState(CutCommandArgs args)
+            => CommandState.Unspecified;
+
+        bool ICommandHandler<CutCommandArgs>.ExecuteCommand(CutCommandArgs args, CommandExecutionContext executionContext)
+        {
+            Broker.GetSession(args.TextView)?.Dismiss();
+            return false;
+        }
+
+        CommandState ICommandHandler<PasteCommandArgs>.GetCommandState(PasteCommandArgs args)
+            => CommandState.Unspecified;
+
+        bool ICommandHandler<PasteCommandArgs>.ExecuteCommand(PasteCommandArgs args, CommandExecutionContext executionContext)
+        {
+            Broker.GetSession(args.TextView)?.Dismiss();
+            return false;
+        }
+
         CommandState IChainedCommandHandler<ReturnKeyCommandArgs>.GetCommandState(ReturnKeyCommandArgs args, Func<CommandState> nextCommandHandler)
-            => GetCommandStateIfCompletionIsActiveOrAvailable(args.SubjectBuffer.ContentType, args.TextView);
+            => nextCommandHandler();
+
 
         bool IDynamicCommandHandler<ReturnKeyCommandArgs>.CanExecuteCommand(ReturnKeyCommandArgs args)
             => Broker.IsCompletionActive(args.TextView) || Broker.IsCompletionSupported(args.SubjectBuffer.ContentType);
@@ -365,23 +400,24 @@ namespace Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion.Implement
                     return;
             }
 
+            var snapshotBeforeEdit = args.TextView.TextSnapshot;
             nextCommandHandler();
 
             // Buffer has changed. Update it for when we try to trigger new session.
             var location = args.TextView.Caret.Position.BufferPosition;
 
-            var trigger = new InitialTrigger(InitialTriggerReason.Insertion, typedChar);
-            var newSession = Broker.TriggerCompletion(args.TextView, location, typedChar, executionContext.OperationContext.UserCancellationToken);
+            var trigger = new CompletionTrigger(CompletionTriggerReason.Insertion, snapshotBeforeEdit, typedChar);
+            var newSession = Broker.TriggerCompletion(args.TextView, trigger, location, executionContext.OperationContext.UserCancellationToken);
             if (newSession is IAsyncCompletionSessionOperations sessionInternal)
             {
                 RealizeVirtualSpaceUpdateApplicableToSpan(sessionInternal, args.TextView);
-                location = args.TextView.Caret.Position.BufferPosition; // Buffer may have changed. Update the location.
-                sessionInternal.OpenOrUpdate(trigger, location, executionContext.OperationContext.UserCancellationToken);
             }
+            location = args.TextView.Caret.Position.BufferPosition; // Buffer may have changed. Update the location.
+            newSession?.OpenOrUpdate(trigger, location, executionContext.OperationContext.UserCancellationToken);
         }
 
         CommandState IChainedCommandHandler<TabKeyCommandArgs>.GetCommandState(TabKeyCommandArgs args, Func<CommandState> nextCommandHandler)
-            => GetCommandStateIfCompletionIsActiveOrAvailable(args.SubjectBuffer.ContentType, args.TextView);
+            => nextCommandHandler();
 
         bool IDynamicCommandHandler<TabKeyCommandArgs>.CanExecuteCommand(TabKeyCommandArgs args)
             => Broker.IsCompletionActive(args.TextView) || Broker.IsCompletionSupported(args.SubjectBuffer.ContentType);
@@ -408,19 +444,19 @@ namespace Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion.Implement
                     || CompletionUtilities.IsDebuggerTextView(args.TextView))
                     return;
             }
-
+            var snapshotBeforeEdit = args.TextView.TextSnapshot;
             nextCommandHandler();
 
             // Buffer has changed. Update it for when we try to trigger new session.
             var location = args.TextView.Caret.Position.BufferPosition;
 
-            var trigger = new InitialTrigger(InitialTriggerReason.Insertion, typedChar);
-            var newSession = Broker.TriggerCompletion(args.TextView, location, typedChar, executionContext.OperationContext.UserCancellationToken);
+            var trigger = new CompletionTrigger(CompletionTriggerReason.Insertion, snapshotBeforeEdit, typedChar);
+            var newSession = Broker.TriggerCompletion(args.TextView, trigger, location, executionContext.OperationContext.UserCancellationToken);
             newSession?.OpenOrUpdate(trigger, location, executionContext.OperationContext.UserCancellationToken);
         }
 
         CommandState IChainedCommandHandler<TypeCharCommandArgs>.GetCommandState(TypeCharCommandArgs args, Func<CommandState> nextCommandHandler)
-            => GetCommandStateIfCompletionIsAvailable(args.SubjectBuffer.ContentType, args.TextView);
+            => nextCommandHandler();
 
         bool IDynamicCommandHandler<TypeCharCommandArgs>.CanExecuteCommand(TypeCharCommandArgs args)
             => CompletionAvailability.IsAvailable(args.SubjectBuffer.ContentType, args.TextView);
@@ -453,6 +489,7 @@ namespace Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion.Implement
                 ((AsyncCompletionSession)sessionToCommit).IgnoreCaretMovement(ignore: true);
             }
 
+            var snapshotBeforeEdit = args.TextView.TextSnapshot;
             // Execute other commands in the chain to see the change in the buffer. This includes brace completion.
             // Note regarding undo: This will be 2nd in the undo stack
             nextCommandHandler();
@@ -494,7 +531,7 @@ namespace Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion.Implement
             // Buffer might have changed. Update it for when we try to trigger new session.
             location = view.Caret.Position.BufferPosition;
 
-            var trigger = new InitialTrigger(InitialTriggerReason.Insertion, args.TypedChar);
+            var trigger = new CompletionTrigger(CompletionTriggerReason.Insertion, snapshotBeforeEdit, args.TypedChar);
             var session = Broker.GetSession(args.TextView);
             if (session != null)
             {
@@ -502,7 +539,7 @@ namespace Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion.Implement
             }
             else
             {
-                var newSession = Broker.TriggerCompletion(args.TextView, location, args.TypedChar, executionContext.OperationContext.UserCancellationToken);
+                var newSession = Broker.TriggerCompletion(args.TextView, trigger, location, executionContext.OperationContext.UserCancellationToken);
                 newSession?.OpenOrUpdate(trigger, location, executionContext.OperationContext.UserCancellationToken);
             }
         }
@@ -554,10 +591,8 @@ namespace Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion.Implement
             if (Broker.GetSession(args.TextView) is AsyncCompletionSession session) // we are accessing an internal method
             {
                 session.SelectUp();
-                System.Diagnostics.Debug.WriteLine("Completions's UpKey command handler returns true (handled)");
                 return true;
             }
-            System.Diagnostics.Debug.WriteLine("Completions's UpKey command handler returns false (unhandled)");
             return false;
         }
     }

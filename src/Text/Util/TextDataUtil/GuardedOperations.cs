@@ -747,16 +747,32 @@ namespace Microsoft.VisualStudio.Text.Utilities
             }).Task;
         }
 
-        static bool _ignoreFailures = false;
+        internal static bool IgnoreFailures = false;
+        internal static bool BreakOnFailures = true;
+
+        public bool TryCastToType<TArgs>(object toCast, out TArgs casted)
+        {
+            try
+            {
+                casted = (TArgs)toCast;
+                return true;
+            }
+            catch (Exception ex)
+            {
+                HandleException(this, ex);
+                casted = default(TArgs);
+                return false;
+            }
+        }
 
         [Conditional("DEBUG")]
         private static void Fail(string message)
         {
-            if (!_ignoreFailures)
+            if (!IgnoreFailures)
             {
-                if (Debugger.IsAttached)
+                if (BreakOnFailures && Debugger.IsAttached)
                     Debugger.Break();
-                Debug.Fail(message);
+                 Debug.Fail(message);
             }
         }
     }

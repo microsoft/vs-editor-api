@@ -262,6 +262,15 @@ namespace Microsoft.VisualStudio.Utilities
         /// <remarks>This class supports the Visual Studio 
         /// infrastructure and in general is not intended to be used directly from your code.</remarks>
         Task RaiseEventOnBackgroundAsync<TArgs>(object sender, AsyncEventHandler<TArgs> eventHandlers, TArgs args) where TArgs : EventArgs;
+
+        /// <summary>
+        /// Safely attempts to cast the given object to the given type.
+        /// </summary>
+        /// <typeparam name="TArgs">The type that should be casted to.</typeparam>
+        /// <param name="toCast">The object that should be casted.</param>
+        /// <param name="casted">Returns out the casted object or default(TArgs) if the cast failed.</param>
+        /// <returns>True if successful in casting, false otherwise.</returns>
+        bool TryCastToType<TArgs>(object toCast, out TArgs casted);
 #pragma warning restore CA1030 // Use events where appropriate
     }
 }

@@ -3,6 +3,8 @@
 //  Licensed under the MIT License. See License.txt in the project root for license information.
 //
 using System;
+using System.Diagnostics;
+using Microsoft.VisualStudio.Text.Formatting;
 
 namespace Microsoft.VisualStudio.Text.Editor
 {
@@ -84,7 +86,74 @@ namespace Microsoft.VisualStudio.Text.Editor
                 throw new ArgumentNullException(nameof(textView));
             }
 
-            return ((ITextView2)textView).MultiSelectionBroker;
+            if (textView is ITextView2 textView2)
+            {
+                return textView2.MultiSelectionBroker;
+            }
+
+            if (textView.Properties.TryGetProperty(typeof(IMultiSelectionBroker), out IMultiSelectionBroker broker))
+            {
+                return broker;
+            }
+
+            Debug.Fail("Failed to acquire IMultiSelectionBroker for a text view");
+
+            return null;
+        }
+
+        /// <summary>
+        /// See <see cref="ITextView2.QueuePostLayoutAction(Action)"/>.
+        /// </summary>
+        public static void QueuePostLayoutAction(this ITextView textView, Action action)
+        {
+            if (textView == null)
+            {
+                throw new ArgumentNullException(nameof(textView));
+            }
+
+            (textView as ITextView2)?.QueuePostLayoutAction(action);
+        }
+
+        /// <summary>
+        /// See <see cref="ITextView2.TryGetTextViewLines(out ITextViewLineCollection)"/>.
+        /// </summary>
+        public static bool TryGetTextViewLines(this ITextView textView, out ITextViewLineCollection textViewLines)
+        {
+            if (textView == null)
+            {
+                throw new ArgumentNullException(nameof(textView));
+            }
+
+            if (textView is ITextView2 textView2)
+            {
+                return textView2.TryGetTextViewLines(out textViewLines);
+            }
+            else
+            {
+                textViewLines = null;
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// See <see cref="ITextView2.TryGetTextViewLineContainingBufferPosition(SnapshotPoint, out Formatting.ITextViewLine)"/>.
+        /// </summary>
+        public static bool TryGetTextViewLineContainingBufferPosition(this ITextView textView, SnapshotPoint bufferPosition, out ITextViewLine textViewLine)
+        {
+            if (textView == null)
+            {
+                throw new ArgumentNullException(nameof(textView));
+            }
+
+            if (textView is ITextView2 textView2)
+            {
+                return textView2.TryGetTextViewLineContainingBufferPosition(bufferPosition, out textViewLine);
+            }
+            else
+            {
+                textViewLine = null;
+                return false;
+            }
         }
     }
 }

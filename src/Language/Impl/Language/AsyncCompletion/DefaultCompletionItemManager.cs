@@ -85,7 +85,35 @@ namespace Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion.Implement
             }
 
             var bestMatch = filterFilteredList.OrderByDescending(n => n.Item2.HasValue).ThenBy(n => n.Item2).FirstOrDefault();
-            var listWithHighlights = filterFilteredList.Select(n => n.Item2.HasValue ? new CompletionItemWithHighlight(n.completionItem, n.Item2.Value.MatchedSpans) : new CompletionItemWithHighlight(n.completionItem)).ToImmutableArray();
+            var listWithHighlights = filterFilteredList.Select(n =>
+            {
+                ImmutableArray<Span> safeMatchedSpans = ImmutableArray<Span>.Empty;
+                if (n.completionItem.DisplayText.Equals(n.completionItem.FilterText, StringComparison.Ordinal))
+                {
+                    if (n.Item2.HasValue)
+                    {
+                        safeMatchedSpans = n.Item2.Value.MatchedSpans;
+                    }
+                }
+                else
+                {
+                    // Matches were made against FilterText. We are displaying DisplayText. To avoid issues, re-apply matches for these items
+                    var newMatchedSpans = patternMatcher.TryMatch(n.completionItem.DisplayText);
+                    if (newMatchedSpans.HasValue)
+                    {
+                        safeMatchedSpans = newMatchedSpans.Value.MatchedSpans;
+                    }
+                }
+
+                if (safeMatchedSpans.IsDefaultOrEmpty)
+                {
+                    return new CompletionItemWithHighlight(n.completionItem);
+                }
+                else
+                {
+                    return new CompletionItemWithHighlight(n.completionItem, safeMatchedSpans);
+                }
+            }).ToImmutableArray();
 
             int selectedItemIndex = 0;
             if (data.DisplaySuggestionItem)

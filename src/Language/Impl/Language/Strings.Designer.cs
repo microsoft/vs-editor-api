@@ -19,7 +19,7 @@ namespace Microsoft.VisualStudio.Language.Intellisense.Implementation {
     // class via a tool like ResGen or Visual Studio.
     // To add or remove a member, edit your .ResX file then rerun ResGen
     // with the /str option, or rebuild your VS project.
-    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("System.Resources.Tools.StronglyTypedResourceBuilder", "15.0.0.0")]
+    [global::System.CodeDom.Compiler.GeneratedCodeAttribute("System.Resources.Tools.StronglyTypedResourceBuilder", "16.0.0.0")]
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
     [global::System.Runtime.CompilerServices.CompilerGeneratedAttribute()]
     public class Strings {
@@ -61,6 +61,15 @@ namespace Microsoft.VisualStudio.Language.Intellisense.Implementation {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Executing code cleanup.
+        /// </summary>
+        public static string CodeCleanupDescription {
+            get {
+                return ResourceManager.GetString("CodeCleanupDescription", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Completion command handler.
         /// </summary>
         public static string CompletionCommandHandlerName {
@@ -70,7 +79,7 @@ namespace Microsoft.VisualStudio.Language.Intellisense.Implementation {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Suggestion mode. Allows typing delimeters without auto completing..
+        ///   Looks up a localized string similar to Suggestion mode item which allows you to provide a name not present in the completion list..
         /// </summary>
         public static string SuggestionModeDefaultTooltip {
             get {

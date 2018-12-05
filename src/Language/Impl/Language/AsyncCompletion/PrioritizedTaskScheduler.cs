@@ -43,16 +43,13 @@ namespace Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion.Implement
             _tasks.Add(task);
         }
 
-        // A class derived from TaskScheduler implements this function to support inline execution
-        // of a task on a thread that initiates a wait on that task object.
         protected override bool TryExecuteTaskInline(Task task, bool taskWasPreviouslyQueued)
         {
-            // NOTE(cyrusn): There is no race condition here.  While our dedicated thread may try to 
-            // call "TryExecuteTask" on this task above *and* we allow another "Wait"ing thread to 
-            // execute it, the TPL ensures that only one will ever get a go.  And, since we have no
-            // ordering guarantees (or other constraints) we're happy to let some other thread try
-            // to execute this task.  It means less work for us, and it makes that other thread not
-            // be blocked.
+            if (Thread.CurrentThread != _thread)
+            {
+                // Don't allow tasks to execute on other threads.
+                return false;
+            }
             return this.TryExecuteTask(task);
         }
 

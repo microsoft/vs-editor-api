@@ -21,7 +21,7 @@ namespace Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion
         /// <param name="trigger">What caused completion</param>
         /// <param name="triggerLocation">Location of the trigger on the subject buffer</param>
         /// <param name="token">Token used to cancel this and other queued operation.</param>
-        void OpenOrUpdate(InitialTrigger trigger, SnapshotPoint triggerLocation, CancellationToken token);
+        void OpenOrUpdate(CompletionTrigger trigger, SnapshotPoint triggerLocation, CancellationToken token);
 
         /// <summary>
         /// Stops the session and hides associated UI.
@@ -34,7 +34,7 @@ namespace Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion
         /// Since this method is on a typing hot path, it returns quickly if the <paramref name="typedChar"/>
         /// is not found among characters collected from <see cref="IAsyncCompletionCommitManager.PotentialCommitCharacters"/>
         /// Else, we map the top-buffer <paramref name="triggerLocation"/> to subject buffers and query
-        /// <see cref="IAsyncCompletionCommitManager.ShouldCommitCompletion(char, SnapshotPoint, CancellationToken)"/>
+        /// <see cref="IAsyncCompletionCommitManager.ShouldCommitCompletion(IAsyncCompletionSession, SnapshotPoint, char, CancellationToken)"/>
         /// to see whether any <see cref="IAsyncCompletionCommitManager"/> would like to commit completion.
         /// Must be called on UI thread.
         /// </summary>
@@ -42,7 +42,7 @@ namespace Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion
         /// <param name="typedChar">The text edit which caused this action. May be null.</param>
         /// <param name="triggerLocation">Location on the view's data buffer: <see cref="ITextView.TextBuffer"/></param>
         /// <param name="token">Token used to cancel this operation</param>
-        /// <returns>Whether any <see cref="IAsyncCompletionCommitManager.ShouldCommitCompletion(char, SnapshotPoint, CancellationToken)"/> returned true</returns>
+        /// <returns>Whether any <see cref="IAsyncCompletionCommitManager.ShouldCommitCompletion(IAsyncCompletionSession, SnapshotPoint, char, CancellationToken)"/> returned true</returns>
         bool ShouldCommit(char typedChar, SnapshotPoint triggerLocation, CancellationToken token);
 
         /// <summary>

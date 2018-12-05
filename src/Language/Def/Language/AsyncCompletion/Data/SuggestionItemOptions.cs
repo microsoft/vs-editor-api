@@ -32,11 +32,8 @@ namespace Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion.Data
         /// <param name="toolTipText">Localized tooltip text for the suggestion item</param>
         public SuggestionItemOptions(string displayTextWhenEmpty, string toolTipText)
         {
-            if (string.IsNullOrWhiteSpace(toolTipText))
-                throw new ArgumentNullException(nameof(toolTipText));
-
             DisplayTextWhenEmpty = displayTextWhenEmpty ?? throw new ArgumentNullException(nameof(displayTextWhenEmpty));
-            ToolTipText = toolTipText;
+            ToolTipText = toolTipText ?? throw new ArgumentNullException(nameof(toolTipText));
         }
     }
 }

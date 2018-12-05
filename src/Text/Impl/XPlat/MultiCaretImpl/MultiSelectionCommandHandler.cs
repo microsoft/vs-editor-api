@@ -2,12 +2,11 @@
 using System.Collections.Generic;
 using System.ComponentModel.Composition;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using Microsoft.VisualStudio.Commanding;
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Text.Editor.Commanding.Commands;
 using Microsoft.VisualStudio.Text.Operations;
+using Microsoft.VisualStudio.Text.Outlining;
 using Microsoft.VisualStudio.Utilities;
 
 namespace Microsoft.VisualStudio.Text.MultiSelection.Implementation
@@ -29,6 +28,9 @@ namespace Microsoft.VisualStudio.Text.MultiSelection.Implementation
 
         [Import]
         internal ITextSearchNavigatorFactoryService TextSearchNavigatorFactoryService { get; set; }
+
+        [Import]
+        internal IOutliningManagerService OutliningManagerService { get; set; }
 
         public string DisplayName => Strings.MultiSelectionCancelCommandName;
 
@@ -58,7 +60,7 @@ namespace Microsoft.VisualStudio.Text.MultiSelection.Implementation
         public CommandState GetCommandState(RemoveLastSecondaryCaretCommandArgs args)
         {
             var broker = args.TextView.GetMultiSelectionBroker();
-            return broker.HasMultipleSelections ? CommandState.Available : CommandState.Unavailable;
+            return broker.HasMultipleSelections || broker.PrimarySelection.Extent.Length > 0 ? CommandState.Available : CommandState.Unavailable;
         }
 
         public CommandState GetCommandState(MoveLastCaretDownCommandArgs args)
@@ -113,7 +115,7 @@ namespace Microsoft.VisualStudio.Text.MultiSelection.Implementation
 
             if (result == true)
             {
-                broker.TryEnsureVisible(newPrimary, EnsureSpanVisibleOptions.AlwaysCenter);
+                broker.TryEnsureVisible(newPrimary, EnsureSpanVisibleOptions.None);
             }
 
             return result;
@@ -140,14 +142,14 @@ namespace Microsoft.VisualStudio.Text.MultiSelection.Implementation
 
             if (result == true)
             {
-                broker.TryEnsureVisible(newPrimary, EnsureSpanVisibleOptions.AlwaysCenter);
+                broker.TryEnsureVisible(newPrimary, EnsureSpanVisibleOptions.None);
             }
 
             return result;
         }
 
         private static Selection InsertDiscoveredMatchRegion(IMultiSelectionBroker broker, Selection primaryRegion, SnapshotSpan found)
-        {
+        { 
             var newSpan = new VirtualSnapshotSpan(found);
             var newSelection = new Selection(newSpan, primaryRegion.IsReversed);
             broker.AddSelection(newSelection);
@@ -161,6 +163,7 @@ namespace Microsoft.VisualStudio.Text.MultiSelection.Implementation
             if (broker.PrimarySelection.IsEmpty)
             {
                 broker.TryPerformActionOnSelection(broker.PrimarySelection, PredefinedSelectionTransformations.SelectCurrentWord, out _);
+                return true;
             }
 
             var navigator = TextSearchNavigatorFactoryService.CreateSearchNavigator(args.TextView.TextViewModel.EditBuffer);
@@ -211,8 +214,14 @@ namespace Microsoft.VisualStudio.Text.MultiSelection.Implementation
 
                     if (!broker.SelectedSpans.OverlapsWith(found))
                     {
+                        var outliningManager = OutliningManagerService.GetOutliningManager(args.TextView);
+                        if (outliningManager != null)
+                        {
+                            outliningManager.ExpandAll(found, collapsible => true);
+                        }
+
                         var addedRegion = InsertDiscoveredMatchRegion(broker, primaryRegion, found);
-                        broker.TryEnsureVisible(addedRegion, EnsureSpanVisibleOptions.AlwaysCenter);
+                        broker.TryEnsureVisible(addedRegion, EnsureSpanVisibleOptions.None);
 
                         return true;
                     }
@@ -249,6 +258,9 @@ namespace Microsoft.VisualStudio.Text.MultiSelection.Implementation
 
                 navigator.Find(); // Get and ignore the primary region
 
+                var newlySelectedSpans = new List<SnapshotSpan>();
+                var oldSelectedSpans = broker.SelectedSpans;
+
                 while (navigator.Find())
                 {
                     var found = navigator.CurrentResult.Value;
@@ -259,10 +271,43 @@ namespace Microsoft.VisualStudio.Text.MultiSelection.Implementation
                         break;
                     }
 
-                    if (!broker.SelectedSpans.OverlapsWith(found))
+                    if (!oldSelectedSpans.OverlapsWith(found))
                     {
-                        InsertDiscoveredMatchRegion(broker, primaryRegion, found);
+                        newlySelectedSpans.Add(found);
                     }
+                }
+
+                // Make sure that none of the newly selected spans overlap
+                for(int i = 0; i < (newlySelectedSpans.Count - 1); i++)
+                {
+                    if (newlySelectedSpans[i].OverlapsWith(newlySelectedSpans[i+1]))
+                    {
+                        newlySelectedSpans.RemoveAt(i + 1);
+
+                        // decrement 1 so we can compare i and what used to be i+2 next time
+                        i--;
+                    }
+                }
+
+                var newlySelectedSpanCollection = new NormalizedSnapshotSpanCollection(newlySelectedSpans);
+
+                // Ok, we've figured out what selections we want to add. Now we need to expand any outlining regions before finally adding the selections
+                var outliningManager = OutliningManagerService.GetOutliningManager(args.TextView);
+                if (outliningManager != null)
+                {
+                    var extent = new SnapshotSpan(
+                        newlySelectedSpanCollection[0].Start,
+                        newlySelectedSpanCollection[newlySelectedSpanCollection.Count - 1].End);
+                    outliningManager.ExpandAll(extent, collapsible =>
+                    {
+                        return newlySelectedSpanCollection.IntersectsWith(collapsible.Extent.GetSpan(broker.CurrentSnapshot));
+                    });
+                }
+
+                // Yay, we can finally actually add the selections
+                for (int i = 0; i < newlySelectedSpans.Count; i++)
+                {
+                    broker.AddSelectionRange(newlySelectedSpans.Select(span => new Selection(span, broker.PrimarySelection.IsReversed)));
                 }
 
                 return true;
@@ -298,8 +343,12 @@ namespace Microsoft.VisualStudio.Text.MultiSelection.Implementation
 
                 if (broker.TryRemoveSelection(toRemove))
                 {
-                    return broker.TryEnsureVisible(FindLastSelection(broker), EnsureSpanVisibleOptions.AlwaysCenter);
+                    return broker.TryEnsureVisible(FindLastSelection(broker), EnsureSpanVisibleOptions.None);
                 }
+            }
+            else if (broker.PrimarySelection.Extent.Length > 0)
+            {
+                broker.TryPerformActionOnSelection(broker.PrimarySelection, PredefinedSelectionTransformations.ClearSelection, out _);
             }
 
             return false;
@@ -317,7 +366,7 @@ namespace Microsoft.VisualStudio.Text.MultiSelection.Implementation
                 {
                     if (broker.TryRemoveSelection(toRemove))
                     {
-                        return broker.TryEnsureVisible(FindLastSelection(broker), EnsureSpanVisibleOptions.AlwaysCenter);
+                        return broker.TryEnsureVisible(FindLastSelection(broker), EnsureSpanVisibleOptions.None);
                     }
                 }
             }

@@ -101,4 +101,7 @@
   <data name="WaitForCommandExecution" xml:space="preserve">
     <value>Please wait for an editor command to finish...</value>
   </data>
+  <data name="CommandCancelled" xml:space="preserve">
+    <value>Command handler '{0}' has exceeded allotted timeout and was auto canceled.</value>
+  </data>
 </root>

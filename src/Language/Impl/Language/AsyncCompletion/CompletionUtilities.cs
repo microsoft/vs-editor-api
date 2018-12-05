@@ -34,8 +34,10 @@ namespace Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion.Implement
         /// <returns>True if the view has "DEBUGVIEW" text view role.</returns>
         internal static bool IsDebuggerTextView(ITextView textView) => textView.Roles.Contains("DEBUGVIEW");
 
+        static readonly EditorOptionKey<bool> NonBlockingCompletionOptionKey = new EditorOptionKey<bool>(PredefinedCompletionNames.NonBlockingCompletionOptionName);
         static readonly EditorOptionKey<bool> SuggestionModeOptionKey = new EditorOptionKey<bool>(PredefinedCompletionNames.SuggestionModeInCompletionOptionName);
         static readonly EditorOptionKey<bool> SuggestionModeInDebuggerCompletionOptionKey = new EditorOptionKey<bool>(PredefinedCompletionNames.SuggestionModeInDebuggerCompletionOptionName);
+        private const bool NonBlockingCompletionDefaultValue = false;
         private const bool UseSuggestionModeDefaultValue = false;
         private const bool UseSuggestionModeInDebuggerCompletionDefaultValue = true;
 
@@ -61,32 +63,50 @@ namespace Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion.Implement
             public override string Name => PredefinedCompletionNames.SuggestionModeInDebuggerCompletionOptionName;
         }
 
+        [Export(typeof(EditorOptionDefinition))]
+        [Name(PredefinedCompletionNames.NonBlockingCompletionOptionName)]
+        class NonBlockingCompletionOptionDefinition : EditorOptionDefinition
+        {
+            public override object DefaultValue => NonBlockingCompletionDefaultValue;
+
+            public override Type ValueType => typeof(bool);
+
+            public override string Name => PredefinedCompletionNames.NonBlockingCompletionOptionName;
+        }
+
         internal static bool GetSuggestionModeOption(ITextView textView)
         {
             var options = textView.Options.GlobalOptions;
-            if (!(options.IsOptionDefined(SuggestionModeOptionKey, localScopeOnly: false)))
-                options.SetOptionValue(SuggestionModeOptionKey, UseSuggestionModeDefaultValue);
-            return options.GetOptionValue(SuggestionModeOptionKey);
+            var optionKey = IsDebuggerTextView(textView) ? SuggestionModeInDebuggerCompletionOptionKey : SuggestionModeOptionKey;
+            if (!(options.IsOptionDefined(optionKey, localScopeOnly: false)))
+            {
+                var defaultValue = IsDebuggerTextView(textView) ? UseSuggestionModeInDebuggerCompletionDefaultValue : UseSuggestionModeDefaultValue;
+                options.SetOptionValue(optionKey, defaultValue);
+            }
+            return options.GetOptionValue(optionKey);
         }
 
         internal static void SetSuggestionModeOption(ITextView textView, bool value)
         {
             var options = textView.Options.GlobalOptions;
-            options.SetOptionValue(SuggestionModeOptionKey, value);
+            var optionKey = IsDebuggerTextView(textView) ? SuggestionModeInDebuggerCompletionOptionKey : SuggestionModeOptionKey;
+            options.SetOptionValue(optionKey, value);
         }
 
-        internal static bool GetSuggestionModeInDebuggerCompletionOption(ITextView textView)
+        internal static bool GetNonBlockingCompletionOption(ITextView textView)
         {
             var options = textView.Options.GlobalOptions;
-            if (!(options.IsOptionDefined(SuggestionModeInDebuggerCompletionOptionKey, localScopeOnly: false)))
-                options.SetOptionValue(SuggestionModeInDebuggerCompletionOptionKey, UseSuggestionModeInDebuggerCompletionDefaultValue);
-            return options.GetOptionValue(SuggestionModeInDebuggerCompletionOptionKey);
+            if (!(options.IsOptionDefined(NonBlockingCompletionOptionKey, localScopeOnly: false)))
+            {
+                options.SetOptionValue(NonBlockingCompletionOptionKey, NonBlockingCompletionDefaultValue);
+            }
+            return options.GetOptionValue(NonBlockingCompletionOptionKey);
         }
 
-        internal static void SetSuggestionModeDuringDebuggingOption(ITextView textView, bool value)
+        internal static void SetNonBlockingModeOption(ITextView textView, bool value)
         {
             var options = textView.Options.GlobalOptions;
-            options.SetOptionValue(SuggestionModeInDebuggerCompletionOptionKey, value);
+            options.SetOptionValue(NonBlockingCompletionOptionKey, value);
         }
     }
 }

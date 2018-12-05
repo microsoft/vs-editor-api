@@ -20,20 +20,19 @@ namespace Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion.Implement
             _options = options ?? throw new ArgumentNullException(nameof(options));
         }
 
-        Task<CompletionContext> IAsyncCompletionSource.GetCompletionContextAsync(InitialTrigger trigger, SnapshotPoint triggerLocation, SnapshotSpan applicableToSpan, CancellationToken token)
+        Task<CompletionContext> IAsyncCompletionSource.GetCompletionContextAsync(IAsyncCompletionSession session, CompletionTrigger trigger, SnapshotPoint triggerLocation, SnapshotSpan applicableToSpan, CancellationToken token)
         {
             throw new NotImplementedException("This item source is not meant to be registered. It is used only to provide a tooltip.");
         }
 
-        Task<object> IAsyncCompletionSource.GetDescriptionAsync(CompletionItem item, CancellationToken token)
+        Task<object> IAsyncCompletionSource.GetDescriptionAsync(IAsyncCompletionSession session, CompletionItem item, CancellationToken token)
         {
             return Task.FromResult<object>(_options.ToolTipText);
         }
 
-        bool IAsyncCompletionSource.TryGetApplicableToSpan(char typedChar, SnapshotPoint triggerLocation, out SnapshotSpan applicableToSpan, CancellationToken token)
+        public CompletionStartData InitializeCompletion(CompletionTrigger trigger, SnapshotPoint triggerLocation, CancellationToken token)
         {
-            applicableToSpan = default;
-            return false;
+            return CompletionStartData.DoesNotParticipateInCompletion;
         }
     }
 }

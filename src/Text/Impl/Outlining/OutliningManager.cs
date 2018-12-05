@@ -398,23 +398,19 @@ namespace Microsoft.VisualStudio.Text.Outlining
 
             foreach (var tagSpan in tagSpans)
             {
-                var spans = tagSpan.Span.GetSpans(current);
-
-                // We only accept this tag if it hasn't been split into multiple spans and if
-                // it hasn't had pieces cut out of it from projection.  Also, refuse 0-length
-                // tags, as they wouldn't be hiding anything.
-                if (spans.Count == 1 &&
-                    spans[0].Length > 0 &&
-                    spans[0].Length == tagSpan.Span.GetSpans(tagSpan.Span.AnchorBuffer)[0].Length)
+                // Attempt to map this tag up to the top level buffer in a contiguous fashion,
+                // rejecting it if either the start or end fails to map.
+                if (TryContiguousMapToSnapshot(tagSpan, current, out var mappedSpan) &&
+                    (mappedSpan.Length > 0))
                 {
-                    ITrackingSpan trackingSpan = current.CreateTrackingSpan(spans[0], SpanTrackingMode.EdgeExclusive);
+                    ITrackingSpan trackingSpan = current.CreateTrackingSpan(mappedSpan, SpanTrackingMode.EdgeExclusive);
                     var collapsible = new Collapsible(trackingSpan, tagSpan.Tag);
                     if (collapsibles.ContainsKey(collapsible))
                     {
                         // TODO: Notify providers somehow.
                         //       Or rewrite so that such things are legal.
 #if false
-                        Debug.WriteLine("IGNORING TAG " + spans[0] + " due to span conflict");
+                        Debug.WriteLine("IGNORING TAG " + mappedSpan + " due to span conflict");
 #endif
                     }
                     else
@@ -425,12 +421,39 @@ namespace Microsoft.VisualStudio.Text.Outlining
                 else
                 {
 #if false
-                    Debug.WriteLine("IGNORING TAG " + tagSpan.Span.GetSpans(editBuffer) + " because it was split or shortened by projection");
+                    Debug.WriteLine("IGNORING TAG " + tagSpan.Span.GetSpans(editBuffer) + " because its start or endpoint failed to map");
 #endif
                 }
             }
 
             return collapsibles;
+        }
+
+        /// <summary>
+        /// Alternative to <see cref="IMappingSpan.GetSpans(ITextSnapshot)"/> that maps the span
+        /// as a contiguous unit so that spans are not split by nested projections.
+        /// </summary>
+        /// <remarks>
+        /// Spans fail to contiguously map if one or more of their end points do not exist in that
+        /// snapshot/buffer.
+        /// </remarks>
+        private static bool TryContiguousMapToSnapshot(IMappingTagSpan<IOutliningRegionTag> tagSpan, ITextSnapshot snapshot, out SnapshotSpan span)
+        {
+            var startPoint = tagSpan.Span.Start.GetPoint(snapshot, PositionAffinity.Successor);
+            if (startPoint.HasValue)
+            {
+                var endPoint = tagSpan.Span.End.GetPoint(snapshot, PositionAffinity.Successor);
+                if (endPoint.HasValue)
+                {
+                    span = new SnapshotSpan(
+                        startPoint.Value,
+                        endPoint.Value);
+                    return true;
+                }
+            }
+
+            span = default;
+            return false;
         }
 
         private IEnumerable<ICollapsible> MergeRegions(IEnumerable<ICollapsed> currentCollapsed, IEnumerable<ICollapsible> newCollapsibles,

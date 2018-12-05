@@ -1,14 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Threading;
+﻿using System.Threading;
 using Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion.Data;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 
-namespace Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion.Implementation
+namespace Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion
 {
     /// <summary>
     /// Exposes non-public functionality to commanding and tests
@@ -23,7 +18,7 @@ namespace Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion.Implement
 
         /// <summary>
         /// Returns whether computation has begun.
-        /// Computation starts after calling <see cref="IAsyncCompletionSession.OpenOrUpdate(InitialTrigger, SnapshotPoint, CancellationToken)"/>
+        /// Computation starts after calling <see cref="IAsyncCompletionSession.OpenOrUpdate(CompletionTrigger, SnapshotPoint, CancellationToken)"/>
         /// </summary>
         bool IsStarted { get; }
 
@@ -40,7 +35,7 @@ namespace Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion.Implement
         /// <summary>
         /// Commits unique item. If no items were computed, performs computation. If there is no unique item, shows the UI.
         /// </summary>
-        void InvokeAndCommitIfUnique(InitialTrigger trigger, SnapshotPoint triggerLocation, CancellationToken token);
+        void InvokeAndCommitIfUnique(CompletionTrigger trigger, SnapshotPoint triggerLocation, CancellationToken token);
 
         /// <summary>
         /// Enqueues selecting the next item. When all queued tasks are completed, the UI updates.

@@ -4,7 +4,7 @@ using Microsoft.VisualStudio.Text;
 namespace Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion.Data
 {
     /// <summary>
-    /// Contains data of <see cref="IAsyncCompletionSession"/> valid at a specific, instantenous moment pertinent to current computation.
+    /// Contains data of <see cref="IAsyncCompletionSession"/> valid at a specific, instantaneous moment pertinent to current computation.
     /// This data is passed to <see cref="IAsyncCompletionItemManager"/> to filter the list and select appropriate item.
     /// </summary>
     public class AsyncCompletionSessionDataSnapshot
@@ -20,14 +20,9 @@ namespace Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion.Data
         public ITextSnapshot Snapshot { get; }
 
         /// <summary>
-        /// The <see cref="InitialTrigger"/> that started this completion session.
+        /// The <see cref="CompletionTrigger"/> that caused this update.
         /// </summary>
-        public InitialTrigger InitialTrigger { get; }
-
-        /// <summary>
-        /// The <see cref="UpdateTrigger"/> for this update.
-        /// </summary>
-        public UpdateTrigger UpdateTrigger { get; }
+        public CompletionTrigger Trigger { get; }
 
         /// <summary>
         /// Filters, their availability and selection state.
@@ -49,16 +44,14 @@ namespace Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion.Data
         /// </summary>
         /// <param name="initialSortedList">Set of <see cref="CompletionItem"/>s to filter and sort, originally returned from <see cref="IAsyncCompletionItemManager.SortCompletionListAsync"/></param>
         /// <param name="snapshot">The <see cref="ITextSnapshot"/> applicable for this computation. The snapshot comes from the view's data buffer</param>
-        /// <param name="initialTrigger">The <see cref="InitialTrigger"/> that started this completion session</param>
-        /// <param name="updateTrigger">The <see cref="UpdateTrigger"/> for this update</param>
+        /// <param name="trigger">The <see cref="CompletionTrigger"/> that caused this update</param>
         /// <param name="selectedFilters">Filters, their availability and selection state</param>
         /// <param name="isSoftSelected">Inidicates whether the session is using soft selection</param>
         /// <param name="displaySuggestionItem">Inidicates whether the session has a suggestion item</param>
         public AsyncCompletionSessionDataSnapshot(
             ImmutableArray<CompletionItem> initialSortedList,
             ITextSnapshot snapshot,
-            InitialTrigger initialTrigger,
-            UpdateTrigger updateTrigger,
+            CompletionTrigger trigger,
             ImmutableArray<CompletionFilterWithState> selectedFilters,
             bool isSoftSelected,
             bool displaySuggestionItem
@@ -66,8 +59,7 @@ namespace Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion.Data
         {
             InitialSortedList = initialSortedList;
             Snapshot = snapshot;
-            InitialTrigger = initialTrigger;
-            UpdateTrigger = updateTrigger;
+            Trigger = trigger;
             SelectedFilters = selectedFilters;
             IsSoftSelected = isSoftSelected;
             DisplaySuggestionItem = displaySuggestionItem;

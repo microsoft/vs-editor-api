@@ -18,7 +18,8 @@ namespace Microsoft.VisualStudio.Text.EditorOptions.Implementation
     using Microsoft.VisualStudio.Utilities;
 
     [Export(typeof(IEditorOptionsFactoryService))]
-    internal sealed class EditorOptionsFactoryService : IEditorOptionsFactoryService
+    [Export(typeof(IEditorOptionsFactoryService2))]
+    internal sealed class EditorOptionsFactoryService : IEditorOptionsFactoryService2
     {
         [ImportMany(typeof(EditorOptionDefinition))]
         internal List<Lazy<EditorOptionDefinition, INameMetadata>> OptionImports { get; set; }
@@ -31,7 +32,6 @@ namespace Microsoft.VisualStudio.Text.EditorOptions.Implementation
         internal GuardedOperations guardedOperations = null;
 
         #region IEditorOptionsFactoryService Members
-
         public IEditorOptions GetOptions(IPropertyOwner scope)
         {
             if (scope == null)
@@ -42,7 +42,7 @@ namespace Microsoft.VisualStudio.Text.EditorOptions.Implementation
 
         public IEditorOptions CreateOptions()
         {
-            return new EditorOptions(this.GlobalOptions as EditorOptions, null, this);
+            return this.CreateOptions(allowsLateBinding: false);
         }
 
         public IEditorOptions GlobalOptions
@@ -51,7 +51,7 @@ namespace Microsoft.VisualStudio.Text.EditorOptions.Implementation
             {
                 if (_globalOptions == null)
                 {
-                    //We're guranteed that the first thing that happens when anyone tries to create options is that the global options will be created first,
+                    //We're guaranteed that the first thing that happens when anyone tries to create options is that the global options will be created first,
                     //so do initialization here.
                     _globalOptions = new EditorOptions(null, null, this);
 
@@ -62,6 +62,30 @@ namespace Microsoft.VisualStudio.Text.EditorOptions.Implementation
 
                 return _globalOptions;
             }
+        }
+        #endregion
+
+        #region IEditorOptionsFactoryService2 Members
+        public bool TryBindToScope(IEditorOptions options, IPropertyOwner scope)
+        {
+            if (scope == null)
+                throw new ArgumentNullException(nameof(scope));
+
+            var editorOptions = options as EditorOptions;
+            if ((editorOptions == null) || (!editorOptions.AllowsLateBinding) || scope.Properties.ContainsProperty(typeof(IEditorOptions)))
+            {
+                // options cannot be bound to the specified scope.
+                return false;
+            }
+
+            editorOptions.SetScope(scope);
+            scope.Properties.AddProperty(typeof(IEditorOptions), options);
+            return true;
+        }
+
+        public IEditorOptions CreateOptions(bool allowsLateBinding)
+        {
+            return new EditorOptions(this.GlobalOptions as EditorOptions, null, this, allowsLateBinding: allowsLateBinding);
         }
         #endregion
 
@@ -108,7 +132,7 @@ namespace Microsoft.VisualStudio.Text.EditorOptions.Implementation
             }
         }
 
-        internal EditorOptionDefinition GetOptionDefinition(string optionId)
+        public EditorOptionDefinition GetOptionDefinition(string optionId)
         {
             lock (_instantiatedOptionDefinitions)
             {

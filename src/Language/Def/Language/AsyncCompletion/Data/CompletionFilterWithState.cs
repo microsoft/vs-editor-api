@@ -3,7 +3,8 @@
 namespace Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion.Data
 {
     /// <summary>
-    /// Immutable data transfer object used to communicate between the completion session and completion UI
+    /// Immutable data transfer object that describes state of a <see cref="CompletionFilter"/>:
+    /// whether it <see cref="IsAvailable"/> based on typed text and whether it <see cref="IsSelected"/> by the user.
     /// </summary>
     public sealed class CompletionFilterWithState
     {
@@ -14,17 +15,19 @@ namespace Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion.Data
 
         /// <summary>
         /// Whether the filter is available.
-        /// Filter should be available when there are visible <see cref="CompletionItem"/>s that define this <see cref="Filter"/> in their <see cref="CompletionItem.Filters"/>
+        /// A filter is available if after filtering by entered text, there are any <see cref="CompletionItem"/>s that reference this <see cref="Filter"/> in their <see cref="CompletionItem.Filters"/>
+        /// Filtering <see cref="CompletionItem"/>s by toggling <see cref="IsSelected"/> property of the <see cref="CompletionFilter"/>s has no impact on this availability.
         /// </summary>
         public bool IsAvailable { get; }
 
         /// <summary>
         /// Whether the filter is selected by the user.
+        /// User may select a filter using mouse or a keyboard shortcut.
         /// </summary>
         public bool IsSelected { get; }
 
         /// <summary>
-        /// Constructs a new instance of <see cref="CompletionFilterWithState"/>.
+        /// Constructs a new instance of <see cref="CompletionFilterWithState"/> which is not selected.
         /// </summary>
         /// <param name="filter">Reference to <see cref="CompletionFilter"/></param>
         /// <param name="isAvailable">Whether this <see cref="CompletionFilter"/> is available</param>
@@ -46,7 +49,8 @@ namespace Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion.Data
         }
 
         /// <summary>
-        /// Returns instance of <see cref="CompletionFilterWithState"/> with specified <see cref="IsAvailable"/>
+        /// Returns instance of <see cref="CompletionFilterWithState"/> with specified <see cref="IsAvailable"/>.
+        /// Use this method when entered text changes availability of relevant <see cref="CompletionItem"/>s.
         /// </summary>
         /// <param name="isAvailable">Value to use for <see cref="IsAvailable"/></param>
         /// <returns>Updated instance of <see cref="CompletionFilterWithState"/></returns>
@@ -70,7 +74,7 @@ namespace Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion.Data
         }
 
         /// <summary>
-        /// Override for nice debugger display
+        /// Override for debugger display
         /// </summary>
         public override string ToString()
         {

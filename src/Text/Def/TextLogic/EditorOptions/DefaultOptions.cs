@@ -4,6 +4,7 @@
 //
 using System;
 using System.ComponentModel.Composition;
+using System.Threading;
 using Microsoft.VisualStudio.Utilities;
 
 namespace Microsoft.VisualStudio.Text.Editor.OptionsExtensionMethods
@@ -204,6 +205,50 @@ namespace Microsoft.VisualStudio.Text.Editor
         public static readonly EditorOptionKey<string> TooltipAppearanceCategoryOptionId = new EditorOptionKey<string>(TooltipAppearanceCategoryOptionName);
         public const string TooltipAppearanceCategoryOptionName = "TooltipAppearanceCategory";
 
+        /// <summary>
+        /// The default option that determines whether files, when opened, attempt to detect for a utf-8 encoding.
+        /// </summary>
+        public static readonly EditorOptionKey<bool> AutoDetectUtf8Id = new EditorOptionKey<bool>(AutoDetectUtf8Name);
+        public const string AutoDetectUtf8Name = "AutoDetectUtf8";
+
+        /// <summary>
+        /// The default option that determines whether matching delimiters should be highlighted.
+        /// </summary>
+        public static readonly EditorOptionKey<bool> AutomaticDelimiterHighlightingId = new EditorOptionKey<bool>(AutomaticDelimiterHighlightingName);
+        public const string AutomaticDelimiterHighlightingName = "AutomaticDelimiterHighlighting";
+
+        /// <summary>
+        /// The default option that determines whether files should follow project coding conventions.
+        /// </summary>
+        public static readonly EditorOptionKey<bool> FollowCodingConventionsId = new EditorOptionKey<bool>(FollowCodingConventionsName);
+        public const string FollowCodingConventionsName = "FollowCodingConventions";
+
+        /// <summary>
+        /// The default option that determines the editor emulation mode.
+        /// </summary>
+        public static readonly EditorOptionKey<int> EditorEmulationModeId = new EditorOptionKey<int>(EditorEmulationModeName);
+        public const string EditorEmulationModeName = "EditorEmulationMode";
+
+        /// <summary>
+        /// The option definition that determines maximum allowed typing latency value in milliseconds. Its value comes either
+        /// from remote settings or from <see cref="UserCustomMaximumTypingLatencyOption"/> if user specifies it in
+        /// Tools/Options/Text Editor/Advanced page.
+        /// </summary>
+        internal static readonly EditorOptionKey<int> MaximumTypingLatencyOptionId = new EditorOptionKey<int>(MaximumTypingLatencyOptionName);
+        internal const string MaximumTypingLatencyOptionName = "MaximumTypingLatency";
+
+        /// <summary>
+        /// The option definition that determines user custom maximum allowed typing latency value in milliseconds. If user
+        /// specifies it on Tools/Options/Text Editor/Advanced page, it becomes a source for the <see cref="MaximumTypingLatency"/> option.
+        /// </summary>
+        internal static readonly EditorOptionKey<int> UserCustomMaximumTypingLatencyOptionId = new EditorOptionKey<int>(UserCustomMaximumTypingLatencyOptionName);
+        internal const string UserCustomMaximumTypingLatencyOptionName = "UserCustomMaximumTypingLatency";
+
+        /// <summary>
+        /// The option definition that determines whether to enable typing latency guarding.
+        /// </summary>
+        internal static readonly EditorOptionKey<bool> EnableTypingLatencyGuardOptionId = new EditorOptionKey<bool>(EnableTypingLatencyGuardOptionName);
+        internal const string EnableTypingLatencyGuardOptionName = "EnableTypingLatencyGuard";
         #endregion
     }
 
@@ -408,5 +453,102 @@ namespace Microsoft.VisualStudio.Text.Editor
         public override EditorOptionKey<string> Key { get { return DefaultOptions.TooltipAppearanceCategoryOptionId; } }
     }
 
+    /// <summary>
+    /// The option definition that determines whether files, when opened, attempt to detect for a utf-8 encoding.
+    /// </summary>
+    [Export(typeof(EditorOptionDefinition))]
+    [Name(DefaultOptions.AutoDetectUtf8Name)]
+    public sealed class AutoDetectUtf8Option : EditorOptionDefinition<bool>
+    {
+        public override bool Default { get => true; }
+
+        public override EditorOptionKey<bool> Key { get { return DefaultOptions.AutoDetectUtf8Id; } }
+    }
+
+    /// <summary>
+    /// The option definition that determines whether matching delimiters should be highlighted.
+    /// </summary>
+    [Export(typeof(EditorOptionDefinition))]
+    [Name(DefaultOptions.AutomaticDelimiterHighlightingName)]
+    public sealed class AutomaticDelimiterHighlightingOption : EditorOptionDefinition<bool>
+    {
+        public override bool Default { get => true; }
+
+        public override EditorOptionKey<bool> Key { get { return DefaultOptions.AutomaticDelimiterHighlightingId; } }
+    }
+
+    /// <summary>
+    /// The option definition that determines whether files should follow project coding conventions.
+    /// </summary>
+    [Export(typeof(EditorOptionDefinition))]
+    [Name(DefaultOptions.FollowCodingConventionsName)]
+    public sealed class FollowCodingConventionsOption : EditorOptionDefinition<bool>
+    {
+        public override bool Default { get => true; }
+
+        public override EditorOptionKey<bool> Key { get { return DefaultOptions.FollowCodingConventionsId; } }
+    }
+
+    /// <summary>
+    /// The option definition that determines the editor emulation mode.
+    /// </summary>
+    [Export(typeof(EditorOptionDefinition))]
+    [Name(DefaultOptions.EditorEmulationModeName)]
+    public sealed class EditorEmulationModeOption : EditorOptionDefinition<int>
+    {
+        public override int Default { get => 0; }
+
+        public override EditorOptionKey<int> Key { get { return DefaultOptions.EditorEmulationModeId; } }
+    }
+
+    /// <summary>
+    ///The option definition that determines whether to enable typing latency guarding.
+    /// </summary>
+    [Export(typeof(EditorOptionDefinition))]
+    [Name(DefaultOptions.EnableTypingLatencyGuardOptionName)]
+    internal sealed class EnableTypingLatencyGuard : EditorOptionDefinition<bool>
+    {
+        /// <summary>
+        /// Gets the default value (true).
+        /// </summary>
+        public override bool Default { get => true; }
+
+        /// <summary>
+        /// Gets the editor option key.
+        /// </summary>
+        public override EditorOptionKey<bool> Key { get { return DefaultOptions.EnableTypingLatencyGuardOptionId; } }
+    }
+
+    /// <summary>
+    /// The option definition that determines maximum allowed typing latency value in milliseconds. Its value comes either
+    /// from remote settings or from <see cref="UserCustomMaximumTypingLatencyOption"/> if user specifies it in
+    /// Tools/Options/Text Editor/Advanced page.
+    /// </summary>
+    [Export(typeof(EditorOptionDefinition))]
+    [Name(DefaultOptions.MaximumTypingLatencyOptionName)]
+    internal sealed class MaximumTypingLatency : EditorOptionDefinition<int>
+    {
+        /// <summary>
+        /// Gets the default value (infinite).
+        /// </summary>
+        public override int Default { get => Timeout.Infinite; }
+
+        /// <summary>
+        /// Gets the editor option key.
+        /// </summary>
+        public override EditorOptionKey<int> Key { get { return DefaultOptions.MaximumTypingLatencyOptionId; } }
+    }
+
+    /// <summary>
+    /// The option definition that determines user custom maximum allowed typing latency value in milliseconds. If user
+    /// specifies it on Tools/Options/Text Editor/Advanced page, it becomes a source for the <see cref="MaximumTypingLatency"/> option.
+    /// </summary>
+    [Export(typeof(EditorOptionDefinition))]
+    [Name(DefaultOptions.UserCustomMaximumTypingLatencyOptionName)]
+    internal sealed class UserCustomMaximumTypingLatencyOption : EditorOptionDefinition<int>
+    {
+        public override int Default { get { return Timeout.Infinite; } }
+        public override EditorOptionKey<int> Key { get { return DefaultOptions.UserCustomMaximumTypingLatencyOptionId; } }
+    }
     #endregion
 }

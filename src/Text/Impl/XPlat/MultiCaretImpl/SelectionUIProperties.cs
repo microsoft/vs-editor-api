@@ -69,23 +69,82 @@ namespace Microsoft.VisualStudio.Text.MultiSelection.Implementation
             }
         }
 
-        public override ITextViewLine ContainingTextViewLine
+        public override bool TryGetContainingTextViewLine(out ITextViewLine line)
         {
-            get
+            line = null;
+            if (_broker.TextView.InLayout || _broker.TextView.IsClosed)
+            {
+                return false;
+            }
+
+            // There are cases where people implement ITextView without ITextView2, so I'm doing a best effort here
+            // checking InLayout and IsClosed manually rather than depending on ITextView2.TryGetTextViewLineContainingBufferPosition below.
+            // The try..catch is then just paranoia to avoid throwing from a TryGet* method at all costs.
+            try
             {
                 var bufferPosition = _transformer.Selection.InsertionPoint.Position;
+
+                // Problematic, though it may be, some callers like to check this during a layout, which means our
+                // snapshot isn't always reliable. If this method comes up in a crash, look through the callstack for someone dispatching
+                // a call without looking to see if the view is in the layout.
+
                 ITextViewLine textLine = _broker.TextView.GetTextViewLineContainingBufferPosition(bufferPosition);
 
-                if ((_transformer.Selection.InsertionPointAffinity == PositionAffinity.Predecessor) && (textLine.Start == bufferPosition) &&
+                line = _broker.TextView.GetTextViewLineContainingBufferPosition(bufferPosition);
+
+                if ((_transformer.Selection.InsertionPointAffinity == PositionAffinity.Predecessor) && (line.Start == bufferPosition) &&
                     (_broker.TextView.TextSnapshot.GetLineFromPosition(bufferPosition).Start != bufferPosition))
                 {
                     //The desired location has precedessor affinity at the start of a word wrapped line, so we
                     //really want the line before this one.
-                    textLine = _broker.TextView.GetTextViewLineContainingBufferPosition(bufferPosition - 1);
+                    line = _broker.TextView.GetTextViewLineContainingBufferPosition(bufferPosition - 1);
                 }
 
-                return textLine;
+                return line != null;
             }
+            catch (Exception ex)
+            {
+                _factory.GuardedOperations.HandleException(this, ex);
+                line = null;
+                return false;
+            }
+        }
+
+        public override ITextViewLine ContainingTextViewLine
+        {
+            get
+            {
+                // Problematic, though it may be, some callers like to check this during a layout, which means our
+                // snapshot isn't always reliable. If this method comes up in a crash, look through the callstack for someone dispatching
+                // a call without looking to see if the view is in the layout.
+                //
+                // The property to check is ITextView.InLayout
+
+                if (TryGetContainingTextViewLine(out var line))
+                {
+                    return line;
+                }
+                else
+                {
+                    try
+                    {
+                        throw new InvalidOperationException("Unable to get TextViewLine containing insertion point.");
+                    }
+                    catch (InvalidOperationException ex) when (LogException(ex))
+                    {
+                        // This catch block will never be reached because LogException always returns false.
+                        return null;
+                    }
+                }
+            }
+        }
+
+        private bool LogException(Exception ex)
+        {
+            // Ok, this is weird. What we are doing here is using guarded operations to log errors to ActivityLogs and Telemetry,
+            // but we really have to throw here because by the time you get to this state there's no graceful recovery.
+            _factory.GuardedOperations.HandleException(this, ex);
+            return false;
         }
 
         public double CaretWidth

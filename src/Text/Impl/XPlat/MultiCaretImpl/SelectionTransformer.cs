@@ -204,6 +204,15 @@ namespace Microsoft.VisualStudio.Text.MultiSelection.Implementation
             }
         }
 
+        /// <summary>
+        /// Determines whether this transformer should be considered as changed by the current operation. This is used
+        /// by normalization code which checks after all operations have completed to ensure that we don't leave a caret
+        /// or selection sitting in the middle of a collapsed region or multi-byte character. It starts as true so that we
+        /// check by default for all new transformers. We need this because the actual normalizing check does expensive formatting
+        /// which we'd like to avoid if possible for selections that were not changed by an operation.
+        /// </summary>
+        internal bool ModifiedByCurrentOperation { get; set; } = true;
+
         private static SnapshotPoint GetFirstNonWhiteSpaceCharacterInSpan(SnapshotSpan span)
         {
             var toReturn = span.Start;
@@ -226,7 +235,7 @@ namespace Microsoft.VisualStudio.Text.MultiSelection.Implementation
             return (endOfWord == endOfLine) && (endOfLine > currentPosition);
         }
 
-        private static bool IsSpanABlankLine(SnapshotSpan currentWord, ITextViewLine currentLine)
+        private static bool IsSpanABlankLine(SnapshotSpan currentWord, ITextSnapshotLine currentLine)
         {
             return currentWord.IsEmpty && currentWord == currentLine.Extent;
         }
@@ -236,65 +245,106 @@ namespace Microsoft.VisualStudio.Text.MultiSelection.Implementation
         /// </summary>
         /// <param name="previousWord">The current previous word.</param>
         /// <param name="line">The line containing previous word.</param>
-
-        private static bool ShouldContinuePastPreviousWord(SnapshotSpan previousWord, ITextViewLine line)
+        private static bool ShouldContinuePastPreviousWord(SnapshotSpan previousWord, ITextSnapshotLine line)
         {
-            return char.IsWhiteSpace(previousWord.Snapshot[previousWord.Start]) && !IsSpanABlankLine(previousWord, line);
+            // If the previous word is whitespace, and the previous word is not the start of the line
+            // then it should be included in the previous word.
+            return char.IsWhiteSpace(previousWord.Snapshot[previousWord.Start]) && previousWord.Start != line.Start;
+        }
+
+        private SnapshotPoint NextCharacter(SnapshotPoint current)
+        {
+            if (current.Snapshot.Length == current.Position)
+            {
+                return current;
+            }
+
+            return _broker.TextView.GetTextElementSpan(current).End;
+        }
+
+        private SnapshotPoint PreviousCharacter(SnapshotPoint current)
+        {
+            if (current.Position == 0)
+            {
+                return current;
+            }
+
+            return _broker.TextView.GetTextElementSpan(current - 1).Start;
         }
 
         private SnapshotSpan GetNextWord()
         {
             var currentPosition = _selection.InsertionPoint.Position;
             var currentWord = _broker.TextStructureNavigator.GetExtentOfWord(currentPosition);
-            var currentLine = _broker.TextView.GetTextViewLineContainingBufferPosition(currentPosition);
+            var currentLine = currentPosition.GetContainingLine();
 
             if (currentWord.Span.End < _currentSnapshot.Length)
             {
-                // If the current point is at the end of the line, look for the next word on the next line
-                if (_selection.InsertionPoint.Position == currentLine.End)
-                {
-                    var startOfNextLine = currentLine.EndIncludingLineBreak;
-                    var nextLine = _broker.TextView.GetTextViewLineContainingBufferPosition(startOfNextLine);
-                    var wordOnNextLine = _broker.TextStructureNavigator.GetExtentOfWord(startOfNextLine);
+                // Get the current caret position
+                int startPosition = currentPosition.Position;
+                int endOfLine = currentLine.End.Position;
 
-                    if (wordOnNextLine.IsSignificant)
+                if (startPosition >= endOfLine)
+                {
+                    // Move the caret to the next line since it is at the end of the current line
+                    currentPosition = currentLine.EndIncludingLineBreak;
+                    currentLine = currentPosition.GetContainingLine();
+                    endOfLine = currentLine.End.Position;
+
+                    // Move past whitespace on the next line
+                    while (currentPosition.Position < endOfLine && char.IsWhiteSpace(currentPosition.Snapshot[currentPosition.Position]))
                     {
-                        return wordOnNextLine.Span;
+                        currentPosition = NextCharacter(currentPosition);
                     }
-                    else if (wordOnNextLine.Span.End >= nextLine.End)
+
+                    return new SnapshotSpan(CurrentSnapshot, currentPosition.Position, 0);
+                }
+
+                currentPosition = NextCharacter(currentPosition);
+
+                // If we are at the end of the line, stop looking for the next word - we want the caret to
+                // stop at the end of each line.
+                if (currentPosition >= endOfLine)
+                {
+                    return new SnapshotSpan(CurrentSnapshot, currentPosition.Position, 0);
+                }
+
+                // Skip past whitespace.
+                while (currentPosition < endOfLine && char.IsWhiteSpace(currentPosition.Snapshot[currentPosition.Position]))
+                {
+                    currentPosition = NextCharacter(currentPosition);
+                }
+
+                // If the position is still not at the end of the line get the current
+                // word.
+                if (currentPosition < endOfLine)
+                {
+                    currentWord = _broker.TextStructureNavigator.GetExtentOfWord(currentPosition);
+
+                    if (currentWord.Span.Start < currentPosition)
                     {
-                        return new SnapshotSpan(nextLine.End, nextLine.End);
+                        // If the current word starts before the current position, move to the end of the 
+                        // current word.
+                        currentPosition = currentWord.Span.End;
                     }
 
-                    // Simulate continuing a search on the next line recursively by just updating our starting point and falling through.
-                    currentPosition = startOfNextLine;
-                    currentWord = wordOnNextLine;
-                    currentLine = nextLine;
-                }
+                    bool hitWhitespace = false;
+                    // Skip past whitespace at the end of the word.
+                    while (currentPosition < endOfLine && char.IsWhiteSpace(currentPosition.Snapshot[currentPosition.Position]))
+                    {
+                        hitWhitespace = true;
+                        currentPosition = NextCharacter(currentPosition);
+                    }
 
-                // By default, VS stops at line breaks when determing word
-                // boundaries.
-                if (ShouldStopAtEndOfLine(currentWord.Span.End, currentLine.End, currentPosition) || IsSpanABlankLine(currentWord.Span, currentLine))
+                    return hitWhitespace ? new SnapshotSpan(CurrentSnapshot, currentPosition, 0) : _broker.TextStructureNavigator.GetExtentOfWord(currentPosition).Span;
+                }
+                else if (currentPosition == endOfLine)
                 {
-                    return new SnapshotSpan(currentWord.Span.End, currentWord.Span.End);
+                    // Just wrap one line be done
+                    currentPosition = NextCharacter(currentPosition);
                 }
 
-                var nextWord = _broker.TextStructureNavigator.GetExtentOfWord(currentWord.Span.End);
-
-                if (!nextWord.IsSignificant)
-                {
-                    nextWord = _broker.TextStructureNavigator.GetExtentOfWord(nextWord.Span.End);
-                }
-
-                int start = nextWord.Span.Start;
-                int end = nextWord.Span.End;
-
-                // The text structure navigator can return a word with whitespace attached at the end.
-                // Handle that case here.
-                start = Math.Max(start, currentWord.Span.End);
-                int length = end - start;
-
-                return new SnapshotSpan(_currentSnapshot, start, length);
+                return new SnapshotSpan(currentPosition, currentPosition);
             }
 
             return new SnapshotSpan(_currentSnapshot, _currentSnapshot.Length, 0);
@@ -304,45 +354,75 @@ namespace Microsoft.VisualStudio.Text.MultiSelection.Implementation
         {
             var position = _selection.InsertionPoint.Position;
             var word = _broker.TextStructureNavigator.GetExtentOfWord(position);
-            var line = _broker.TextView.GetTextViewLineContainingBufferPosition(position);
+            var line = position.GetContainingLine();
 
-            if (word.Span.Start > 0)
+            if (word.Span.Start == 0)
             {
-                // By default, VS stops at line breaks when determing word
-                // boundaries.
-                if ((word.Span.Start == line.Start) &&
-                    (position != line.Start || _selection.InsertionPoint.IsInVirtualSpace))
+                // We can't move back anymore, just give the start of the document as an empty span.
+                return new SnapshotSpan(_currentSnapshot, 0, 0);
+            }
+
+            if (word.Span.Start == line.Start && !_selection.InsertionPoint.IsInVirtualSpace)
+            {
+                // We're starting at the beginning of the line, jump to the end of the previous line, then continute the algorithm as normal.
+                var lineNumber = line.LineNumber;
+                line = _broker.CurrentSnapshot.GetLineFromLineNumber(Math.Max(0, lineNumber - 1));
+                position = line.End;
+
+                // If the line is empty, just return
+                if (line.Extent.IsEmpty)
                 {
-                    return new SnapshotSpan(line.Start, line.Start);
+                    return line.Extent;
                 }
 
-                // If the point is not at the beginning of a word that is not whitespace, it is possible
-                // that the "current word" is also the word we wish to navigate to the beginning of.
-                if ((word.Span.Start != position) &&
-                    (!word.Span.IsEmpty))
-                {
-                    return word.Span;
-                }
-
-                // Ok, we have to start moving backwards through the document.
-                position = word.Span.Start - 1;
+                // Make sure we're not in the middle of a text element like a hidden region, a multi-byte char or something else weird.
+                position = _broker.TextView.GetTextElementSpan(position).Start;
                 word = _broker.TextStructureNavigator.GetExtentOfWord(position);
-                line = _broker.TextView.GetTextViewLineContainingBufferPosition(position);
+            }
 
-                if (word.Span.Start > 0)
-                {
-                    if (ShouldContinuePastPreviousWord(word.Span, line))
-                    {
-                        // Move back one more time
-                        position = word.Span.Start - 1;
-                        word = _broker.TextStructureNavigator.GetExtentOfWord(position);
-                    }
-                }
+            // By default, VS stops at line breaks when determing word
+            // boundaries.
+            if ((word.Span.Start == line.Start) &&
+                (position != line.Start || _selection.InsertionPoint.IsInVirtualSpace))
+            {
+                return new SnapshotSpan(line.Start, line.Start);
+            }
 
+            // If the point is not at the beginning of a word that is not whitespace, it is possible
+            // that the "current word" is also the word we wish to navigate to the beginning of.
+            if ((word.Span.Start != position) && (!word.Span.IsEmpty) && word.IsSignificant)
+            {
                 return word.Span;
             }
 
-            return new SnapshotSpan(_currentSnapshot, 0, 0);
+            // Ok, we have to start moving backwards through the document.
+            do
+            {
+                position = PreviousCharacter(position);
+
+                // Skip past whitespace at the start of the word.
+            } while (position > line.Start && char.IsWhiteSpace(position.GetChar()));
+
+            // Again, VS stops at line breaks when determining word boundaries
+            if (position <= line.Start)
+            {
+                return new SnapshotSpan(position, position);
+            }
+
+            word = _broker.TextStructureNavigator.GetExtentOfWord(position);
+            line = position.GetContainingLine();
+
+            if (word.Span.Start > 0)
+            {
+                if (ShouldContinuePastPreviousWord(word.Span, line))
+                {
+                    // Move back one more time
+                    position = PreviousCharacter(position);
+                    word = _broker.TextStructureNavigator.GetExtentOfWord(position);
+                }
+            }
+
+            return word.Span;
         }
 
         public void MoveTo(VirtualSnapshotPoint point, bool select, PositionAffinity insertionPointAffinity)
@@ -354,13 +434,52 @@ namespace Microsoft.VisualStudio.Text.MultiSelection.Implementation
                 || (!select && _selection.AnchorPoint != point)
                 || _selection.InsertionPointAffinity != insertionPointAffinity)
             {
-                _selection = new Selection(point, select ? _selection.AnchorPoint : point, point, insertionPointAffinity);
+                var newSelection = new Selection(point, select ? _selection.AnchorPoint : point, point, insertionPointAffinity);
+
+                // Using the ternary here to shortcut out if the snapshots are the same. There's a similar check in the
+                // MapSelectionToCurrentSnapshot method to avoid doing unneeded work, but even spinning up the method call can be expensive.
+                _selection = (newSelection.InsertionPoint.Position.Snapshot == this.CurrentSnapshot)
+                    ? newSelection
+                    : MapSelectionToCurrentSnapshot(newSelection);
+
                 _broker.QueueCaretUpdatedEvent(this);
             }
         }
 
+        private bool LogException(Exception ex)
+        {
+            _broker.Factory.GuardedOperations.HandleException(this, ex);
+            return true;
+        }
+
+        private Selection MapSelectionToCurrentSnapshot(Selection newSelection)
+        {
+            if (newSelection.InsertionPoint.Position.Snapshot != this.CurrentSnapshot)
+            {
+                try
+                {
+                    throw new InvalidOperationException("Selection does not match the current snapshot.");
+                }
+                catch (InvalidOperationException ex) when (LogException(ex))
+                {
+                    // This will catch every time, since LogException always returns true.
+
+                    // We really should throw here every time, but to limit the number of crashes we see from this immediately
+                    // we are doing a best effort here, and only throwing when we can't map forward. Additionally, we're logging
+                    // faults with guarded operations in order to identify bad actors so we can fix them before converting this
+                    // to the 'throw always' route.
+
+                    // This can still throw if mapping doesn't happen, but it should be significantly less often than currently.
+                    newSelection = newSelection.MapToSnapshot(this.CurrentSnapshot, _broker.TextView);
+                }
+            }
+
+            return newSelection;
+        }
+
         public void MoveTo(VirtualSnapshotPoint anchorPoint, VirtualSnapshotPoint activePoint, VirtualSnapshotPoint insertionPoint, PositionAffinity insertionPointAffinity)
         {
+            // See other overload of MoveTo for interesting comments.
             this.CheckIsValid();
 
             if (_selection.AnchorPoint != anchorPoint
@@ -368,7 +487,10 @@ namespace Microsoft.VisualStudio.Text.MultiSelection.Implementation
                 || _selection.InsertionPoint != insertionPoint
                 || _selection.InsertionPointAffinity != insertionPointAffinity)
             {
-                _selection = new Selection(insertionPoint, anchorPoint, activePoint, insertionPointAffinity);
+                var newSelection = new Selection(insertionPoint, anchorPoint, activePoint, insertionPointAffinity);
+                _selection = (newSelection.InsertionPoint.Position.Snapshot == this.CurrentSnapshot)
+                    ? newSelection
+                    : MapSelectionToCurrentSnapshot(newSelection);
                 _broker.QueueCaretUpdatedEvent(this);
             }
         }
@@ -468,7 +590,6 @@ namespace Microsoft.VisualStudio.Text.MultiSelection.Implementation
                     break;
             }
         }
-
 
         #region Predefined Caret Manipulations
         public void ClearSelection()
@@ -695,6 +816,13 @@ namespace Microsoft.VisualStudio.Text.MultiSelection.Implementation
         private void SelectCurrentWord()
         {
             var extent = _broker.TextStructureNavigator.GetExtentOfWord(this.Selection.InsertionPoint.Position);
+
+            // Select word left of caret if the token to the right is just whitespace.
+            if (!extent.IsSignificant && (extent.Span.Start.Position > 0))
+            {
+                extent = _broker.TextStructureNavigator.GetExtentOfWord(this.Selection.InsertionPoint.Position - 1);
+            }
+
             var anchor = new VirtualSnapshotPoint(extent.Span.Start);
             var active = new VirtualSnapshotPoint(extent.Span.End);
 

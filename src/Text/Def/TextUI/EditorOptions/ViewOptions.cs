@@ -536,6 +536,12 @@ namespace Microsoft.VisualStudio.Text.Editor
         public const string ErrorMarginWidthOptionName = "OverviewMargin/ErrorMarginWidth";
         public readonly static EditorOptionKey<double> ErrorMarginWidthOptionId = new EditorOptionKey<double>(ErrorMarginWidthOptionName);
 
+        /// <summary>
+        /// Determines whether to have a file health indicator.
+        /// </summary>
+        public static readonly EditorOptionKey<bool> EnableFileHealthIndicatorOptionId = new EditorOptionKey<bool>(EnableFileHealthIndicatorOptionName);
+        public const string EnableFileHealthIndicatorOptionName = "TextViewHost/FileHealthIndicator";
+
         #endregion
     }
 
@@ -658,7 +664,7 @@ namespace Microsoft.VisualStudio.Text.Editor
         /// <summary>
         /// Gets the default value, which is <c>WordWrapStyles.None</c>.
         /// </summary>
-        public override WordWrapStyles Default { get { return WordWrapStyles.None; } }
+        public override WordWrapStyles Default { get { return WordWrapStyles.AutoIndent; } }
 
         /// <summary>
         /// Gets the default text view host value.
@@ -893,7 +899,7 @@ namespace Microsoft.VisualStudio.Text.Editor
         /// <summary>
         /// Gets the default value, which is <c>false</c>.
         /// </summary>
-        public override bool Default { get { return false; } }
+        public override bool Default { get { return true; } }
 
         /// <summary>
         /// Gets the default text view host value.
@@ -1001,5 +1007,23 @@ namespace Microsoft.VisualStudio.Text.Editor
         /// Gets the editor option key.
         /// </summary>
         public override EditorOptionKey<double> Key => DefaultTextViewOptions.CaretWidthId;
+    }
+
+    /// <summary>
+    /// Defines the option to enable the File Health Indicator.
+    /// </summary>
+    [Export(typeof(EditorOptionDefinition))]
+    [Name(DefaultTextViewHostOptions.EnableFileHealthIndicatorOptionName)]
+    public sealed class FileHealthIndicatorEnabled : ViewOptionDefinition<bool>
+    {
+        /// <summary>
+        /// Gets the default value, which is <c>true</c>.
+        /// </summary>
+        public override bool Default { get { return true; } }
+
+        /// <summary>
+        /// Gets the default text view host value.
+        /// </summary>
+        public override EditorOptionKey<bool> Key { get { return DefaultTextViewHostOptions.EnableFileHealthIndicatorOptionId; } }
     }
 }

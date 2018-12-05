@@ -61,12 +61,15 @@ namespace Microsoft.VisualStudio.Text.Utilities
         /// Changing this will force the event to send to Watson. Be careful because it can have big perf impact.
         /// If unchanged, it will be set according to the default sample rate.
         /// </param>
+        /// <param name="correlations">TelemetryEventCorrelations which help correlate this fault to the scope it was executing within</param>
         void PostFault(
             string eventName,
             string description,
             Exception exceptionObject,
-            string additionalErrorInfo,
-            bool? isIncludedInWatsonSample);
+            string additionalErrorInfo = null,
+            bool? isIncludedInWatsonSample = null,
+            object[] correlations = null
+            );
 
         /// <summary>
         /// Adjust the counter associated with <paramref name="key"/> and <paramref name="name"/> by <paramref name="delta"/>.
@@ -85,5 +88,9 @@ namespace Microsoft.VisualStudio.Text.Utilities
         /// <para>The counters are cleared as a side-effect of this call.</para>
         /// </remarks>
         void PostCounters();
+
+        object CreateTelemetryOperationEventScope(string eventName, TelemetrySeverity severity, object[] correlations, IDictionary<string, object> startingProperties);
+        object GetCorrelationFromTelemetryScope(object telemetryScope);
+         void EndTelemetryScope(object telemetryScope, TelemetryResult result, string summary = null);
     }
 }

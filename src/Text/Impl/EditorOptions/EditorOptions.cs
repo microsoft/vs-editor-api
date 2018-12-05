@@ -11,28 +11,30 @@ namespace Microsoft.VisualStudio.Text.EditorOptions.Implementation
     using System.Collections.Generic;
     using System.Collections.Specialized;
     using System.Globalization;
-    using System.Linq;
     using Microsoft.VisualStudio.Text.Editor;
     using Microsoft.VisualStudio.Text.Utilities;
     using Microsoft.VisualStudio.Utilities;
 
     internal class EditorOptions : IEditorOptions
     {
-        IPropertyOwner Scope { get; set; }
+        internal IPropertyOwner Scope { get; private set; }
 
         HybridDictionary OptionsSetLocally { get; set; }
 
         private EditorOptionsFactoryService _factory;
+        internal readonly bool AllowsLateBinding;
 
         FrugalList<WeakReference> DerivedEditorOptions = new FrugalList<WeakReference>();
 
         internal EditorOptions(EditorOptions parent,
                                IPropertyOwner scope,
-                               EditorOptionsFactoryService factory)
+                               EditorOptionsFactoryService factory,
+                               bool allowsLateBinding = false)
         {
             _parent = parent;
             _factory = factory;
             this.Scope = scope;
+            this.AllowsLateBinding = allowsLateBinding;
 
             this.OptionsSetLocally = new HybridDictionary();
 
@@ -249,6 +251,11 @@ namespace Microsoft.VisualStudio.Text.EditorOptions.Implementation
         public event EventHandler<EditorOptionChangedEventArgs> OptionChanged;
 
         #endregion
+
+        internal void SetScope(IPropertyOwner newScope)
+        {
+            this.Scope = newScope;
+        }
 
         #region Private Helpers
 

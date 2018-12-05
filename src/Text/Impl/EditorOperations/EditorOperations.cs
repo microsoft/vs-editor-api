@@ -55,7 +55,7 @@ namespace Microsoft.VisualStudio.Text.Operations.Implementation
             ClearVirtualSpace
         };
 
-#region Private Members
+        #region Private Members
 
         ITextView _textView;
         EditorOperationsFactoryService _factory;
@@ -80,7 +80,7 @@ namespace Microsoft.VisualStudio.Text.Operations.Implementation
         /// </summary>
         private const string _boxSelectionCutCopyTag = "MSDEVColumnSelect";
 
-#endregion // Private Members
+        #endregion // Private Members
 
         /// <summary>
         /// Constructs an <see cref="EditorOperations"/> bound to a given <see cref="ITextView"/>.
@@ -121,7 +121,7 @@ namespace Microsoft.VisualStudio.Text.Operations.Implementation
         }
 
 
-#region IEditorOperations2 Members
+        #region IEditorOperations2 Members
 
         public bool MoveSelectedLinesUp()
         {
@@ -153,7 +153,7 @@ namespace Microsoft.VisualStudio.Text.Operations.Implementation
                     endViewLine = _textView.GetTextViewLineContainingBufferPosition(_textView.Selection.End.Position - 1);
                 }
 
-#region Initial Asserts
+                #region Initial Asserts
 
                 Debug.Assert(_textView.Selection.Start.Position.Snapshot == _textView.TextSnapshot, "Selection is out of sync with view.");
 
@@ -161,7 +161,7 @@ namespace Microsoft.VisualStudio.Text.Operations.Implementation
 
                 Debug.Assert(_textView.TextSnapshot == snapshot, "Text view lines are out of sync with the view");
 
-#endregion
+                #endregion
 
                 // check if we are at the top of the file, or trying to move a blank line
                 if (startLine.LineNumber < 1 || start == end)
@@ -363,7 +363,7 @@ namespace Microsoft.VisualStudio.Text.Operations.Implementation
                     endViewLine = _textView.GetTextViewLineContainingBufferPosition(_textView.Selection.End.Position - 1);
                 }
 
-#region Initial Asserts
+                #region Initial Asserts
 
                 Debug.Assert(_textView.Selection.Start.Position.Snapshot == _textView.TextSnapshot, "Selection is out of sync with view.");
 
@@ -371,7 +371,7 @@ namespace Microsoft.VisualStudio.Text.Operations.Implementation
 
                 Debug.Assert(_textView.TextSnapshot == snapshot, "Text view lines are out of sync with the view");
 
-#endregion
+                #endregion
 
                 // check if we are at the end of the file
                 if ((endLine.LineNumber + 1) >= snapshot.LineCount)
@@ -568,10 +568,10 @@ namespace Microsoft.VisualStudio.Text.Operations.Implementation
             return line;
         }
 
-#endregion
+        #endregion
 
 
-#region IEditorOperations Members
+        #region IEditorOperations Members
 
         public void SelectAndMoveCaret(VirtualSnapshotPoint anchorPoint, VirtualSnapshotPoint activePoint)
         {
@@ -1613,45 +1613,261 @@ namespace Microsoft.VisualStudio.Text.Operations.Implementation
         /// </summary>
         public bool Indent()
         {
-            bool insertTabs = _textView.Selection.Mode == TextSelectionMode.Box || !IndentOperationShouldBeMultiLine;
+            if (!IndentWillCreateEdit())
+            {
+                // Indent box selection in virtual whitespace, if any.
+                if (_multiSelectionBroker.IsBoxSelection)
+                {
+                    int indentSize = _editorOptions.GetIndentSize();
+                    VirtualSnapshotPoint? anchorPoint = CalculateBoxIndentForSelectionPoint(_multiSelectionBroker.BoxSelection.AnchorPoint, indentSize);
+                    VirtualSnapshotPoint? activePoint = CalculateBoxIndentForSelectionPoint(_multiSelectionBroker.BoxSelection.ActivePoint, indentSize);
+                    FixUpSelectionAfterBoxOperation(anchorPoint, activePoint);
+                }
+
+                return true;
+            }
 
             Func<bool> action = () =>
             {
-                if (insertTabs)
+                using (_multiSelectionBroker.BeginBatchOperation())
                 {
-                    return this.EditHelper(edit =>
+                    if (_multiSelectionBroker.IsBoxSelection)
                     {
-                        int tabSize = _editorOptions.GetTabSize();
-                        int indentSize = _editorOptions.GetIndentSize();
-                        bool convertTabsToSpaces = _editorOptions.IsConvertTabsToSpacesEnabled();
-                        bool boxSelection = _textView.Selection.Mode == TextSelectionMode.Box &&
-                                            _textView.Selection.Start != _textView.Selection.End;
-
-                        // We'll need to update the start/end points if they are in virtual space, since they won't be tracking
-                        // through a text change.
-                        VirtualSnapshotPoint? anchorPoint = (boxSelection) ? CalculateBoxIndentForSelectionPoint(_textView.Selection.AnchorPoint, indentSize) : null;
-                        VirtualSnapshotPoint? activePoint = (boxSelection) ? CalculateBoxIndentForSelectionPoint(_textView.Selection.ActivePoint, indentSize) : null;
-
-                        // Insert an indent for each portion of the selection (with an empty selection, there will only be a single
-                        // span).
-                        foreach (VirtualSnapshotSpan span in _textView.Selection.VirtualSelectedSpans)
+                        if (!TryIndentBoxSelection())
                         {
-                            if (!InsertIndentForSpan(span, edit, exactlyOneIndentLevel: false))
-                                return false;
+                            return false;
                         }
+                    }
+                    else
+                    {
+                        if (!TryIndentAndFixupStreamSelections())
+                        {
+                            return false;
+                        }
+                    }
 
-                        FixUpSelectionAfterBoxOperation(anchorPoint, activePoint);
+                    _multiSelectionBroker.TryEnsureVisible(_multiSelectionBroker.PrimarySelection, EnsureSpanVisibleOptions.MinimumScroll);
 
-                        return true;
-                    });
-                }
-                else
-                {
-                    return PerformIndentActionOnEachBufferLine(InsertSingleIndentAtPoint);
+                    return true;
                 }
             };
 
-            return ExecuteAction(Strings.InsertTab, action, (_textView.Selection.IsEmpty) ? SelectionUpdate.ClearVirtualSpace : SelectionUpdate.Ignore, ensureVisible: insertTabs);
+            return ExecuteAction(Strings.InsertTab, action, SelectionUpdate.Ignore, ensureVisible: false);
+        }
+
+        private bool IndentWillCreateEdit()
+        {
+            var allSelections = _multiSelectionBroker.AllSelections;
+            if (_multiSelectionBroker.IsBoxSelection)
+            {
+                // Box selection can only create an edit if at least one non-virtual subspan is of non-zero length.
+                for (int i = 0; i < allSelections.Count; i++)
+                {
+                    var selection = allSelections[i];
+                    if (!selection.Start.IsInVirtualSpace)
+                    {
+                        return true;
+                    }
+                }
+                return false;
+            }
+
+            for (int i = 0; i < allSelections.Count; i++)
+            {
+                var selection = allSelections[i];
+
+                // Carets (zero-width selections) always produce an edit.
+                if (selection.IsEmpty)
+                {
+                    return true;
+                }
+                else
+                {
+                    var startLine = selection.Start.Position.GetContainingLine();
+                    var endLine = selection.End.Position.GetContainingLine();
+
+                    // Selections that start and end on the same line create an edit if and only if the line is non-zero in length.
+                    if (startLine.LineNumber == endLine.LineNumber)
+                    {
+                        return (startLine.Length > 0);
+                    }
+                    else
+                    {
+                        // Only edits for multiline selections if one of the contained lines is
+                        // non-zero in length because empty lines have nothing to indent.
+                        for (int j = startLine.LineNumber; j < endLine.LineNumber; j++)
+                        {
+                            if (startLine.Snapshot.GetLineFromLineNumber(j).Length > 0)
+                            {
+                                return true;
+                            }
+                        }
+                    }
+                }
+            }
+
+            return false;
+        }
+
+        private bool TryIndentAndFixupStreamSelections()
+        {
+            var newSelections = new FrugalList<(Selection old, Selection newSel)>();
+            if (!EditHelper((edit) => IndentStreamSelections(edit, newSelections)))
+            {
+                return false;
+            }
+
+            _multiSelectionBroker.PerformActionOnAllSelections(transformer =>
+            {
+                var selection = transformer.Selection;
+                if (selection.IsEmpty && selection.Extent.IsInVirtualSpace)
+                {
+                    // Remove all virtual space from selection.
+                    transformer.MoveTo(
+                        new VirtualSnapshotPoint(selection.AnchorPoint.Position),
+                        new VirtualSnapshotPoint(selection.ActivePoint.Position),
+                        new VirtualSnapshotPoint(selection.InsertionPoint.Position),
+                        PositionAffinity.Successor);
+                }
+            });
+
+            // Apply selection changes after the edit so we can apply the desired point tracking mode.
+            // Preserves pre-multicaret behavior by keeping the left edge of selections unmodified
+            // when the user presses 'tab' using negative tracking.
+            TransformSelections(newSelections);
+
+            return true;
+        }
+
+        private void TransformSelections(FrugalList<(Selection old, Selection newSel)> newSelections)
+        {
+            foreach (var (oldSelection, newSelection) in newSelections)
+            {
+                var start = newSelection.Start.TranslateTo(_multiSelectionBroker.CurrentSnapshot, PointTrackingMode.Negative);
+                var end = newSelection.End.TranslateTo(_multiSelectionBroker.CurrentSnapshot, PointTrackingMode.Positive);
+                var insertion = newSelection.InsertionPoint.TranslateTo(
+                    _multiSelectionBroker.CurrentSnapshot,
+                    newSelection.IsReversed ? PointTrackingMode.Negative : PointTrackingMode.Positive);
+
+                _multiSelectionBroker.TryPerformActionOnSelection(
+                    oldSelection,
+                    transformer => transformer.MoveTo(
+                        newSelection.IsReversed ? end : start,
+                        newSelection.IsReversed ? start : end,
+                        insertion,
+                        newSelection.InsertionPointAffinity),
+                    out _);
+            }
+        }
+
+        private bool IndentStreamSelections(ITextEdit edit, IList<(Selection old, Selection newSel)> newSelections)
+        {
+            // Tracks whether or not an edit succeeded. Edits can fail if the caret is in a readonly region.
+            bool succeeded = true;
+
+            // Compound edits perform multiple actions with reference to the original snapshot. This tracks
+            // the column adjustment of the previous caret so that we can align the subsequent caret with the
+            // correct tabstop when there are multiple carets on the same line.
+            var columnOffset = default(int?);
+
+            // There is a particular edge case where there can be multiple multi-line selections on the same line.
+            // Naively indenting one tabstop per selection would cause this line to be indented twice so we must
+            // keep track of which line the previous multi-line selection ended on.
+            int? previousSelectionEndLineNumber = 0;
+            bool previousSelectionWasMultiline = false;
+
+            _multiSelectionBroker.PerformActionOnAllSelections((transformer) =>
+            {
+                int? newSelectionStartLineNumber = transformer.Selection.Start.Position.GetContainingLine().LineNumber;
+                int? newSelectionEndLineNumber = transformer.Selection.End.Position.GetContainingLine().LineNumber;
+
+                // Reset the column offset if we've transitioned to the next line.
+                if (newSelectionStartLineNumber != previousSelectionEndLineNumber)
+                {
+                    columnOffset = null;
+                }
+
+                previousSelectionWasMultiline = IndentOperationShouldBeMultiLine(transformer.Selection);
+
+                if (IndentOperationShouldBeMultiLine(transformer.Selection))
+                {
+                    // Don't indent this line if we are the second multi-line selection intersecting this line
+                    // or else we'll cause a double-indent.
+                    bool skipFirstLine = (columnOffset != null) && previousSelectionEndLineNumber == newSelectionStartLineNumber && previousSelectionWasMultiline;
+
+                    // In case there are multiple carets on a single line, we have to remember the column
+                    // to ensure that the subsequent carets on the same line receive adequate indentation.
+                    columnOffset = PerformIndentActionOnEachBufferLine(
+                        edit,
+                        newSelections,
+                        skipFirstLine ? MultiLineSelectionWithoutFirstLine(transformer.Selection) : transformer.Selection,
+                        InsertSingleIndentAtPoint);
+                    if (columnOffset == null)
+                    {
+                        succeeded = false;
+                        return;
+                    }
+                }
+                else
+                {
+                    // In case there are multiple carets on a single line, we have to remember the column
+                    // to ensure that the subsequent carets on the same line receive adequate indentation.
+                    columnOffset = InsertIndentForSpan(transformer.Selection.Extent, edit, exactlyOneIndentLevel: false, false, columnOffset: columnOffset ?? 0);
+                    if (columnOffset == null)
+                    {
+                        succeeded = false;
+                        return;
+                    }
+                }
+
+                previousSelectionEndLineNumber = newSelectionEndLineNumber;
+            });
+
+            return succeeded;
+        }
+
+        private static Selection MultiLineSelectionWithoutFirstLine(Selection selection)
+        {
+            var snapshot = selection.Start.Position.Snapshot;
+            var firstLineNumber = selection.Start.Position.GetContainingLine().LineNumber;
+
+            // Requires the selection to be multiple lines.
+            Debug.Assert(firstLineNumber <= snapshot.LineCount);
+
+            var start = new VirtualSnapshotPoint(snapshot.GetLineFromLineNumber(firstLineNumber + 1).Start);
+
+            return new Selection(
+                new VirtualSnapshotSpan(start, selection.End),
+                isReversed: selection.IsReversed);
+        }
+
+        private bool TryIndentBoxSelection()
+        {
+            return this.EditHelper((edit) =>
+            {
+                int tabSize = _editorOptions.GetTabSize();
+                int indentSize = _editorOptions.GetIndentSize();
+                bool convertTabsToSpaces = _editorOptions.IsConvertTabsToSpacesEnabled();
+
+                // We'll need to update the start/end points if they are in virtual space, since they won't be tracking
+                // through a text change.
+                VirtualSnapshotPoint? anchorPoint = CalculateBoxIndentForSelectionPoint(_multiSelectionBroker.BoxSelection.AnchorPoint, indentSize);
+                VirtualSnapshotPoint? activePoint = CalculateBoxIndentForSelectionPoint(_multiSelectionBroker.BoxSelection.ActivePoint, indentSize);
+
+                // Insert an indent for each portion of the selection (with an empty selection, there will only be a single
+                // span).
+                foreach (VirtualSnapshotSpan span in _textView.Selection.VirtualSelectedSpans)
+                {
+                    if (InsertIndentForSpan(span, edit, exactlyOneIndentLevel: false) == null)
+                    {
+                        return false;
+                    }
+                }
+
+                FixUpSelectionAfterBoxOperation(anchorPoint, activePoint);
+
+                return true;
+            });
         }
 
         /// <summary>
@@ -1661,58 +1877,158 @@ namespace Microsoft.VisualStudio.Text.Operations.Implementation
         /// </summary>
         public bool Unindent()
         {
-            bool boxSelection = _textView.Selection.Mode == TextSelectionMode.Box &&
-                                _textView.Selection.Start != _textView.Selection.End;
-
-            Func<bool> action = null;
-
-            if (_textView.Caret.InVirtualSpace && _textView.Selection.IsEmpty)
+            if (UnindentWillCreateEdit())
             {
-                this.MoveCaretToPreviousIndentStopInVirtualSpace();
+                Func<bool> action = () =>
+                {
+                    using (_multiSelectionBroker.BeginBatchOperation())
+                    {
+                        var succeeded = this.EditHelper(edit =>
+                        {
+                            if (_multiSelectionBroker.IsBoxSelection)
+                            {
+                                return UnindentBoxSelection(edit);
+                            }
+                            else
+                            {
+                                return UnindentStreamSelections(edit);
+                            }
+                        });
+
+                        _multiSelectionBroker.TryEnsureVisible(_multiSelectionBroker.PrimarySelection, EnsureSpanVisibleOptions.MinimumScroll);
+
+                        return succeeded;
+                    }
+                };
+
+                return ExecuteAction(Strings.RemovePreviousTab, action, SelectionUpdate.Ignore, ensureVisible: true);
+            }
+            else
+            {
+                using (_multiSelectionBroker.BeginBatchOperation())
+                {
+                    if (_multiSelectionBroker.IsBoxSelection)
+                    {
+                        int columnsToRemove = DetermineMaxBoxUnindent();
+
+                        // We'll need to update the start/end points if they are in virtual space, since they won't be tracking
+                        // through a text change.
+                        VirtualSnapshotPoint? anchorPoint = CalculateBoxUnindentForSelectionPoint(_textView.Selection.AnchorPoint, columnsToRemove);
+                        VirtualSnapshotPoint? activePoint = CalculateBoxUnindentForSelectionPoint(_textView.Selection.ActivePoint, columnsToRemove);
+
+                        FixUpSelectionAfterBoxOperation(anchorPoint, activePoint);
+                    }
+                    else
+                    {
+                        _multiSelectionBroker.PerformActionOnAllSelections(transformer =>
+                        {
+                            VirtualSnapshotPoint point = GetPreviousIndentStopInVirtualSpace(transformer.Selection.Start);
+                            transformer.MoveTo(point, select: false, PositionAffinity.Successor);
+                        });
+                    }
+                }
+
+                _multiSelectionBroker.TryEnsureVisible(_multiSelectionBroker.PrimarySelection, EnsureSpanVisibleOptions.MinimumScroll);
 
                 return true;
             }
-            else if (!boxSelection && IndentOperationShouldBeMultiLine)
-            {
-                action = () => PerformIndentActionOnEachBufferLine(RemoveIndentAtPoint);
-            }
-            else if (!boxSelection)
-            {
-                action = () => EditHelper(edit => RemoveIndentAtPoint(_textView.Selection.Start.Position, edit, failOnNonWhitespaceCharacter: false));
-            }
-            else // Box selection
-            {
-                int columnsToRemove = DetermineMaxBoxUnindent();
+        }
 
-                action = () => EditHelper(edit =>
+        private bool UnindentWillCreateEdit()
+        {
+            var allSelections = _multiSelectionBroker.AllSelections;
+            if (_multiSelectionBroker.IsBoxSelection)
+            {
+                // Box selection can only create an edit if at least one non-virtual subspan is of non-zero length.
+                for (int i = 0; i < allSelections.Count; i++)
                 {
-                    // We'll need to update the start/end points if they are in virtual space, since they won't be tracking
-                    // through a text change.
-                    VirtualSnapshotPoint? anchorPoint = CalculateBoxUnindentForSelectionPoint(_textView.Selection.AnchorPoint, columnsToRemove);
-                    VirtualSnapshotPoint? activePoint = CalculateBoxUnindentForSelectionPoint(_textView.Selection.ActivePoint, columnsToRemove);
-
-                    // Remove an indent for each portion of the selection (with an empty selection, there will only be a single
-                    // span).
-                    foreach (VirtualSnapshotSpan span in _textView.Selection.VirtualSelectedSpans)
+                    var selection = allSelections[i];
+                    if (!selection.Start.IsInVirtualSpace)
                     {
-                        if (!RemoveIndentAtPoint(span.Start.Position, edit, failOnNonWhitespaceCharacter: false, columnsToRemove: columnsToRemove))
-                            return false;
+                        return true;
                     }
-
-                    FixUpSelectionAfterBoxOperation(anchorPoint, activePoint);
-
-                    return true;
-
-                });
+                }
+            }
+            else
+            {
+                // Stream selection can only create an edit if at least one selection has an end-point in non-virtual space.
+                for (int i = 0; i < allSelections.Count; i++)
+                {
+                    var selection = allSelections[i];
+                    if (!selection.Start.IsInVirtualSpace || !selection.End.IsInVirtualSpace)
+                    {
+                        return true;
+                    }
+                }
             }
 
-            return ExecuteAction(Strings.RemovePreviousTab, action, SelectionUpdate.Ignore, ensureVisible: true);
+            return false;
+        }
+
+        private bool UnindentStreamSelections(ITextEdit edit)
+        {
+            bool succeeded = true;
+            _multiSelectionBroker.PerformActionOnAllSelections(transformer =>
+            {
+                Selection selection = transformer.Selection;
+
+                if (selection.IsEmpty && selection.InsertionPoint.IsInVirtualSpace)
+                {
+                    VirtualSnapshotPoint point = GetPreviousIndentStopInVirtualSpace(selection.InsertionPoint);
+                    transformer.MoveTo(point, select: false, PositionAffinity.Successor);
+                }
+                else if (IndentOperationShouldBeMultiLine(selection))
+                {
+                    var selections = new List<(Selection oldSelection, Selection newSelection)>();
+                    if (PerformIndentActionOnEachBufferLine(edit, selections, selection, RemoveIndentAtPoint) == null)
+                    {
+                        succeeded = false;
+                        return;
+                    }
+                }
+                else
+                {
+                    if (!RemoveIndentAtPoint(selection.Start.Position, edit, failOnNonWhitespaceCharacter: false))
+                    {
+                        succeeded = false;
+                        return;
+                    }
+                }
+            });
+
+            return succeeded;
+        }
+
+        private bool UnindentBoxSelection(ITextEdit edit)
+        {
+            int columnsToRemove = DetermineMaxBoxUnindent();
+
+            // We'll need to update the start/end points if they are in virtual space, since they won't be tracking
+            // through a text change.
+            VirtualSnapshotPoint? anchorPoint = CalculateBoxUnindentForSelectionPoint(_textView.Selection.AnchorPoint, columnsToRemove);
+            VirtualSnapshotPoint? activePoint = CalculateBoxUnindentForSelectionPoint(_textView.Selection.ActivePoint, columnsToRemove);
+
+            // Remove an indent for each portion of the selection (with an empty selection, there will only be a single
+            // span).
+            foreach (VirtualSnapshotSpan span in _textView.Selection.VirtualSelectedSpans)
+            {
+                if (!RemoveIndentAtPoint(span.Start.Position, edit, failOnNonWhitespaceCharacter: false, columnsToRemove: columnsToRemove))
+                    return false;
+            }
+
+            FixUpSelectionAfterBoxOperation(anchorPoint, activePoint);
+
+            return true;
         }
 
         public bool IncreaseLineIndent()
         {
             Func<bool> action = () =>
             {
+                // NOTE: This method doesn't account for multiple multi-line selections indenting the same
+                // line, so using this method will double indent the line intersected by both selections.
+                // Not worth fixing at the moment because this isn't a mapped command. See Indent for an
+                // example of how this should work.
                 return PerformIndentActionOnEachBufferLine(InsertSingleIndentAtPoint);
             };
 
@@ -2973,9 +3289,9 @@ namespace Microsoft.VisualStudio.Text.Operations.Implementation
 #endif
         }
 
-#endregion // IEditorOperations Members
+        #endregion // IEditorOperations Members
 
-#region Virtual Space to Whitespace helpers
+        #region Virtual Space to Whitespace helpers
 
         public string GetWhitespaceForVirtualSpace(VirtualSnapshotPoint point)
         {
@@ -3064,9 +3380,9 @@ namespace Microsoft.VisualStudio.Text.Operations.Implementation
             return textToInsert;
         }
 
-#endregion
+        #endregion
 
-#region Text insertion helpers
+        #region Text insertion helpers
 
         private bool InsertText(string text, bool final)
         {
@@ -3502,9 +3818,9 @@ namespace Microsoft.VisualStudio.Text.Operations.Implementation
 
             return succeeded;
         }
-#endregion
+        #endregion
 
-#region Clipboard and RTF helpers
+        #region Clipboard and RTF helpers
 
         private Func<bool> PrepareClipboardSelectionCopy()
         {
@@ -3603,24 +3919,27 @@ namespace Microsoft.VisualStudio.Text.Operations.Implementation
         private string GenerateRtf(NormalizedSnapshotSpanCollection spans)
         {
 #if WINDOWS
-            //Don't generate RTF for large spans (since it is expensive and probably not wanted).
-            int length = spans.Sum((span) => span.Length);
-            if (length < _textView.Options.GetOptionValue(MaxRtfCopyLength.OptionKey))
+            if (_textView.Options.GetOptionValue(EnableRtfCopy.OptionKey))
             {
-                if (_textView.Options.GetOptionValue(UseAccurateClassificationForRtfCopy.OptionKey))
+                //Don't generate RTF for large spans (since it is expensive and probably not wanted).
+                int length = spans.Sum((span) => span.Length);
+                if (length < _textView.Options.GetOptionValue(MaxRtfCopyLength.OptionKey))
                 {
-                    using (var dialog = WaitHelper.Wait(_factory.WaitIndicator, Strings.WaitTitle, Strings.WaitMessage))
+                    if (_textView.Options.GetOptionValue(UseAccurateClassificationForRtfCopy.OptionKey))
                     {
-                        return ((IRtfBuilderService2)(_factory.RtfBuilderService)).GenerateRtf(spans, dialog.CancellationToken);
+                        using (var dialog = WaitHelper.Wait(_factory.WaitIndicator, Strings.WaitTitle, Strings.WaitMessage))
+                        {
+                            return ((IRtfBuilderService2)(_factory.RtfBuilderService)).GenerateRtf(spans, dialog.CancellationToken);
+                        }
+                    }
+                    else
+                    {
+                        return _factory.RtfBuilderService.GenerateRtf(spans);
                     }
                 }
-                else
-                {
-                    return _factory.RtfBuilderService.GenerateRtf(spans);
-                }
-            }
             else
                 return null;
+            }
 
 #else
             return null;
@@ -3632,9 +3951,9 @@ namespace Microsoft.VisualStudio.Text.Operations.Implementation
             return GenerateRtf(new NormalizedSnapshotSpanCollection(span));
         }
 
-#endregion
+        #endregion
 
-#region Horizontal whitespace helpers
+        #region Horizontal whitespace helpers
 
         private bool DeleteHorizontalWhitespace()
         {
@@ -3816,22 +4135,60 @@ namespace Microsoft.VisualStudio.Text.Operations.Implementation
             return startPoint;
         }
 
-#endregion
+        #endregion
 
-#region Indent/unindent helpers
+        #region Indent/unindent helpers
 
         // Perform the given indent action (indent/unindent) on each line at the first non-whitespace
         // character, skipping lines that are either empty or just whitespace.
         // This method is used by Indent, Unindent, IncreaseLineIndent, and DecreaseLineIndent, and
         // is essentially a replacement for the editor primitive's Indent and Unindent functions.
-        private bool PerformIndentActionOnEachBufferLine(Func<SnapshotPoint, ITextEdit, bool> action)
+        private bool PerformIndentActionOnEachBufferLine(Func<SnapshotPoint, ITextEdit, int?> action)
         {
-            Func<ITextEdit, bool> editAction = edit =>
+            Func<bool> indentAction = () =>
             {
+                var newSelections = new FrugalList<(Selection old, Selection newSel)>();
+                if (!this.EditHelper(edit =>
+                {
+                    bool succeeded = true;
+
+                    using (_multiSelectionBroker.BeginBatchOperation())
+                    {
+                        _multiSelectionBroker.PerformActionOnAllSelections(transformer =>
+                        {
+                            if (this.PerformIndentActionOnEachBufferLine(edit, newSelections, transformer.Selection, action) == null)
+                            {
+                                succeeded = false;
+                            }
+                        });
+                    }
+
+                    return succeeded;
+                }))
+                {
+                    return false;
+                }
+
+                // Apply selection changes after the edit so we can apply the desired point tracking mode.
+                TransformSelections(newSelections);
+
+                _multiSelectionBroker.TryEnsureVisible(_multiSelectionBroker.PrimarySelection, EnsureSpanVisibleOptions.MinimumScroll);
+
+                return true;
+            };
+
+            return this.ExecuteAction(Strings.IncreaseLineIndent, indentAction, SelectionUpdate.Ignore);
+        }
+
+        private int? PerformIndentActionOnEachBufferLine(ITextEdit textEdit, IList<(Selection old, Selection newSel)> newSelections, Selection selection, Func<SnapshotPoint, ITextEdit, int?> action)
+        {
+            Func<ITextEdit, int?> editAction = edit =>
+            {
+                int? actionResult = null;
                 ITextSnapshot snapshot = _textView.TextSnapshot;
 
-                int startLineNumber = snapshot.GetLineNumberFromPosition(_textView.Selection.Start.Position);
-                int endLineNumber = snapshot.GetLineNumberFromPosition(_textView.Selection.End.Position);
+                int startLineNumber = snapshot.GetLineNumberFromPosition(selection.Start.Position);
+                int endLineNumber = snapshot.GetLineNumberFromPosition(selection.End.Position);
 
                 for (int i = startLineNumber; i <= endLineNumber; i++)
                 {
@@ -3840,7 +4197,7 @@ namespace Microsoft.VisualStudio.Text.Operations.Implementation
                     // If the line is blank or the (non-empty) selection ends at the start of this line, exclude
                     // the line from processing.
                     if (line.Length == 0 ||
-                        (!_textView.Selection.IsEmpty && line.Start == _textView.Selection.End.Position))
+                        (!selection.IsEmpty && line.Start == selection.End.Position))
                         continue;
 
                     TextPoint textPoint = _editorPrimitives.Buffer.GetTextPoint(line.Start).GetFirstNonWhiteSpaceCharacterOnLine();
@@ -3850,67 +4207,73 @@ namespace Microsoft.VisualStudio.Text.Operations.Implementation
 
                     SnapshotPoint point = new SnapshotPoint(snapshot, textPoint.CurrentPosition);
 
-                    if (!action(point, edit))
-                        return false;
+                    actionResult = action(point, edit);
+                    if (actionResult == null)
+                    {
+                        return null;
+                    }
                 }
 
-                return true;
+                // Return the indent of the final line.
+                return actionResult;
             };
 
             // Track the start of the selection with PointTrackingMode.Negative through the text
             // change.  If the result has the same absolute snapshot offset as the point before the change, we'll move
             // the selection start point back to there instead of letting it track automatically.
-            ITrackingPoint startPoint = _textView.TextSnapshot.CreateTrackingPoint(_textView.Selection.Start.Position, PointTrackingMode.Negative);
-            int startPositionBufferChange = _textView.Selection.Start.Position;
+            ITrackingPoint startPoint = _textView.TextSnapshot.CreateTrackingPoint(selection.Start.Position, PointTrackingMode.Negative);
+            int startPositionBufferChange = selection.Start.Position;
 
-            if (!EditHelper(editAction))
-                return false;
+            var result = editAction.Invoke(textEdit);
+            if (result == null)
+            {
+                return null;
+            }
 
             VirtualSnapshotPoint newStart = new VirtualSnapshotPoint(startPoint.GetPoint(_textView.TextSnapshot));
             if (newStart.Position == startPositionBufferChange)
             {
-                bool isReversed = _textView.Selection.IsReversed;
-                VirtualSnapshotPoint anchor = isReversed ? _textView.Selection.End : newStart;
-                VirtualSnapshotPoint active = isReversed ? newStart : _textView.Selection.End;
-                SelectAndMoveCaret(anchor, active);
+                bool isReversed = selection.IsReversed;
+                VirtualSnapshotPoint anchor = isReversed ? selection.End : newStart;
+                VirtualSnapshotPoint active = isReversed ? newStart : selection.End;
+
+                newSelections.Add(
+                    (selection,
+                        new Selection(
+                            active.TranslateTo(_textView.TextSnapshot, PointTrackingMode.Positive),
+                            anchor.TranslateTo(_textView.TextSnapshot, PointTrackingMode.Negative),
+                            active.TranslateTo(_textView.TextSnapshot, PointTrackingMode.Positive),
+                            selection.InsertionPointAffinity)));
             }
 
-            return true;
+            return result;
         }
 
-        // This is used by indent/unindent should be multiline operations. To be multiline, the selection
-        // points must be on separate lines, and not just an entire line (though not the entire last line, which
-        // we special case).  This is for backwards compatibility with Orcas, but is generally undesirable behavior.
-        // Dev10 #856382 tracks removing this special behavior for indent and just treating it like a tab at the
-        // start of the selection.
-        private bool IndentOperationShouldBeMultiLine
+        private bool IndentOperationShouldBeMultiLine(Selection selection)
         {
-            get
-            {
-                if (_textView.Selection.IsEmpty)
-                    return false;
+            if (selection.IsEmpty)
+                return false;
 
-                var startLine = _textView.Selection.Start.Position.GetContainingLine();
+            var startLine = selection.Start.Position.GetContainingLine();
 
-                bool pointsOnSameLine = _textView.Selection.End.Position <= startLine.End;
+            bool pointsOnSameLine = selection.End.Position <= startLine.End;
 
-                bool lastLineOfFile = startLine.End == startLine.EndIncludingLineBreak;
-                bool entireLastLineSelected = lastLineOfFile &&
-                                              _textView.Selection.Start.Position == startLine.Start &&
-                                              _textView.Selection.End.Position == startLine.End;
+            bool lastLineOfFile = startLine.End == startLine.EndIncludingLineBreak;
+            bool entireLastLineSelected = lastLineOfFile &&
+                                            _textView.Selection.Start.Position == startLine.Start &&
+                                            _textView.Selection.End.Position == startLine.End;
 
-                return !pointsOnSameLine || entireLastLineSelected;
-            }
+            return !pointsOnSameLine || entireLastLineSelected;
         }
 
-        private bool InsertSingleIndentAtPoint(SnapshotPoint point, ITextEdit edit)
+        private int? InsertSingleIndentAtPoint(SnapshotPoint point, ITextEdit edit)
         {
             VirtualSnapshotPoint virtualPoint = new VirtualSnapshotPoint(point);
             VirtualSnapshotSpan span = new VirtualSnapshotSpan(virtualPoint, virtualPoint);
-            return InsertIndentForSpan(span, edit, exactlyOneIndentLevel: true, useBufferPrimitives: true);
+            return InsertIndentForSpan(span, edit, exactlyOneIndentLevel: true, useBufferPrimitives: true) != null ? 0 : default(int?);
         }
 
-        private bool InsertIndentForSpan(VirtualSnapshotSpan span, ITextEdit edit, bool exactlyOneIndentLevel, bool useBufferPrimitives = false)
+        private int? InsertIndentForSpan(VirtualSnapshotSpan span, ITextEdit edit, bool exactlyOneIndentLevel, bool useBufferPrimitives = false, int columnOffset = 0)
         {
             int indentSize = _textView.Options.GetIndentSize();
             bool convertTabsToSpaces = _textView.Options.IsConvertTabsToSpacesEnabled();
@@ -3923,7 +4286,7 @@ namespace Microsoft.VisualStudio.Text.Operations.Implementation
             // In a box selection, we don't insert anything for lines in virtual space
             if (boxSelection && point.IsInVirtualSpace)
             {
-                return true;
+                return 0;
             }
 
             string textToInsert;
@@ -3972,14 +4335,12 @@ namespace Microsoft.VisualStudio.Text.Operations.Implementation
                 else
                     textPoint = _editorPrimitives.View.GetTextPoint(point.Position.Position);
 
-                currentColumn = textPoint.Column + point.VirtualSpaces;
+                currentColumn = textPoint.Column + point.VirtualSpaces + columnOffset;
 
                 if (exactlyOneIndentLevel)
                     distanceToNextIndentStop = indentSize;
                 else
                     distanceToNextIndentStop = indentSize - (currentColumn % indentSize);
-
-                int columnToInsertTo = currentColumn + distanceToNextIndentStop;
 
                 textToInsert = GetWhiteSpaceForPositionAndVirtualSpace(point.Position, point.VirtualSpaces + distanceToNextIndentStop, useBufferPrimitives);
             }
@@ -3999,12 +4360,15 @@ namespace Microsoft.VisualStudio.Text.Operations.Implementation
                 }
             }
 
-            return edit.Replace(Span.FromBounds(startPointForReplace, endPointForReplace), textToInsert);
+            var spanToReplace = Span.FromBounds(startPointForReplace, endPointForReplace);
+            int newColumnOffset = (textToInsert.Length - spanToReplace.Length) + columnOffset;
+
+            return edit.Replace(spanToReplace, textToInsert) ? newColumnOffset : default(int?);
         }
 
-        private bool RemoveIndentAtPoint(SnapshotPoint point, ITextEdit edit)
+        private int? RemoveIndentAtPoint(SnapshotPoint point, ITextEdit edit)
         {
-            return RemoveIndentAtPoint(point, edit, failOnNonWhitespaceCharacter: true, useBufferPrimitives: true);
+            return RemoveIndentAtPoint(point, edit, failOnNonWhitespaceCharacter: true, useBufferPrimitives: true) ? 0 : default(int?);
         }
 
         /// <summary>
@@ -4088,14 +4452,6 @@ namespace Microsoft.VisualStudio.Text.Operations.Implementation
             return edit.Replace(Span.FromBounds(startPointForReplace, point.Position), textToInsert);
         }
 
-        private void MoveCaretToPreviousIndentStopInVirtualSpace()
-        {
-            Debug.Assert(_textView.Caret.InVirtualSpace);
-
-            VirtualSnapshotPoint point = GetPreviousIndentStopInVirtualSpace(_textView.Caret.Position.VirtualBufferPosition);
-            _textView.Caret.MoveTo(point);
-        }
-
         /// <summary>
         /// Used by the un-indenting logic to determine what an unindent means in virtual space.
         /// </summary>
@@ -4118,9 +4474,9 @@ namespace Microsoft.VisualStudio.Text.Operations.Implementation
                 return new VirtualSnapshotPoint(point.Position);
         }
 
-#endregion
+        #endregion
 
-#region Box Selection indent/unindent helpers
+        #region Box Selection indent/unindent helpers
 
         /// <summary>
         /// Given a "fix-up" anchor/active point determined before the box operation, fix up the current selection's
@@ -4234,9 +4590,9 @@ namespace Microsoft.VisualStudio.Text.Operations.Implementation
             return maxColumnUnindent;
         }
 
-#endregion
+        #endregion
 
-#region Miscellaneous line helpers
+        #region Miscellaneous line helpers
 
         private DisplayTextRange GetFullLines()
         {
@@ -4300,9 +4656,9 @@ namespace Microsoft.VisualStudio.Text.Operations.Implementation
             return firstTextColumn.CurrentPosition == displayTextPoint.EndOfViewLine;
         }
 
-#endregion
+        #endregion
 
-#region Tabs <-> spaces
+        #region Tabs <-> spaces
 
         private bool ConvertSpacesAndTabsHelper(bool toTabs)
         {
@@ -4427,9 +4783,9 @@ namespace Microsoft.VisualStudio.Text.Operations.Implementation
             return true;
         }
 
-#endregion
+        #endregion
 
-#region Edit/Replace/Delete helpers
+        #region Edit/Replace/Delete helpers
 
         internal bool EditHelper(Func<ITextEdit, bool> editAction)
         {
@@ -4506,7 +4862,7 @@ namespace Microsoft.VisualStudio.Text.Operations.Implementation
             });
         }
 
-#endregion
+        #endregion
 
         internal bool IsEmptyBoxSelection()
         {
@@ -4890,6 +5246,21 @@ namespace Microsoft.VisualStudio.Text.Operations.Implementation
         /// Gets the editor option key.
         /// </summary>
         public override EditorOptionKey<int> Key { get { return MaxRtfCopyLength.OptionKey; } }
+    }
+
+    [Export(typeof(EditorOptionDefinition))]
+    [Name(EnableRtfCopy.OptionName)]
+    public sealed class EnableRtfCopy : EditorOptionDefinition<bool>
+    {
+        public const string OptionName = "EnableRtfCopy";
+        public static readonly EditorOptionKey<bool> OptionKey = new EditorOptionKey<bool>(EnableRtfCopy.OptionName);
+
+        public override bool Default { get { return true; } }
+
+        /// <summary>
+        /// Gets the editor option key.
+        /// </summary>
+        public override EditorOptionKey<bool> Key { get { return EnableRtfCopy.OptionKey; } }
     }
 
     [Export(typeof(EditorOptionDefinition))]

@@ -16,13 +16,13 @@ namespace Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion
         /// Opens the UI and displays provided data
         /// </summary>
         /// <param name="presentation">Data to display in the UI</param>
-        void Open(CompletionPresentationViewModel presentation);
+        void Open(IAsyncCompletionSession session, CompletionPresentationViewModel presentation);
 
         /// <summary>
         /// Updates the UI with provided data
         /// </summary>
         /// <param name="presentation">Data to display in the UI</param>
-        void Update(CompletionPresentationViewModel presentation);
+        void Update(IAsyncCompletionSession session, CompletionPresentationViewModel presentation);
 
         /// <summary>
         /// Hides the completion UI
@@ -35,7 +35,8 @@ namespace Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion
         event EventHandler<CompletionFilterChangedEventArgs> FiltersChanged;
 
         /// <summary>
-        /// Notifies of user selecting an item
+        /// Notifies of user selecting an item.
+        /// When item is selected programmatically, firing this event may result in endless loop.
         /// </summary>
         event EventHandler<CompletionItemSelectedEventArgs> CompletionItemSelected;
 

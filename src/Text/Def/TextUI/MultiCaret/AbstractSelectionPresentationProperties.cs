@@ -45,5 +45,13 @@ namespace Microsoft.VisualStudio.Text
         /// Gets the <see cref="ITextViewLine"/> that contains the <see cref="Selection.InsertionPoint"/>.
         /// </summary>
         public virtual ITextViewLine ContainingTextViewLine { get; }
+
+        /// <summary>
+        /// Tries to get the <see cref="ITextViewLine"/> that contains the <see cref="Selection.InsertionPoint"/>.
+        /// This can fail if the call happens during a view layout or after the view is closed.
+        /// </summary>
+        /// <param name="line">Returns out the requested line if available, or null otherwise.</param>
+        /// <returns>True if successful, false otherwise.</returns>
+        public abstract bool TryGetContainingTextViewLine(out ITextViewLine line);
     }
 }

@@ -8,6 +8,7 @@ using Microsoft.VisualStudio.Utilities;
 using Microsoft.VisualStudio.Threading;
 using System.Linq;
 using Microsoft.VisualStudio.Text;
+using Microsoft.VisualStudio.Text.Utilities;
 
 namespace Microsoft.VisualStudio.UI.Text.Commanding.Implementation
 {
@@ -16,11 +17,7 @@ namespace Microsoft.VisualStudio.UI.Text.Commanding.Implementation
     {
         private readonly IEnumerable<Lazy<ICommandHandler, ICommandHandlerMetadata>> _commandHandlers;
         private readonly IList<Lazy<ICommandingTextBufferResolverProvider, IContentTypeMetadata>> _bufferResolverProviders;
-        private readonly IUIThreadOperationExecutor _uiThreadOperationExecutor;
-        private readonly JoinableTaskContext _joinableTaskContext;
         private readonly IContentTypeRegistryService _contentTypeRegistryService;
-        private readonly IGuardedOperations _guardedOperations;
-        private readonly StableContentTypeComparer _contentTypeComparer;
 
         [ImportingConstructor]
         public EditorCommandHandlerServiceFactory(
@@ -28,14 +25,19 @@ namespace Microsoft.VisualStudio.UI.Text.Commanding.Implementation
             [ImportMany]IEnumerable<Lazy<ICommandingTextBufferResolverProvider, IContentTypeMetadata>> bufferResolvers,
             IUIThreadOperationExecutor uiThreadOperationExecutor,
             JoinableTaskContext joinableTaskContext,
+            IStatusBarService statusBar,
             IContentTypeRegistryService contentTypeRegistryService,
-            IGuardedOperations guardedOperations)
+            IGuardedOperations guardedOperations,
+            [Import(AllowDefault = true)] ILoggingServiceInternal loggingService)
         {
-            _uiThreadOperationExecutor = uiThreadOperationExecutor;
-            _joinableTaskContext = joinableTaskContext;
-            _guardedOperations = guardedOperations;
+            UIThreadOperationExecutor = uiThreadOperationExecutor;
+            JoinableTaskContext = joinableTaskContext;
+            StatusBar = statusBar;
+            GuardedOperations = guardedOperations;
+            LoggingService = loggingService;
+
             _contentTypeRegistryService = contentTypeRegistryService;
-            _contentTypeComparer = new StableContentTypeComparer(_contentTypeRegistryService);
+            ContentTypeComparer = new StableContentTypeComparer(_contentTypeRegistryService);
             _commandHandlers = OrderCommandHandlers(commandHandlers);
             if (!bufferResolvers.Any())
             {
@@ -45,16 +47,27 @@ namespace Microsoft.VisualStudio.UI.Text.Commanding.Implementation
             _bufferResolverProviders = bufferResolvers.ToList();
         }
 
+        internal IGuardedOperations GuardedOperations { get; }
+
+        internal ILoggingServiceInternal LoggingService { get; }
+
+        internal JoinableTaskContext JoinableTaskContext { get; }
+
+        internal IUIThreadOperationExecutor UIThreadOperationExecutor { get; }
+
+        internal IStatusBarService StatusBar { get; }
+
+        internal StableContentTypeComparer ContentTypeComparer { get; }
+
         public IEditorCommandHandlerService GetService(ITextView textView)
         {
             return textView.Properties.GetOrCreateSingletonProperty(() =>
             {
-                var bufferResolverProvider = _guardedOperations.InvokeBestMatchingFactory(_bufferResolverProviders, textView.TextBuffer.ContentType, _contentTypeRegistryService, errorSource: this);
+                var bufferResolverProvider = GuardedOperations.InvokeBestMatchingFactory(_bufferResolverProviders, textView.TextBuffer.ContentType, _contentTypeRegistryService, errorSource: this);
                 ICommandingTextBufferResolver bufferResolver = null;
-                _guardedOperations.CallExtensionPoint(() => bufferResolver = bufferResolverProvider.CreateResolver(textView));
+                GuardedOperations.CallExtensionPoint(() => bufferResolver = bufferResolverProvider.CreateResolver(textView));
                 bufferResolver = bufferResolver ?? new DefaultBufferResolver(textView);
-                return new EditorCommandHandlerService(textView, _commandHandlers, _uiThreadOperationExecutor, _joinableTaskContext,
-                   _contentTypeComparer, bufferResolver, _guardedOperations);
+                return new EditorCommandHandlerService(this, textView, _commandHandlers, bufferResolver);
             });
         }
 
@@ -69,14 +82,12 @@ namespace Microsoft.VisualStudio.UI.Text.Commanding.Implementation
             // buffer can be used by another text view, see https://devdiv.visualstudio.com/DevDiv/_workitems/edit/563472.
             // There is no good way to cache it without holding onto the buffer (which can be disconnected
             // from the text view anytime).
-            return new EditorCommandHandlerService(textView, _commandHandlers, _uiThreadOperationExecutor,
-                _joinableTaskContext, _contentTypeComparer,
-                new SingleBufferResolver(subjectBuffer), _guardedOperations);
+            return new EditorCommandHandlerService(this, textView, _commandHandlers, new SingleBufferResolver(subjectBuffer));
         }
 
         private IEnumerable<Lazy<ICommandHandler, ICommandHandlerMetadata>> OrderCommandHandlers(IEnumerable<Lazy<ICommandHandler, ICommandHandlerMetadata>> commandHandlers)
         {
-            return commandHandlers.OrderBy((handler) => handler.Metadata.ContentTypes, _contentTypeComparer);
+            return commandHandlers.OrderBy((handler) => handler.Metadata.ContentTypes, ContentTypeComparer);
         }
     }
 }

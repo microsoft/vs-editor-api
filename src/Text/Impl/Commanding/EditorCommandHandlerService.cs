@@ -1,27 +1,30 @@
 ﻿using System;
-using System.Linq;
 using System.Collections.Generic;
-using Microsoft.VisualStudio.Utilities;
-using Microsoft.VisualStudio.Commanding;
-using Microsoft.VisualStudio.Text.Utilities;
-using Microsoft.VisualStudio.Text.Editor.Commanding;
-using Microsoft.VisualStudio.Text.Editor;
-using Microsoft.VisualStudio.Text;
-using Microsoft.VisualStudio.Threading;
-using ICommandHandlerAndMetadata = System.Lazy<Microsoft.VisualStudio.Commanding.ICommandHandler, Microsoft.VisualStudio.UI.Text.Commanding.Implementation.ICommandHandlerMetadata>;
+using System.Diagnostics;
+using System.Globalization;
+using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Threading;
+using Microsoft.VisualStudio.Commanding;
+using Microsoft.VisualStudio.Text;
+using Microsoft.VisualStudio.Text.Editor;
+using Microsoft.VisualStudio.Text.Editor.Commanding;
+using Microsoft.VisualStudio.Text.Editor.Commanding.Commands;
+using Microsoft.VisualStudio.Text.Utilities;
+using Microsoft.VisualStudio.Utilities;
+using ICommandHandlerAndMetadata = System.Lazy<Microsoft.VisualStudio.Commanding.ICommandHandler, Microsoft.VisualStudio.UI.Text.Commanding.Implementation.ICommandHandlerMetadata>;
 
 namespace Microsoft.VisualStudio.UI.Text.Commanding.Implementation
 {
     internal class EditorCommandHandlerService : IEditorCommandHandlerService
     {
+        private const string TelemetryEventPrefix = "VS/Editor/Commanding";
+        private const string TelemetryPropertyPrefix = "VS.Editor.Commanding";
+
         private readonly IEnumerable<ICommandHandlerAndMetadata> _commandHandlers;
-        private readonly IUIThreadOperationExecutor _uiThreadOperationExecutor;
-        private readonly JoinableTaskContext _joinableTaskContext;
+        private readonly EditorCommandHandlerServiceFactory _factory;
         private readonly ITextView _textView;
-        private readonly IComparer<IEnumerable<string>> _contentTypesComparer;
         private readonly ICommandingTextBufferResolver _bufferResolver;
-        private readonly IGuardedOperations _guardedOperations;
 
         private readonly static IReadOnlyList<ICommandHandlerAndMetadata> EmptyHandlerList = new List<ICommandHandlerAndMetadata>(0);
         private readonly static Action EmptyAction = delegate { };
@@ -32,26 +35,21 @@ namespace Microsoft.VisualStudio.UI.Text.Commanding.Implementation
         /// handlers every time we need handlers of a specific type, for a given content type.
         private readonly Dictionary<(Type commandArgType, IContentType contentType), IReadOnlyList<ICommandHandlerAndMetadata>> _commandHandlersByTypeAndContentType;
 
-        public EditorCommandHandlerService(ITextView textView,
+        public EditorCommandHandlerService(EditorCommandHandlerServiceFactory factory,
+            ITextView textView,
             IEnumerable<ICommandHandlerAndMetadata> commandHandlers,
-            IUIThreadOperationExecutor uiThreadOperationExecutor, JoinableTaskContext joinableTaskContext,
-            IComparer<IEnumerable<string>> contentTypesComparer,
-            ICommandingTextBufferResolver bufferResolver,
-            IGuardedOperations guardedOperations)
+            ICommandingTextBufferResolver bufferResolver)
         {
             _commandHandlers = commandHandlers ?? throw new ArgumentNullException(nameof(commandHandlers));
+            _factory = factory ?? throw new ArgumentNullException(nameof(factory));
             _textView = textView ?? throw new ArgumentNullException(nameof(textView));
-            _uiThreadOperationExecutor = uiThreadOperationExecutor ?? throw new ArgumentNullException(nameof(uiThreadOperationExecutor));
-            _joinableTaskContext = joinableTaskContext ?? throw new ArgumentNullException(nameof(joinableTaskContext));
-            _contentTypesComparer = contentTypesComparer ?? throw new ArgumentNullException(nameof(contentTypesComparer));
             _commandHandlersByTypeAndContentType = new Dictionary<(Type commandArgType, IContentType contentType), IReadOnlyList<ICommandHandlerAndMetadata>>();
             _bufferResolver = bufferResolver ?? throw new ArgumentNullException(nameof(bufferResolver));
-            _guardedOperations = guardedOperations ?? throw new ArgumentNullException(nameof(guardedOperations));
         }
 
         public CommandState GetCommandState<T>(Func<ITextView, ITextBuffer, T> argsFactory, Func<CommandState> nextCommandHandler) where T : EditorCommandArgs
         {
-            if (!_joinableTaskContext.IsOnMainThread)
+            if (!_factory.JoinableTaskContext.IsOnMainThread)
             {
                 throw new InvalidOperationException($"{nameof(IEditorCommandHandlerService.GetCommandState)} method shoudl only be called on the UI thread.");
             }
@@ -91,7 +89,7 @@ namespace Microsoft.VisualStudio.UI.Text.Commanding.Implementation
 
         public void Execute<T>(Func<ITextView, ITextBuffer, T> argsFactory, Action nextCommandHandler) where T : EditorCommandArgs
         {
-            if (!_joinableTaskContext.IsOnMainThread)
+            if (!_factory.JoinableTaskContext.IsOnMainThread)
             {
                 throw new InvalidOperationException($"{nameof(IEditorCommandHandlerService.Execute)} method shoudl only be called on the UI thread.");
             }
@@ -105,10 +103,10 @@ namespace Microsoft.VisualStudio.UI.Text.Commanding.Implementation
                 return;
             }
 
+            EditorCommandHandlerServiceState state = null;
+
             using (var reentrancyGuard = new ReentrancyGuard(_textView))
             {
-                CommandExecutionContext commandExecutionContext = null;
-
                 // Build up chain of handlers per buffer
                 Action handlerChain = nextCommandHandler ?? EmptyAction;
                 // TODO: realize the chain dynamically and without Reverse()
@@ -123,6 +121,7 @@ namespace Microsoft.VisualStudio.UI.Text.Commanding.Implementation
                     {
                         // Args factory failed, skip command handlers and just call next
                         handlerChain();
+                        return;
                     }
 
                     if (handler is IDynamicCommandHandler<T> dynamicCommandHandler &&
@@ -132,19 +131,45 @@ namespace Microsoft.VisualStudio.UI.Text.Commanding.Implementation
                         continue;
                     }
 
-                    if (commandExecutionContext == null)
+                    if (state == null)
                     {
-                        commandExecutionContext = CreateCommandExecutionContext();
+                        state = InitializeExecutionState(args);
                     }
 
-                    handlerChain = () => _guardedOperations.CallExtensionPoint(handler,
-                        () => handler.ExecuteCommand(args, nextHandler, commandExecutionContext),
+                    handlerChain = () => _factory.GuardedOperations.CallExtensionPoint(handler,
+                        () =>
+                        {
+                            state.OnExecutingCommandHandlerBegin(handler);
+                            handler.ExecuteCommand(args, nextHandler, state.ExecutionContext);
+                            state.OnExecutingCommandHandlerEnd(handler);
+                        },
                         // Do not guard against cancellation exceptions, they are handled by ExecuteCommandHandlerChain
-                        exceptionGuardFilter: (e) => !IsOperationCancelledException(e)); 
+                        exceptionGuardFilter: (e) => !IsOperationCancelledException(e));
                 }
 
-                ExecuteCommandHandlerChain(commandExecutionContext, handlerChain, nextCommandHandler);
+                if (state == null)
+                {
+                    // No matching command handlers, just call next
+                    handlerChain();
+                    return;
+                }
+
+                ExecuteCommandHandlerChain(state, handlerChain, nextCommandHandler);
             }
+        }
+
+        private EditorCommandHandlerServiceState InitializeExecutionState<T>(T args) where T : EditorCommandArgs
+        {
+            var state = new EditorCommandHandlerServiceState(args, IsTypingCommand(args));
+            var uiThreadOperationContext = _factory.UIThreadOperationExecutor.BeginExecute(
+                new UIThreadOperationExecutionOptions(
+                    title: null, // We want same caption as the main window
+                    defaultDescription: WaitForCommandExecutionString, allowCancellation: true, showProgress: true,
+                    timeoutController: new TimeoutController(state, _textView, _factory.LoggingService)));
+            var commandExecutionContext = new CommandExecutionContext(uiThreadOperationContext);
+            commandExecutionContext.OperationContext.UserCancellationToken.Register(OnExecutionCancellationRequested, state);
+            state.ExecutionContext = commandExecutionContext;
+            return state;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -153,8 +178,8 @@ namespace Microsoft.VisualStudio.UI.Text.Commanding.Implementation
             return e is OperationCanceledException || e is AggregateException aggregate && aggregate.InnerExceptions.All(ie => ie is OperationCanceledException);
         }
 
-        private static void ExecuteCommandHandlerChain(
-            CommandExecutionContext commandExecutionContext,
+        private void ExecuteCommandHandlerChain(
+            EditorCommandHandlerServiceState state,
             Action handlerChain,
             Action nextCommandHandler)
         {
@@ -162,19 +187,45 @@ namespace Microsoft.VisualStudio.UI.Text.Commanding.Implementation
             {
                 // Kick off the first command handler.
                 handlerChain();
+                if (state.ExecutionContext.OperationContext.UserCancellationToken.IsCancellationRequested)
+                {
+                    LogCancellationWasIgnored(state);
+                }
             }
             catch (OperationCanceledException)
             {
-                nextCommandHandler?.Invoke();
+                OnCommandExecutionCancelled(nextCommandHandler, state);
             }
             catch (AggregateException aggregate) when (aggregate.InnerExceptions.All(e => e is OperationCanceledException))
             {
-                nextCommandHandler?.Invoke();
+                OnCommandExecutionCancelled(nextCommandHandler, state);
             }
             finally
             {
-                commandExecutionContext?.OperationContext?.Dispose();
+                state.ExecutionContext?.OperationContext?.Dispose();
             }
+        }
+
+        private void OnExecutionCancellationRequested(object state)
+        {
+            Debug.Assert(!_factory.JoinableTaskContext.IsOnMainThread);
+            ((EditorCommandHandlerServiceState)state).OnExecutionCancellationRequested();
+        }
+
+        private void OnCommandExecutionCancelled(Action nextCommandHandler, EditorCommandHandlerServiceState state)
+        {
+            var executingHandler = state.GetCurrentlyExecutingCommandHander();
+            var executingCommand = state.ExecutingCommand;
+            bool userCancelled = !state.ExecutionHasTimedOut;
+            _factory.JoinableTaskContext.Factory.RunAsync(async () =>
+            {
+                LogCommandExecutionCancelled(executingHandler, executingCommand, userCancelled);
+
+                string statusBarMessage = string.Format(CultureInfo.CurrentCulture, CommandingStrings.CommandCancelled, executingHandler?.DisplayName);
+                await _factory.StatusBar.SetTextAsync(statusBarMessage).ConfigureAwait(false);
+            });
+
+            nextCommandHandler?.Invoke();
         }
 
         private class ReentrancyGuard : IDisposable
@@ -196,15 +247,6 @@ namespace Microsoft.VisualStudio.UI.Text.Commanding.Implementation
         private bool IsReentrantCall()
         {
             return _textView.Properties.ContainsProperty(typeof(ReentrancyGuard));
-        }
-
-        private CommandExecutionContext CreateCommandExecutionContext()
-        {
-            CommandExecutionContext commandExecutionContext;
-            var uiThreadOperationContext = _uiThreadOperationExecutor.BeginExecute(title: null, // We want same caption as the main window
-                defaultDescription: WaitForCommandExecutionString, allowCancellation: true, showProgress: true);
-            commandExecutionContext = new CommandExecutionContext(uiThreadOperationContext);
-            return commandExecutionContext;
         }
 
         //internal for unit tests
@@ -289,7 +331,7 @@ namespace Microsoft.VisualStudio.UI.Text.Commanding.Implementation
                         {
                             var handler = handlerBuckets[i].Peek();
                             // Can this handler handle content type more specific than top handler in firstNonEmptyBucket?
-                            if (_contentTypesComparer.Compare(handler.Metadata.ContentTypes, currentHandler.Metadata.ContentTypes) < 0)
+                            if (_factory.ContentTypeComparer.Compare(handler.Metadata.ContentTypes, currentHandler.Metadata.ContentTypes) < 0)
                             {
                                 foundBetterHandler = true;
                                 handlerBuckets[i].Pop();
@@ -316,7 +358,7 @@ namespace Microsoft.VisualStudio.UI.Text.Commanding.Implementation
                 IList<ICommandHandlerAndMetadata> newCommandHandlerList = null;
                 foreach (var lazyCommandHandler in SelectMatchingCommandHandlers(_commandHandlers, contentType, textViewRoles))
                 {
-                    var commandHandler = _guardedOperations.InstantiateExtension<ICommandHandler>(this, lazyCommandHandler);
+                    var commandHandler = _factory.GuardedOperations.InstantiateExtension<ICommandHandler>(this, lazyCommandHandler);
                     if (commandHandler is ICommandHandler<T> || commandHandler is IChainedCommandHandler<T>)
                     {
                         if (newCommandHandlerList == null)
@@ -388,6 +430,83 @@ namespace Microsoft.VisualStudio.UI.Text.Commanding.Implementation
             }
 
             return false;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static bool IsTypingCommand(EditorCommandArgs args)
+        {
+            // TODO: temporarily only include typechar to not break Roslyn inline rename and other non-typing scenario, tracked by #657668
+            return args is TypeCharCommandArgs;
+                   //args is DeleteKeyCommandArgs ||
+                   //args is ReturnKeyCommandArgs ||
+                   //args is BackspaceKeyCommandArgs ||
+                   //args is TabKeyCommandArgs ||
+                   //args is UndoCommandArgs ||
+                   //args is RedoCommandArgs;
+        }
+
+        private void LogCommandExecutionCancelled(INamed executingHandler, EditorCommandArgs executingCommand, bool userCancelled)
+        {
+            _factory.LoggingService?.PostEvent($"{TelemetryEventPrefix}/ExecutionCancelled",
+                $"{TelemetryPropertyPrefix}.Command", executingCommand?.GetType().FullName,
+                $"{TelemetryPropertyPrefix}.CommandHandler", executingHandler?.GetType().FullName,
+                $"{TelemetryPropertyPrefix}.UserCancelled", userCancelled);
+        }
+
+        private void LogCancellationWasIgnored(EditorCommandHandlerServiceState state)
+        {
+            bool userCancelled = !state.ExecutionHasTimedOut;
+            var executingCommand = state.ExecutingCommand;
+            _factory.LoggingService?.PostEvent($"{TelemetryEventPrefix}/IgnoredExecutionCancellation",
+                $"{TelemetryPropertyPrefix}.Command", executingCommand?.GetType().FullName,
+                $"{TelemetryPropertyPrefix}.CommandHandler", state.CommandHandlerExecutingDuringCancellationRequest?.GetType().FullName,
+                $"{TelemetryPropertyPrefix}.UserCancelled", userCancelled);
+        }
+
+        private class TimeoutController : IUIThreadOperationTimeoutController
+        {
+            private readonly EditorCommandHandlerServiceState _state;
+            private readonly ITextView _textView;
+            private readonly ILoggingServiceInternal _loggingService;
+
+            public TimeoutController(EditorCommandHandlerServiceState state, ITextView textView, ILoggingServiceInternal loggingService)
+            {
+                _state = state;
+                _textView = textView;
+                _loggingService = loggingService;
+            }
+
+            public int CancelAfter
+                => _state.IsExecutingTypingCommand ?
+                _textView.Options.GetOptionValue(DefaultOptions.MaximumTypingLatencyOptionId) :
+                Timeout.Infinite;
+
+            public bool ShouldCancel()
+            {
+                // TODO: this needs to allow non typing command scenarios for example hitting return in inline rename, tracked by #657668
+                return _state.IsExecutingTypingCommand;
+            }
+
+            public void OnTimeout(bool wasExecutionCancelled)
+            {
+                Debug.Assert(_state.IsExecutingTypingCommand);
+                _state.ExecutionHasTimedOut = true;
+                var executingCommand = _state.ExecutingCommand;
+
+                _loggingService?.PostEvent($"{TelemetryEventPrefix}/ExecutionTimeout",
+                    $"{TelemetryPropertyPrefix}.Command", executingCommand?.GetType().FullName,
+                    $"{TelemetryPropertyPrefix}.CommandHandler", _state.GetCurrentlyExecutingCommandHander()?.GetType().FullName,
+                    $"{TelemetryPropertyPrefix}.Timeout", this.CancelAfter,
+                    $"{TelemetryPropertyPrefix}.WasExecutionCancelled", wasExecutionCancelled);
+            }
+
+            public void OnDelay()
+            {
+                var executingCommand = _state.ExecutingCommand;
+                _loggingService?.PostEvent($"{TelemetryEventPrefix}/WaitDialogShown",
+                    $"{TelemetryPropertyPrefix}.Command", executingCommand?.GetType().FullName,
+                    $"{TelemetryPropertyPrefix}.CommandHandler", _state.GetCurrentlyExecutingCommandHander()?.GetType().FullName);
+            }
         }
     }
 }

@@ -64,7 +64,7 @@ namespace Microsoft.VisualStudio.Utilities
         /// <summary>
         /// Executes the action synchronously and waits for it to complete.
         /// </summary>
-        /// <param name="title">Operation's title.</param>
+        /// <param name="title">Operation's title. Can be null to indicate that the wait dialog should use the application's title.</param>
         /// <param name="defaultDescription">Default operation's description, which is displayed on the wait dialog unless
         /// one or more <see cref="IUIThreadOperationScope"/>s with more specific descriptions were added to
         /// the <see cref="IUIThreadOperationContext"/>.</param>
@@ -76,10 +76,18 @@ namespace Microsoft.VisualStudio.Utilities
             Action<IUIThreadOperationContext> action);
 
         /// <summary>
+        /// Executes the action synchronously and waits for it to complete.
+        /// </summary>
+        /// <param name="executionOptions">Options that control action execution behavior.</param>
+        /// <param name="action">An action to execute.</param>
+        /// <returns>A status of action execution.</returns>
+        UIThreadOperationStatus Execute(UIThreadOperationExecutionOptions executionOptions, Action<IUIThreadOperationContext> action);
+
+        /// <summary>
         /// Begins executing potentially long running operation on the caller thread and provides a context object that provides access to shared
         /// cancellability and wait indication.
         /// </summary>
-        /// <param name="title">Operation's title.</param>
+        /// <param name="title">Operation's title. Can be null to indicate that the wait dialog should use the application's title.</param>
         /// <param name="defaultDescription">Default operation's description, which is displayed on the wait dialog unless
         /// one or more <see cref="IUIThreadOperationScope"/>s with more specific descriptions were added to
         /// the <see cref="IUIThreadOperationContext"/>.</param>
@@ -89,5 +97,15 @@ namespace Microsoft.VisualStudio.Utilities
         /// cancellability and wait indication for the given operation. The operation is considered executed
         /// when this <see cref="IUIThreadOperationContext"/> instance is disposed.</returns>
         IUIThreadOperationContext BeginExecute(string title, string defaultDescription, bool allowCancellation, bool showProgress);
+
+        /// <summary>
+        /// Begins executing potentially long running operation on the caller thread and provides a context object that provides access to shared
+        /// cancellability and wait indication.
+        /// </summary>
+        /// <param name="executionOptions">Options that control execution behavior.</param>
+        /// <returns><see cref="IUIThreadOperationContext"/> instance that provides access to shared two way
+        /// cancellability and wait indication for the given operation. The operation is considered executed
+        /// when this <see cref="IUIThreadOperationContext"/> instance is disposed.</returns>
+        IUIThreadOperationContext BeginExecute(UIThreadOperationExecutionOptions executionOptions);
     }
 }

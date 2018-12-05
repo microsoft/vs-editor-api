@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Linq;
 using System.Threading;
 
@@ -12,7 +13,7 @@ namespace Microsoft.VisualStudio.Utilities
     public abstract class AbstractUIThreadOperationContext : IUIThreadOperationContext
 #pragma warning restore CA1063 // Implement IDisposable Correctly
     {
-        private List<IUIThreadOperationScope> _scopes;
+        private ImmutableList<IUIThreadOperationScope> _scopes;
         private bool _allowCancellation;
         private PropertyCollection _properties;
         private readonly string _defaultDescription;
@@ -30,6 +31,7 @@ namespace Microsoft.VisualStudio.Utilities
         {
             _defaultDescription = defaultDescription ?? throw new ArgumentNullException(nameof(defaultDescription));
             _allowCancellation = allowCancellation;
+            _scopes = ImmutableList<IUIThreadOperationScope>.Empty;
         }
 
         /// <summary>
@@ -56,12 +58,14 @@ namespace Microsoft.VisualStudio.Utilities
                     return false;
                 }
 
-                if (_scopes == null || _scopes.Count == 0)
+                ImmutableList<IUIThreadOperationScope> scopes = _scopes;
+
+                if (scopes == null || scopes.Count == 0)
                 {
                     return _allowCancellation;
                 }
 
-                return _scopes.All((s) => s.AllowCancellation);
+                return scopes.All((s) => s.AllowCancellation);
             }
         }
 
@@ -78,31 +82,42 @@ namespace Microsoft.VisualStudio.Utilities
                     return _defaultDescription;
                 }
 
+                ImmutableList<IUIThreadOperationScope> scopes = _scopes;
+
                 // Most common case
-                if (_scopes.Count == 1)
+                if (scopes.Count == 1)
                 {
-                    return _scopes[0].Description;
+                    return scopes[0].Description;
                 }
 
                 // Combine descriptions of all current scopes
-                return string.Join(Environment.NewLine, _scopes.Select((s) => s.Description));
+                return string.Join(Environment.NewLine, scopes.Select((s) => s.Description));
             }
         }
 
         protected int CompletedItems => _completedItems;
         protected int TotalItems => _totalItems;
 
-        private IList<IUIThreadOperationScope> LazyScopes => _scopes ?? (_scopes = new List<IUIThreadOperationScope>());
-
         /// <summary>
         /// Gets current list of <see cref="IUIThreadOperationScope"/>s in this context.
         /// </summary>
-        public virtual IEnumerable<IUIThreadOperationScope> Scopes => this.LazyScopes;
+        public virtual IEnumerable<IUIThreadOperationScope> Scopes => _scopes;
 
         /// <summary>
         /// A collection of properties.
         /// </summary>
-        public virtual PropertyCollection Properties => _properties ?? (_properties = new PropertyCollection());
+        public virtual PropertyCollection Properties
+        {
+            get
+            {
+                if (_properties == null)
+                {
+                    Interlocked.CompareExchange(ref _properties, new PropertyCollection(), null);
+                }
+
+                return _properties;
+            }
+        }
 
         /// <summary>
         /// Adds an UI thread operation scope with its own cancellability, description and progress tracker.
@@ -111,7 +126,20 @@ namespace Microsoft.VisualStudio.Utilities
         public virtual IUIThreadOperationScope AddScope(bool allowCancellation, string description)
         {
             var scope = new UIThreadOperationScope(allowCancellation, description, this);
-            this.LazyScopes.Add(scope);
+
+            while (true)
+            {
+                ImmutableList<IUIThreadOperationScope> oldScopes = _scopes;
+                ImmutableList<IUIThreadOperationScope> newScopes = oldScopes == null ? ImmutableList.Create<IUIThreadOperationScope>(scope) : oldScopes.Add(scope);
+
+                var currentScopes = Interlocked.CompareExchange(ref _scopes, newScopes, oldScopes);
+                if (currentScopes == oldScopes)
+                {
+                    // No other thread preempted us, new scopes set successfully
+                    break;
+                }
+            }
+
             this.OnScopesChanged();
             return scope;
         }
@@ -120,7 +148,14 @@ namespace Microsoft.VisualStudio.Utilities
         {
             int completed = 0;
             int total = 0;
-            foreach (UIThreadOperationScope scope in this.LazyScopes)
+
+            ImmutableList<IUIThreadOperationScope> scopes = _scopes;
+            if (scopes == null)
+            {
+                return;
+            }
+
+            foreach (UIThreadOperationScope scope in scopes)
             {
                 completed += scope.CompletedItems;
                 total += scope.TotalItems;
@@ -159,16 +194,37 @@ namespace Microsoft.VisualStudio.Utilities
 
         protected virtual void OnScopeDisposed(IUIThreadOperationScope scope)
         {
+            if (scope == null)
+            {
+                return;
+            }
+
             _allowCancellation &= scope.AllowCancellation;
-            _scopes.Remove(scope);
+
+            if (_scopes == null)
+            {
+                return;
+            }
+
+            while (true) {
+                ImmutableList<IUIThreadOperationScope> oldScopes = _scopes;
+                ImmutableList<IUIThreadOperationScope> newScopes = oldScopes.Remove(scope);
+
+                var currentScopes = Interlocked.CompareExchange(ref _scopes, newScopes, oldScopes);
+                if (currentScopes == oldScopes)
+                {
+                    // No other thread preempted us, new scopes set successfully
+                    break;
+                }
+            }
+
             OnScopesChanged();
         }
 
-        private class UIThreadOperationScope : IUIThreadOperationScope
+        private class UIThreadOperationScope : IUIThreadOperationScope, IProgress<ProgressInfo>
         {
             private bool _allowCancellation;
             private string _description;
-            private IProgress<ProgressInfo> _progress;
             private readonly AbstractUIThreadOperationContext _context;
             private int _completedItems;
             private int _totalItems;
@@ -208,22 +264,22 @@ namespace Microsoft.VisualStudio.Utilities
 
             public IUIThreadOperationContext Context => _context;
 
-            public IProgress<ProgressInfo> Progress => _progress ?? (_progress = new Progress<ProgressInfo>((progressInfo) => OnProgressChanged(progressInfo)));
+            public IProgress<ProgressInfo> Progress => this;
 
             public int CompletedItems => _completedItems;
 
             public int TotalItems => _totalItems;
 
-            private void OnProgressChanged(ProgressInfo progressInfo)
+            public void Dispose()
+            {
+                _context.OnScopeDisposed(this);
+            }
+
+            void IProgress<ProgressInfo>.Report(ProgressInfo progressInfo)
             {
                 Interlocked.Exchange(ref _completedItems, progressInfo.CompletedItems);
                 Interlocked.Exchange(ref _totalItems, progressInfo.TotalItems);
                 _context.OnScopeProgressChanged(this);
-            }
-
-            public void Dispose()
-            {
-                _context.OnScopeDisposed(this);
             }
         }
     }

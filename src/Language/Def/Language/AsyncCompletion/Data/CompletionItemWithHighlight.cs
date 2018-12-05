@@ -42,6 +42,7 @@ namespace Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion.Data
             CompletionItem = completionItem ?? throw new ArgumentNullException(nameof(completionItem));
             if (highlightedSpans.IsDefault)
                 throw new ArgumentException("Array must be initialized", nameof(highlightedSpans));
+
             HighlightedSpans = highlightedSpans;
         }
 

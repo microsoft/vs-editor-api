@@ -29,7 +29,7 @@ namespace Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion.Data
         RaiseFurtherReturnKeyAndTabKeyCommandHandlers = 0b0010,
 
         /// <summary>
-        /// Cancels the commit operation, does not call any other <see cref="IAsyncCompletionCommitManager.TryCommit(Text.Editor.ITextView, Text.ITextBuffer, CompletionItem, Text.ITrackingSpan, char, System.Threading.CancellationToken)"/>.
+        /// Cancels the commit operation, does not call any other <see cref="IAsyncCompletionCommitManager.TryCommit(IAsyncCompletionSession, Text.ITextBuffer, CompletionItem, char, System.Threading.CancellationToken)"/>.
         /// Functionally, acts as if the typed character was not a commit character,
         /// allowing the user to continue working with the <see cref="IAsyncCompletionSession"/>
         /// </summary>

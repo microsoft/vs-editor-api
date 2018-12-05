@@ -23,6 +23,11 @@ namespace Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion
         public const string CompletionCommandHandler = "CompletionCommandHandler";
 
         /// <summary>
+        /// Name of the editor option that stores user's preference for dismissing completion rather than blocking for potentially long running tasks.
+        /// </summary>
+        public const string NonBlockingCompletionOptionName = "NonBlockingCompletion";
+
+        /// <summary>
         /// Name of the editor option that stores user's preference for the completion mode.
         /// </summary>
         public const string SuggestionModeInCompletionOptionName = "SuggestionModeInCompletion";
@@ -30,6 +35,6 @@ namespace Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion
         /// <summary>
         /// Name of the editor option that stores user's preference for the completion mode during debugging.
         /// </summary>
-        public const string SuggestionModeInDebuggerCompletionOptionName = "SuggestionModeInCompletionDuringDebugging";
+        public const string SuggestionModeInDebuggerCompletionOptionName = "SuggestionModeInDebuggerViewCompletion";
     }
 }

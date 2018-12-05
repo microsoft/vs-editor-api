@@ -83,11 +83,12 @@ namespace Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion.Implement
                 try
                 {
                     var previousModel = await previousTask;
-                    // Previous task finished processing. We are ready to execute next piece of work.
+
                     if (_token.IsCancellationRequested || _terminated)
                         return previousModel;
 
-                    var transformedModel = await transformation(await previousTask, _token).ConfigureAwait(true);
+                    // Previous task finished processing. We are ready to execute next piece of work.
+                    var transformedModel = await transformation(previousModel, _token).ConfigureAwait(true);
                     RecentModel = transformedModel;
 
                     // TODO: update UI even if updateUi is false but it wasn't updated yet.
@@ -97,15 +98,19 @@ namespace Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion.Implement
                         if (!_uiCancellation.IsCancellationRequested)
                             _callbacks.UpdateUI(transformedModel, _uiCancellation.Token).Forget();
                     }
-
                     return transformedModel;
                 }
                 catch (Exception ex)
                 {
+                    // Disallow enqueuing more tasks
                     _terminated = true;
-                    _guardedOperations.HandleException(this, ex);
+                    // Log the issue
+                    if (!(ex is ThreadAbortException))
+                        _guardedOperations.HandleException(this, ex);
+                    // Close completion
                     _callbacks.Dismiss();
-                    return await previousTask;
+                    // Return a task that has not faulted
+                    return default(TModel);
                 }
             });
 

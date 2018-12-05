@@ -34,6 +34,13 @@ namespace Microsoft.VisualStudio.Text.Differencing
         /// <remarks>This option is ignored in the other view modes.</remarks>
         public static readonly EditorOptionKey<bool> SynchronizeSideBySideViewsId = new EditorOptionKey<bool>(DifferenceViewerOptions.SynchronizeSideBySideViewsName);
         public const string SynchronizeSideBySideViewsName = "Diff/View/SynchronizeSideBySideViews";
+
+
+        /// <summary>
+        /// If <c>true</c>, show the difference overview margin.
+        /// </summary>
+        public static readonly EditorOptionKey<bool> ShowDiffOverviewMarginId = new EditorOptionKey<bool>(DifferenceViewerOptions.ShowDiffOverviewMarginName);
+        public const string ShowDiffOverviewMarginName = "Diff/View/ShowDiffOverviewMargin";
     }
 
     /// <summary>

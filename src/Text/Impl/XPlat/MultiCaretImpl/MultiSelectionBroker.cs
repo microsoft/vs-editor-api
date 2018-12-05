@@ -40,7 +40,7 @@ namespace Microsoft.VisualStudio.Text.MultiSelection.Implementation
             _selectionTransformers.Add(_primaryTransformer);
 
             // Ignore normal text structure navigators and take the plain text version to keep ownership of word navigation.
-            _textStructureNavigator = Factory.TextStructureNavigatorSelectorService.CreateTextStructureNavigator(_textView.TextViewModel.EditBuffer, Factory.ContentTypeRegistryService.GetContentType("text"));
+            _textStructureNavigator = Factory.TextStructureNavigatorSelectorService.GetTextStructureNavigator(_textView.TextViewModel.EditBuffer);
 
             _textView.LayoutChanged += OnTextViewLayoutChanged;
             _textView.Closed += OnTextViewClosed;
@@ -60,9 +60,32 @@ namespace Microsoft.VisualStudio.Text.MultiSelection.Implementation
 
         private void OnTextViewLayoutChanged(object sender, TextViewLayoutChangedEventArgs e)
         {
-            if (CurrentSnapshot != e.NewSnapshot)
+            using (var batchOp = BeginBatchOperation())
             {
-                CurrentSnapshot = e.NewSnapshot;
+                // If we get a text change, we need to go through all the selections and update them to be in the
+                // new snapshot. If there is just a visual change, we could still need to update selections because
+                // word wrap or collapsed regions might have moved around.
+                if (CurrentSnapshot != e.NewSnapshot)
+                {
+                    CurrentSnapshot = e.NewSnapshot;
+                }
+                else if (e.NewViewState.VisualSnapshot != e.OldViewState.VisualSnapshot)
+                {
+                    // Box selection is special. Moving _boxSelection is easy, but InnerSetBoxSelection will totally
+                    // reset all the selections. It's easier to go a different path here than it is to special case
+                    // NormalizeSelections, which is also called when adding an individual selection.
+                    if (IsBoxSelection)
+                    {
+                        // MapToSnapshot does take the visual buffer into account as well. Calling it here should do the right thing
+                        // for collapsed regions and word wrap.
+                        _boxSelection.Selection = _boxSelection.Selection.MapToSnapshot(_currentSnapshot, _textView);
+                        InnerSetBoxSelection();
+                    }
+                    else
+                    {
+                        NormalizeSelections(true);
+                    }
+                }
             }
         }
 
@@ -197,18 +220,22 @@ namespace Microsoft.VisualStudio.Text.MultiSelection.Implementation
             }
         }
 
-        internal void QueueCaretUpdatedEvent(SelectionTransformer selection)
+        internal void QueueCaretUpdatedEvent(SelectionTransformer transformer)
         {
             // This is set for calls to TransformSelection which doesn't
             // make permanent changes to _selectionTransformers.
-            if (selection == _standaloneTransformation)
+            if (transformer == _standaloneTransformation)
             {
                 return;
             }
 
-            if (selection == _boxSelection)
+            if (transformer == _boxSelection)
             {
                 InnerSetBoxSelection();
+            }
+            else
+            {
+                transformer.ModifiedByCurrentOperation = true;
             }
 
             _fireEvents = true;
@@ -382,6 +409,9 @@ namespace Microsoft.VisualStudio.Text.MultiSelection.Implementation
 
         private void FireSessionUpdated()
         {
+            var changesFromNormalization = NormalizeSelections();
+            _fireEvents = _fireEvents || changesFromNormalization;
+
             // Perform merges as late as possible so that each region can act independently for operations.
             MergeSelections();
 
@@ -398,6 +428,42 @@ namespace Microsoft.VisualStudio.Text.MultiSelection.Implementation
                     Factory.GuardedOperations.RaiseEvent(this, evt);
                 }
             }
+        }
+
+        /// <summary>
+        /// Takes selections and makes sure they do not occupy space within text elements like collapsed regions or multi-byte
+        /// characters.
+        /// </summary>
+        /// <param name="overrideModifiedFlags">If specified, ignores dirty flags and normalizes everything.</param>
+        /// <returns>True if anything changed, false otherwise.</returns>
+        private bool NormalizeSelections(bool overrideModifiedFlags = false)
+        {
+            bool selectionsChanged = false;
+
+            // Normalizing for box selection is a more drastic action, and needs to be done with perf in mind since it can throw away,
+            // and recreate large numbers of selections. 
+            if (_boxSelection == null)
+            {
+                for (int i = 0; i < _selectionTransformers.Count; i++)
+                {
+                    if (overrideModifiedFlags || _selectionTransformers[i].ModifiedByCurrentOperation)
+                    {
+                        _selectionTransformers[i].ModifiedByCurrentOperation = false;
+
+                        // Mapping to the current snapshot has the side-affect of moving points away from the middle of text elements,
+                        // or in other words collapsed regions and multi-byte characters.
+                        var normalizedSelection = _selectionTransformers[i].Selection.MapToSnapshot(_currentSnapshot, _textView);
+
+                        if (_selectionTransformers[i].Selection != normalizedSelection)
+                        {
+                            selectionsChanged = true;
+                            _selectionTransformers[i].Selection = normalizedSelection;
+                        }
+                    }
+                }
+            }
+
+            return selectionsChanged;
         }
 
         private IFeatureService FeatureService
