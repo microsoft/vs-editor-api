@@ -7,14 +7,24 @@ namespace Microsoft.VisualStudio.UI.Text.Commanding.Implementation
     [Name("default")]
     internal class DefaultUIThreadOperationExecutor : IUIThreadOperationExecutor
     {
-        public IUIThreadOperationContext BeginExecute(string title, string description, bool allowCancel, bool showProgress)
+        public IUIThreadOperationContext BeginExecute(string title, string defaultDescription, bool allowCancellation, bool showProgress)
         {
-            return new DefaultUIThreadOperationContext(allowCancel, description);
+            return BeginExecute(new UIThreadOperationExecutionOptions(title, defaultDescription, allowCancellation, showProgress));
         }
 
-        public UIThreadOperationStatus Execute(string title, string description, bool allowCancel, bool showProgress, Action<IUIThreadOperationContext> action)
+        public IUIThreadOperationContext BeginExecute(UIThreadOperationExecutionOptions executionOptions)
         {
-            var context = new DefaultUIThreadOperationContext(allowCancel, description);
+            return new DefaultUIThreadOperationContext(executionOptions.AllowCancellation, executionOptions.DefaultDescription);
+        }
+
+        public UIThreadOperationStatus Execute(string title, string defaultDescription, bool allowCancellation, bool showProgress, Action<IUIThreadOperationContext> action)
+        {
+            return Execute(new UIThreadOperationExecutionOptions(title, defaultDescription, allowCancellation, showProgress), action);
+        }
+
+        public UIThreadOperationStatus Execute(UIThreadOperationExecutionOptions executionOptions, Action<IUIThreadOperationContext> action)
+        {
+            var context = new DefaultUIThreadOperationContext(executionOptions.AllowCancellation, executionOptions.DefaultDescription);
             action(context);
             return UIThreadOperationStatus.Completed;
         }
@@ -22,8 +32,8 @@ namespace Microsoft.VisualStudio.UI.Text.Commanding.Implementation
 
     internal class DefaultUIThreadOperationContext : AbstractUIThreadOperationContext
     {
-        public DefaultUIThreadOperationContext(bool allowCancellation, string description)
-            : base(allowCancellation, description)
+        public DefaultUIThreadOperationContext(bool allowCancellation, string defaultDescription)
+            : base(allowCancellation, defaultDescription)
         {
         }
     }

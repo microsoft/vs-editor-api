@@ -478,7 +478,7 @@ namespace Microsoft.VisualStudio.UI.Text.Commanding.Implementation
 
             public int CancelAfter
                 => _state.IsExecutingTypingCommand ?
-                _textView.Options.GetOptionValue(DefaultOptions.MaximumTypingLatencyOptionId) :
+                _textView.Options.GetOptionValue<int>("MaximumTypingLatency") :
                 Timeout.Infinite;
 
             public bool ShouldCancel()

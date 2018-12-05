@@ -5,10 +5,10 @@
     <SignAssembly>true</SignAssembly>
     <AssemblyOriginatorKeyFile>key.snk</AssemblyOriginatorKeyFile>
     <DelaySign>false</DelaySign>
-    <Version>15.2.3-pre</Version>
+    <Version>15.2.4-pre</Version>
     <AssemblyVersion>15.0.0.0</AssemblyVersion>
-    <NuGetVersionEditor>15.8.519</NuGetVersionEditor>
-    <NuGetVersionLanguage>15.8.519</NuGetVersionLanguage>
+    <NuGetVersionEditor>16.0.142-g25b7188c54</NuGetVersionEditor>
+    <NuGetVersionLanguage>16.0.142-g25b7188c54</NuGetVersionLanguage>
     <LangVersion>latest</LangVersion>
   </PropertyGroup>
 

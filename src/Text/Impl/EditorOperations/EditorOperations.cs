@@ -25,6 +25,7 @@ namespace Microsoft.VisualStudio.Text.Operations.Implementation
     using Microsoft.VisualStudio.Utilities;
     using Microsoft.VisualStudio.Text.Outlining;
     using Microsoft.VisualStudio.Text.Tagging;
+    using Microsoft.VisualStudio.Text.Utilities;
 #if WINDOWS
     using Microsoft.VisualStudio.Language.Intellisense.Utilities;
 #endif
