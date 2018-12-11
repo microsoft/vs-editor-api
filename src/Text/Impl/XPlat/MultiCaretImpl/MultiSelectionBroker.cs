@@ -60,33 +60,37 @@ namespace Microsoft.VisualStudio.Text.MultiSelection.Implementation
 
         private void OnTextViewLayoutChanged(object sender, TextViewLayoutChangedEventArgs e)
         {
-            using (var batchOp = BeginBatchOperation())
+            if (CurrentSnapshot != e.NewSnapshot)
             {
-                // If we get a text change, we need to go through all the selections and update them to be in the
-                // new snapshot. If there is just a visual change, we could still need to update selections because
-                // word wrap or collapsed regions might have moved around.
-                if (CurrentSnapshot != e.NewSnapshot)
-                {
-                    CurrentSnapshot = e.NewSnapshot;
-                }
-                else if (e.NewViewState.VisualSnapshot != e.OldViewState.VisualSnapshot)
-                {
-                    // Box selection is special. Moving _boxSelection is easy, but InnerSetBoxSelection will totally
-                    // reset all the selections. It's easier to go a different path here than it is to special case
-                    // NormalizeSelections, which is also called when adding an individual selection.
-                    if (IsBoxSelection)
-                    {
-                        // MapToSnapshot does take the visual buffer into account as well. Calling it here should do the right thing
-                        // for collapsed regions and word wrap.
-                        _boxSelection.Selection = _boxSelection.Selection.MapToSnapshot(_currentSnapshot, _textView);
-                        InnerSetBoxSelection();
-                    }
-                    else
-                    {
-                        NormalizeSelections(true);
-                    }
-                }
+                CurrentSnapshot = e.NewSnapshot;
             }
+            //using (var batchOp = BeginBatchOperation())
+            //{
+            //    // If we get a text change, we need to go through all the selections and update them to be in the
+            //    // new snapshot. If there is just a visual change, we could still need to update selections because
+            //    // word wrap or collapsed regions might have moved around.
+            //    if (CurrentSnapshot != e.NewSnapshot)
+            //    {
+            //        CurrentSnapshot = e.NewSnapshot;
+            //    }
+            //    else if (e.NewViewState.VisualSnapshot != e.OldViewState.VisualSnapshot)
+            //    {
+            //        // Box selection is special. Moving _boxSelection is easy, but InnerSetBoxSelection will totally
+            //        // reset all the selections. It's easier to go a different path here than it is to special case
+            //        // NormalizeSelections, which is also called when adding an individual selection.
+            //        if (IsBoxSelection)
+            //        {
+            //            // MapToSnapshot does take the visual buffer into account as well. Calling it here should do the right thing
+            //            // for collapsed regions and word wrap.
+            //            _boxSelection.Selection = _boxSelection.Selection.MapToSnapshot(_currentSnapshot, _textView);
+            //            InnerSetBoxSelection();
+            //        }
+            //        else
+            //        {
+            //            NormalizeSelections(true);
+            //        }
+            //    }
+            //}
         }
 
         private void OnTextViewClosed(object sender, EventArgs e)
@@ -409,8 +413,8 @@ namespace Microsoft.VisualStudio.Text.MultiSelection.Implementation
 
         private void FireSessionUpdated()
         {
-            var changesFromNormalization = NormalizeSelections();
-            _fireEvents = _fireEvents || changesFromNormalization;
+            //var changesFromNormalization = NormalizeSelections();
+            //_fireEvents = _fireEvents || changesFromNormalization;
 
             // Perform merges as late as possible so that each region can act independently for operations.
             MergeSelections();

@@ -438,9 +438,10 @@ namespace Microsoft.VisualStudio.Text.MultiSelection.Implementation
 
                 // Using the ternary here to shortcut out if the snapshots are the same. There's a similar check in the
                 // MapSelectionToCurrentSnapshot method to avoid doing unneeded work, but even spinning up the method call can be expensive.
-                _selection = (newSelection.InsertionPoint.Position.Snapshot == this.CurrentSnapshot)
-                    ? newSelection
-                    : MapSelectionToCurrentSnapshot(newSelection);
+                //_selection = (newSelection.InsertionPoint.Position.Snapshot == this.CurrentSnapshot)
+                //    ? newSelection
+                //    : MapSelectionToCurrentSnapshot(newSelection);
+                _selection = newSelection;
 
                 _broker.QueueCaretUpdatedEvent(this);
             }
