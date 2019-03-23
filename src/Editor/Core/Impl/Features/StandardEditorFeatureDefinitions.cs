@@ -25,5 +25,10 @@ namespace Microsoft.VisualStudio.Utilities.Features.Implementation
         [BaseDefinition(PredefinedEditorFeatureNames.InteractivePopup)]
         [BaseDefinition(PredefinedEditorFeatureNames.Editor)]
         public FeatureDefinition CompletionDefinition;
+
+        [Export]
+        [Name(PredefinedEditorFeatureNames.AsyncCompletion)]
+        [BaseDefinition(PredefinedEditorFeatureNames.Completion)]
+        public FeatureDefinition AsyncCompletionDefinition;
     }
 }

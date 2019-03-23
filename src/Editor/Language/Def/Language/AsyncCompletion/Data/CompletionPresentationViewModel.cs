@@ -63,10 +63,10 @@ namespace Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion.Data
         /// <param name="filters">Completion filters with their available and selected state</param>
         /// <param name="selectedItemIndex">Controls which item is selected. Use -1 in suggestion mode</param>
         /// <param name="applicableToSpan">Span pertinent to the completion session</param>
-        /// <param name="useSoftSelection">Controls whether selected item should be soft selected. Default is <code>false</code></param>
-        /// <param name="displaySuggestionItem">Controls whether suggestion mode item is visible. Default is <code>false</code></param>
-        /// <param name="selectSuggestionItem">Controls whether suggestion mode item is selected. Default is <code>false</code></param>
-        /// <param name="suggestionItem">Suggestion mode item to display. Default is <code>null</code></param>
+        /// <param name="useSoftSelection">Controls whether selected item should be soft selected. Default is <c>false</c></param>
+        /// <param name="displaySuggestionItem">Controls whether suggestion mode item is visible. Default is <c>false</c></param>
+        /// <param name="selectSuggestionItem">Controls whether suggestion mode item is selected. Default is <c>false</c></param>
+        /// <param name="suggestionItem">Suggestion mode item to display. Default is <c>null</c></param>
         /// <param name="suggestionItemOptions">How to present the suggestion mode item. This is required because completion may be in suggestion mode even if there is no explicit suggestion mode item</param>
         public CompletionPresentationViewModel(
             ImmutableArray<CompletionItemWithHighlight> items,

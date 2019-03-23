@@ -1,4 +1,4 @@
-//
+﻿//
 //  Copyright (c) Microsoft Corporation. All rights reserved.
 //  Licensed under the MIT License. See License.txt in the project root for license information.
 //
@@ -25,15 +25,13 @@ namespace Microsoft.VisualStudio.Text.Operations.Implementation
     using Microsoft.VisualStudio.Utilities;
     using Microsoft.VisualStudio.Text.Outlining;
     using Microsoft.VisualStudio.Text.Tagging;
-    using Microsoft.VisualStudio.Text.Utilities;
-#if WINDOWS
     using Microsoft.VisualStudio.Language.Intellisense.Utilities;
-#endif
+    using Microsoft.VisualStudio.Text.Utilities;
 
     /// <summary>
     /// Provides a default operations set on top of the text editor
     /// </summary>
-    internal class EditorOperations : IEditorOperations3
+    internal class EditorOperations : IEditorOperations4
     {
         enum CaretMovementDirection
         {
@@ -58,14 +56,14 @@ namespace Microsoft.VisualStudio.Text.Operations.Implementation
 
         #region Private Members
 
-        ITextView _textView;
-        EditorOperationsFactoryService _factory;
-        ITextDocument _textDocument;
-        ITextStructureNavigator _textStructureNavigator;
-        ITextUndoHistory _undoHistory;
-        IViewPrimitives _editorPrimitives;
-        IEditorOptions _editorOptions;
-        IMultiSelectionBroker _multiSelectionBroker;
+        readonly ITextView3 _textView;
+        readonly EditorOperationsFactoryService _factory;
+        readonly ITextDocument _textDocument;
+        readonly ITextStructureNavigator _textStructureNavigator;
+        readonly ITextUndoHistory _undoHistory;
+        readonly IViewPrimitives _editorPrimitives;
+        readonly IEditorOptions _editorOptions;
+        readonly IMultiSelectionBroker _multiSelectionBroker;
 
         private ITrackingSpan _immProvisionalComposition;
 
@@ -98,7 +96,7 @@ namespace Microsoft.VisualStudio.Text.Operations.Implementation
             if (factory == null)
                 throw new ArgumentNullException(nameof(factory));
 
-            _textView = textView;
+            _textView = (Microsoft.VisualStudio.Text.Editor.ITextView3)textView;
             _factory = factory;
             _multiSelectionBroker = _textView.GetMultiSelectionBroker();
             _editorPrimitives = factory.EditorPrimitivesProvider.GetViewPrimitives(textView);
@@ -1083,30 +1081,29 @@ namespace Microsoft.VisualStudio.Text.Operations.Implementation
             }
             else
             {
-                //Next we test for surrogate pairs and newline:
-                ITextSnapshot snapshot = edit.Snapshot;
                 int previousPosition = selection.InsertionPoint.Position.Position - 1;
+                //If span length == 1 it's no brainer to delete just 1 char
+                if (previousElementSpan.Length == 1)
+                    return edit.Delete(new Span(previousPosition, 1));
 
-                int index = previousPosition;
-                char currentCharacter = snapshot[previousPosition];
+                ITextSnapshot snapshot = edit.Snapshot;
 
-                // By default VS (and many other apps) will delete only the last character
-                // of a combining character sequence.  The one exception to this rule is
-                // surrogate pais which we are handling here.
-                if (char.GetUnicodeCategory(currentCharacter) == UnicodeCategory.Surrogate)
+                //Handle deleting both characters of Windows new line
+                if (snapshot[previousPosition] == '\n' &&
+                    snapshot[previousPosition - 1] == '\r')
                 {
-                    index--;
+                    return edit.Delete(new Span(previousPosition - 1, 2));
                 }
 
-                if ((index > 0) &&
-                    (currentCharacter == '\n') &&
-                    (snapshot[previousPosition - 1] == '\r'))
+                // Check if it's emoji or other kind of multichar unicode that should be deleted at once
+                if (char.GetUnicodeCategory(snapshot[previousPosition]) == UnicodeCategory.Surrogate)
                 {
-                    index--;
+                    return edit.Delete(new Span(selection.InsertionPoint.Position.Position - previousElementSpan.Length, previousElementSpan.Length));
                 }
 
-                // With index moved back in the cases of newline and surrogate pairs, this delete should handle all other cases.
-                return edit.Delete(new Span(index, previousPosition - index + 1));
+                // This is also multichar unicode, but we don't want to delete it at once but char by char
+                // because thats what user expects when doing chinese or arabic input
+                return edit.Delete(new Span(previousPosition, 1));
             }
         }
 
@@ -1347,7 +1344,7 @@ namespace Microsoft.VisualStudio.Text.Operations.Implementation
         /// </summary>
         public void SelectAll()
         {
-            _editorPrimitives.Selection.SelectAll();
+            _editorPrimitives.Selection.SelectAll(_editorOptions.ShouldMoveCaretOnSelectAll());
         }
 
         /// <summary>
@@ -2774,7 +2771,6 @@ namespace Microsoft.VisualStudio.Text.Operations.Implementation
             // Clipboard may throw exceptions, so enclose Clipboard calls in a try-catch block
             try
             {
-#if WINDOWS
                 IDataObject dataObj = Clipboard.GetDataObject();
 
                 if (dataObj == null || !dataObj.GetDataPresent(typeof(string)))
@@ -2790,7 +2786,6 @@ namespace Microsoft.VisualStudio.Text.Operations.Implementation
 
                 dataHasLineCutCopyTag = dataObj.GetDataPresent(_clipboardLineBasedCutCopyTag);
                 dataHasBoxCutCopyTag = dataObj.GetDataPresent(_boxSelectionCutCopyTag);
-#endif
             }
             catch (System.Runtime.InteropServices.ExternalException)
             {
@@ -2886,11 +2881,7 @@ namespace Microsoft.VisualStudio.Text.Operations.Implementation
                 // Clipboard may throw exceptions, so enclose Clipboard calls in a try-catch block
                 try
                 {
-#if WINDOWS
                     return Clipboard.ContainsText() && !_textView.TextSnapshot.TextBuffer.IsReadOnly(_editorPrimitives.Caret.CurrentPosition);
-#else
-                    return false;
-#endif
                 }
                 catch (System.Runtime.InteropServices.ExternalException)
                 {
@@ -3196,26 +3187,14 @@ namespace Microsoft.VisualStudio.Text.Operations.Implementation
 
         public void ScrollColumnLeft()
         {
-#if WINDOWS
-            IWpfTextView wpfTextView = _textView as IWpfTextView;
-            if (wpfTextView != null)
-            {
-                // A column is defined as the width of a space in the default font
-                _textView.ViewScroller.ScrollViewportHorizontallyByPixels(wpfTextView.FormattedLineSource.ColumnWidth * -1.0);
-            }
-#endif
+            // A column is defined as the width of a space in the default font
+            _textView.ViewScroller.ScrollViewportHorizontallyByPixels(_textView.FormattedLineSource.ColumnWidth * -1.0);
         }
 
         public void ScrollColumnRight()
         {
-#if WINDOWS
-            IWpfTextView wpfTextView = _textView as IWpfTextView;
-            if (wpfTextView != null)
-            {
-                // A column is defined as the width of a space in the default font
-                _textView.ViewScroller.ScrollViewportHorizontallyByPixels(wpfTextView.FormattedLineSource.ColumnWidth);
-            }
-#endif
+            // A column is defined as the width of a space in the default font
+            _textView.ViewScroller.ScrollViewportHorizontallyByPixels(_textView.FormattedLineSource.ColumnWidth);
         }
 
         public void ScrollLineBottom()
@@ -3249,45 +3228,52 @@ namespace Microsoft.VisualStudio.Text.Operations.Implementation
             _undoHistory.CurrentTransaction.AddUndo(beforeTextBufferChangeUndoPrimitive);
         }
 
+        public bool CanZoomIn => CanZoomTo && _textView.ZoomLevel < ZoomConstants.MaxZoom;
+
         public void ZoomIn()
         {
-#if WINDOWS
-            IWpfTextView wpfTextView = _textView as IWpfTextView;
-            if (wpfTextView != null && wpfTextView.Roles.Contains(PredefinedTextViewRoles.Zoomable))
+            if (CanZoomIn)
             {
-                double zoomLevel = wpfTextView.ZoomLevel * ZoomConstants.ScalingFactor;
+                double zoomLevel = Math.Min(_textView.ZoomLevel * ZoomConstants.ScalingFactor, ZoomConstants.MaxZoom);
                 if (zoomLevel < ZoomConstants.MaxZoom || Math.Abs(zoomLevel - ZoomConstants.MaxZoom) < 0.00001)
                 {
-                    wpfTextView.Options.GlobalOptions.SetOptionValue(DefaultWpfViewOptions.ZoomLevelId, zoomLevel);
+                    _textView.Options.GlobalOptions.SetOptionValue(DefaultTextViewOptions.ZoomLevelId, zoomLevel);
                 }
             }
-#endif
         }
+
+        public bool CanZoomOut => CanZoomTo && _textView.ZoomLevel > ZoomConstants.MinZoom;
 
         public void ZoomOut()
         {
-#if WINDOWS
-            IWpfTextView wpfTextView = _textView as IWpfTextView;
-            if (wpfTextView != null && wpfTextView.Roles.Contains(PredefinedTextViewRoles.Zoomable))
+            if (CanZoomOut)
             {
-                double zoomLevel = wpfTextView.ZoomLevel / ZoomConstants.ScalingFactor;
+                double zoomLevel = Math.Max(_textView.ZoomLevel / ZoomConstants.ScalingFactor, ZoomConstants.MinZoom);
                 if (zoomLevel > ZoomConstants.MinZoom || Math.Abs(zoomLevel - ZoomConstants.MinZoom) < 0.00001)
                 {
-                    wpfTextView.Options.GlobalOptions.SetOptionValue(DefaultWpfViewOptions.ZoomLevelId, zoomLevel);
+                    _textView.Options.GlobalOptions.SetOptionValue(DefaultTextViewOptions.ZoomLevelId, zoomLevel);
                 }
             }
-#endif
         }
+
+        public bool CanZoomTo => _textView.Roles.Contains(PredefinedTextViewRoles.Zoomable);
 
         public void ZoomTo(double zoomLevel)
         {
-#if WINDOWS
-            IWpfTextView wpfTextView = _textView as IWpfTextView;
-            if (wpfTextView != null && wpfTextView.Roles.Contains(PredefinedTextViewRoles.Zoomable))
+            if (CanZoomTo)
             {
-                wpfTextView.Options.GlobalOptions.SetOptionValue(DefaultWpfViewOptions.ZoomLevelId, zoomLevel);
+                _textView.Options.GlobalOptions.SetOptionValue(DefaultTextViewOptions.ZoomLevelId, zoomLevel);
             }
-#endif
+        }
+
+        public bool CanZoomReset => CanZoomTo && _textView.ZoomLevel != ZoomConstants.DefaultZoom;
+
+        public void ZoomReset()
+        {
+            if (CanZoomReset)
+            {
+                ZoomTo(ZoomConstants.DefaultZoom);
+            }
         }
 
         #endregion // IEditorOperations Members
@@ -3874,7 +3860,6 @@ namespace Microsoft.VisualStudio.Text.Operations.Implementation
             // Clipboard may throw exceptions, so enclose Clipboard calls in a try-catch block
             try
             {
-#if WINDOWS
                 DataObject dataObject = new DataObject();
 
                 //set plain text format
@@ -3906,7 +3891,6 @@ namespace Microsoft.VisualStudio.Text.Operations.Implementation
                 // which confuse applications that try to synchronize clipboard data between multiple machines such 
                 // as MagicMouse or remote desktop.
                 Clipboard.SetDataObject(dataObject, false);
-#endif
 
                 return true;
             }
@@ -3919,32 +3903,28 @@ namespace Microsoft.VisualStudio.Text.Operations.Implementation
 
         private string GenerateRtf(NormalizedSnapshotSpanCollection spans)
         {
-#if WINDOWS
-            if (_textView.Options.GetOptionValue(EnableRtfCopy.OptionKey))
-            {
-                //Don't generate RTF for large spans (since it is expensive and probably not wanted).
-                int length = spans.Sum((span) => span.Length);
-                if (length < _textView.Options.GetOptionValue(MaxRtfCopyLength.OptionKey))
-                {
-                    if (_textView.Options.GetOptionValue(UseAccurateClassificationForRtfCopy.OptionKey))
-                    {
-                        using (var dialog = WaitHelper.Wait(_factory.WaitIndicator, Strings.WaitTitle, Strings.WaitMessage))
-                        {
-                            return ((IRtfBuilderService2)(_factory.RtfBuilderService)).GenerateRtf(spans, dialog.CancellationToken);
-                        }
-                    }
-                    else
-                    {
-                        return _factory.RtfBuilderService.GenerateRtf(spans);
-                    }
-                }
-            else
-                return null;
-            }
+            //TODO:MAC
+            //if (_textView.Options.GetOptionValue(EnableRtfCopy.OptionKey))
+            //{
+            //    //Don't generate RTF for large spans (since it is expensive and probably not wanted).
+            //    int length = spans.Sum((span) => span.Length);
+            //    if (length < _textView.Options.GetOptionValue(MaxRtfCopyLength.OptionKey))
+            //    {
+            //        if (_textView.Options.GetOptionValue(UseAccurateClassificationForRtfCopy.OptionKey))
+            //        {
+            //            using (var dialog = WaitHelper.Wait(_factory.WaitIndicator, Strings.WaitTitle, Strings.WaitMessage))
+            //            {
+            //                return ((IRtfBuilderService2)(_factory.RtfBuilderService)).GenerateRtf(spans, dialog.CancellationToken);
+            //            }
+            //        }
+            //        else
+            //        {
+            //            return _factory.RtfBuilderService.GenerateRtf(spans);
+            //        }
+            //    }
+            //}
 
-#else
             return null;
-#endif
         }
 
         private string GenerateRtf(SnapshotSpan span)

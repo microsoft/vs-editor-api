@@ -4,7 +4,6 @@
 //
 using System;
 using System.Diagnostics;
-using Microsoft.VisualStudio.Text.Formatting;
 
 namespace Microsoft.VisualStudio.Text.Editor
 {
@@ -138,7 +137,7 @@ namespace Microsoft.VisualStudio.Text.Editor
         /// <summary>
         /// See <see cref="ITextView2.TryGetTextViewLineContainingBufferPosition(SnapshotPoint, out Formatting.ITextViewLine)"/>.
         /// </summary>
-        public static bool TryGetTextViewLineContainingBufferPosition(this ITextView textView, SnapshotPoint bufferPosition, out ITextViewLine textViewLine)
+        public static bool TryGetTextViewLineContainingBufferPosition(this ITextView textView, SnapshotPoint bufferPosition, out ITextViewLineCollection textViewLines)
         {
             if (textView == null)
             {
@@ -147,11 +146,11 @@ namespace Microsoft.VisualStudio.Text.Editor
 
             if (textView is ITextView2 textView2)
             {
-                return textView2.TryGetTextViewLineContainingBufferPosition(bufferPosition, out textViewLine);
+                return textView2.TryGetTextViewLineContainingBufferPosition(bufferPosition, out textViewLines);
             }
             else
             {
-                textViewLine = null;
+                textViewLines = null;
                 return false;
             }
         }

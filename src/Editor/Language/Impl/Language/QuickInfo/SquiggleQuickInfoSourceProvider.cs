@@ -6,9 +6,7 @@
     using Microsoft.VisualStudio.Threading;
     using Microsoft.VisualStudio.Utilities;
 
-    // TODO: re-enable this as part of
-    // https://devdiv.visualstudio.com/DevDiv/Xamarin%20VS%20for%20Mac/_workitems/edit/617427
-    // [Export(typeof(IAsyncQuickInfoSourceProvider))]
+    [Export(typeof(IAsyncQuickInfoSourceProvider))]
     [Name("squiggle")]
     [Order]
     [ContentType("any")]

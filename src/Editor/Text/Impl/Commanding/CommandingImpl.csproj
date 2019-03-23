@@ -1,0 +1,43 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AssemblyName>Microsoft.VisualStudio.UI.Text.Commanding.Implementation</AssemblyName>
+    <RootNamespace>$(AssemblyName)</RootNamespace>
+    <NoWarn>649;436;$(NoWarn)</NoWarn>
+    <AssemblyAttributeClsCompliant>true</AssemblyAttributeClsCompliant>
+    <TargetFramework>$(TargetFramework)</TargetFramework>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="System" />
+    <Reference Include="System.ComponentModel.Composition" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Xml.Linq" />
+    <Reference Include="System.Data.DataSetExtensions" />
+    <Reference Include="Microsoft.CSharp" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Net.Http" />
+    <Reference Include="System.Xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\Core\Def\CoreUtility.csproj" />
+    <ProjectReference Include="..\..\Def\TextData\TextData.csproj" />
+    <ProjectReference Include="..\..\Def\TextUI\TextUI.csproj" />
+    <ProjectReference Include="..\..\Util\TextDataUtil\TextDataUtil.csproj" />
+    <ProjectReference Include="..\..\Util\TextUIUtil\TextUIUtil.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Update="CommandingStrings.Designer.cs">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>CommandingStrings.resx</DependentUpon>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Update="CommandingStrings.resx">
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>CommandingStrings.Designer.cs</LastGenOutput>
+    </EmbeddedResource>
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Properties\" />
+  </ItemGroup>
+</Project>

@@ -23,6 +23,10 @@ namespace Microsoft.VisualStudio.Commanding
     {
         /// <summary>
         /// Called to determine the state of the command.
+        /// This method should never return <see cref="CommandState.Unspecified"/> as it would prevent calling following command handlers.
+        /// <paramref name="nextCommandHandler"/> should be called instead. If a <see cref="IChainedCommandHandler{T}"/> handles a command
+        /// it doesn't own, its <see cref="GetCommandState(T, Func{CommandState})"/> should always call <paramref name="nextCommandHandler"/>"
+        /// to give a chance a <see cref="ICommandHandler"/> that owns the command to enable or disable it.
         /// </summary>
         /// <param name="args">The <see cref="CommandArgs"/> arguments for the command.</param>
         /// <param name="nextCommandHandler">The next command handler in the command execution chain.</param>
@@ -31,6 +35,8 @@ namespace Microsoft.VisualStudio.Commanding
 
         /// <summary>
         /// Called to execute the command.
+        /// If this implementation does not execute the command, <paramref name="nextCommandHandler"/> should be called
+        /// so that other <see cref="ICommandHandler"/>s may act on this command.
         /// </summary>
         /// <param name="args">The <see cref="CommandArgs"/> arguments for the command.</param>
         /// <param name="nextCommandHandler">The next command handler in the command execution chain.</param>

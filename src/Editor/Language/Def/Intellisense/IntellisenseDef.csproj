@@ -1,0 +1,28 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AssemblyName>Microsoft.VisualStudio.Language.Intellisense</AssemblyName>
+    <RootNamespace>$(AssemblyName)</RootNamespace>
+    <PushToPublicFeed>true</PushToPublicFeed>
+    <AssemblyAttributeClsCompliant>true</AssemblyAttributeClsCompliant>
+    <TargetFramework>$(TargetFramework)</TargetFramework>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="System" />
+    <Reference Include="PresentationCore" />
+    <Reference Include="WindowsBase" />
+    <Reference Include="System.ComponentModel.Composition" />
+    <Reference Include="System.Core" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.VisualStudio.ImageCatalog" />
+    <PackageReference Include="Microsoft.VisualStudio.Imaging.Interop.14.0.DesignTime" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\Core\Def\CoreUtility.csproj" />
+    <ProjectReference Include="..\..\..\Text\Def\TextData\TextData.csproj" />
+    <ProjectReference Include="..\..\..\Text\Def\TextLogic\TextLogic.csproj" />
+    <ProjectReference Include="..\..\..\Text\Def\TextUI\TextUI.csproj" />
+    <ProjectReference Include="..\Language\LanguageDef.csproj" />
+  </ItemGroup>
+</Project>

@@ -52,7 +52,7 @@ namespace Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion
         /// </summary>
         /// <remarks>
         /// If a language service does not wish to participate in completion, it should try to provide a valid <see cref="CompletionStartData.ApplicableToSpan"/>
-        /// and set <see cref="CompletionStartData.Participation"/> to <code>false</code>.
+        /// and set <see cref="CompletionStartData.Participation"/> to <c>false</c>.
         /// This will enable other extensions to provide completion in syntactically appropriate location.
         /// </remarks>
         /// <param name="trigger">What causes the completion, including the character typed and reference to <see cref="ITextView.TextSnapshot"/> prior to triggering the completion</param>

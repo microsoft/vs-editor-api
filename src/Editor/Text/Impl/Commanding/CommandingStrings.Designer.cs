@@ -39,7 +39,7 @@ namespace Microsoft.VisualStudio.UI.Text.Commanding.Implementation {
         internal static global::System.Resources.ResourceManager ResourceManager {
             get {
                 if (object.ReferenceEquals(resourceMan, null)) {
-                    global::System.Resources.ResourceManager temp = new global::System.Resources.ResourceManager("Microsoft.VisualStudio.Text.Implementation.Text.Impl.Commanding.CommandingStrings", typeof(CommandingStrings).Assembly);
+                    global::System.Resources.ResourceManager temp = new global::System.Resources.ResourceManager("Microsoft.VisualStudio.UI.Text.Commanding.Implementation.CommandingStrings", typeof(CommandingStrings).Assembly);
                     resourceMan = temp;
                 }
                 return resourceMan;

@@ -6,6 +6,7 @@ namespace Microsoft.VisualStudio.Text.Utilities
 {
     using System;
     using System.Collections.Generic;
+    using System.Linq;
     using Microsoft.VisualStudio.Text.Projection;
 
     internal static class MappingHelper
@@ -270,6 +271,47 @@ namespace Microsoft.VisualStudio.Text.Utilities
                 position = projSnap.MapToSourceSnapshot(position);
             }
             return position;
+        }
+
+        /// <summary>
+        /// Finds points on buffers in the <paramref name="bufferGraph"/> which are available at <paramref name="location"/>,
+        /// including when <paramref name="location"/> is on a buffer seam.
+        /// </summary>
+        /// <param name="location">Location where we look for points on other buffers</param>
+        /// <param name="rootSnapshot">Top snapshot from which we map down to other snapshots.
+        /// Typically it's the snapshot of <paramref name="location"/>, but you may provide a different snapshot
+        /// to work around incorrectly built buffer graphs.</param>
+        /// <returns>Enumeration of <see cref="SnapshotPoint"/>s that exist at given <paramref name="location"/>, mapped to buffers of the <paramref name="bufferGraph"/></returns>
+        internal static IEnumerable<SnapshotPoint> GetPointsAtLocation(SnapshotPoint location, ITextSnapshot rootSnapshot)
+        {
+            if (location.Snapshot != rootSnapshot)
+            {
+                // In Roslyn debugger text view case, location is not on the root. We need to map up
+                var locationAtRoot = MappingPointSnapshot.MapUpToSnapshotNoTrack(rootSnapshot, location, PositionAffinity.Predecessor);
+                location = locationAtRoot ?? location;
+            }
+            return GetProjectedPoints(location);
+        }
+
+        /// <summary>
+        /// Maps <paramref name="location"/> down to all projected <see cref="ITextSnapshot"/>s.
+        /// </summary>
+        /// <param name="location">Location which will be mapped down</param>
+        /// <returns></returns>
+        internal static IEnumerable<SnapshotPoint> GetProjectedPoints(SnapshotPoint location)
+        {
+            if (location.Snapshot is IProjectionSnapshot projection)
+            {
+                var span = new SnapshotSpan(location, 0);
+                foreach (var s in projection.MapToSourceSnapshots(span))
+                {
+                    foreach (var child in GetProjectedPoints(s.Start))
+                    {
+                        yield return child;
+                    }
+                }
+            }
+            yield return location;
         }
     }
 }

@@ -1039,11 +1039,8 @@ namespace Microsoft.VisualStudio.Text.Implementation
                         }
                     },
                     CancellationToken.None, TaskContinuationOptions.None, TaskScheduler.Default);
-
-#if WINDOWS
                 // Now register pending task with task tracker to ensure it's completed when editor host is shutdown
                 this.guardedOperations.NonJoinableTaskTracker?.Register(_lastChangeOnBackgroundRaisedEvent);
-#endif
             }
             if (medHandler != null)
             {

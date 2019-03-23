@@ -5,9 +5,6 @@ using Microsoft.VisualStudio.Text.Editor;
 namespace Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion
 {
     /// <summary>
-    /// Provides instances of <see cref="IAsyncCompletionSource"/> which filters and sorts available <see cref="CompletionItem"/>s given the current state of the editor.
-    /// </summary>
-    /// <summary>
     /// Provides instances of <see cref="IAsyncCompletionSource"/> which provides <see cref="CompletionItem"/>s
     /// and other information relevant to the completion feature at a specific <see cref="SnapshotPoint"/>
     /// </summary>
@@ -18,11 +15,13 @@ namespace Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion
     /// matches content type of any buffer in the completion's trigger location.
     /// </remarks>
     /// <example>
+    /// <code>
     ///     [Export(typeof(IAsyncCompletionSourceProvider))]
     ///     [Name(nameof(MyCompletionSource))]
     ///     [ContentType("text")]
     ///     [TextViewRoles(PredefinedTextViewRoles.Editable)]
     ///     public class MyCompletionSource : IAsyncCompletionSource
+    /// </code>
     /// </example>
     public interface IAsyncCompletionSourceProvider
     {

@@ -2,13 +2,15 @@
   <PropertyGroup>
     <AssemblyName>Microsoft.VisualStudio.Text.UI</AssemblyName>
     <RootNamespace>Microsoft.VisualStudio.Text.Editor</RootNamespace>
-    <TargetFramework>net46</TargetFramework>
     <PushToPublicFeed>true</PushToPublicFeed>
     <NoWarn>649;436;$(NoWarn)</NoWarn>
     <AssemblyAttributeClsCompliant>true</AssemblyAttributeClsCompliant>
+    <TargetFramework>$(TargetFramework)</TargetFramework>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" />
+    <Reference Include="WindowsBase" />
+    <Reference Include="PresentationCore" />
     <Reference Include="System.ComponentModel.Composition" />
   </ItemGroup>
   <ItemGroup>

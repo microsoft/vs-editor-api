@@ -91,24 +91,33 @@ namespace Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion.Implement
                     var transformedModel = await transformation(previousModel, _token).ConfigureAwait(true);
                     RecentModel = transformedModel;
 
-                    // TODO: update UI even if updateUi is false but it wasn't updated yet.
-                    if (_lastJoinableTask == currentTask && updateUi)
+                    // TODO: Consider updating UI even if updateUi is false but it wasn't updated yet.
+                    if (_lastJoinableTask == currentTask && !_token.IsCancellationRequested && !_terminated)
                     {
-                        // update UI because we're the latest task
-                        if (!_uiCancellation.IsCancellationRequested)
+                        _callbacks.ComputationFinished(transformedModel);
+
+                        if (updateUi && !_uiCancellation.IsCancellationRequested)
                             _callbacks.UpdateUI(transformedModel, _uiCancellation.Token).Forget();
                     }
                     return transformedModel;
+                }
+                catch (Exception ex) when (ex is OperationCanceledException || ex is ThreadAbortException)
+                {
+                    // Disallow enqueuing more tasks
+                    _terminated = true;
+                    // Close completion
+                    _callbacks.DismissDueToCancellation();
+                    // Return a task that has not faulted
+                    return default(TModel);
                 }
                 catch (Exception ex)
                 {
                     // Disallow enqueuing more tasks
                     _terminated = true;
                     // Log the issue
-                    if (!(ex is ThreadAbortException))
-                        _guardedOperations.HandleException(this, ex);
+                    _guardedOperations.HandleException(this, ex);
                     // Close completion
-                    _callbacks.Dismiss();
+                    _callbacks.DismissDueToError();
                     // Return a task that has not faulted
                     return default(TModel);
                 }

@@ -1,0 +1,28 @@
+﻿<Project ToolsVersion="15.0">
+  <PropertyGroup>
+    <!-- workaround for https://github.com/NuGet/Home/issues/5894 -->
+    <OriginalProjectName>PatternMatchingImpl</OriginalProjectName>
+    <TargetFramework>$(TargetFramework)</TargetFramework>
+  </PropertyGroup>
+  <Import Sdk="Microsoft.NET.Sdk" Project="Sdk.props" />
+  <PropertyGroup>
+    <AssemblyName>Microsoft.VisualStudio.Text.PatternMatching.Implementation</AssemblyName>
+    <RootNamespace>Microsoft.VisualStudio.Text.PatternMatching.Implementation</RootNamespace>
+    <AssemblyAttributeClsCompliant>true</AssemblyAttributeClsCompliant>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="System" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.ComponentModel.Composition" />
+    <Reference Include="System.Runtime" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="System.Collections.Immutable" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\Def\TextData\TextData.csproj" />
+    <ProjectReference Include="..\..\Def\Internal\Internal.csproj" />
+    <ProjectReference Include="..\..\Util\TextDataUtil\TextDataUtil.csproj" />
+  </ItemGroup>
+  <Import Sdk="Microsoft.NET.Sdk" Project="Sdk.targets" />
+</Project>

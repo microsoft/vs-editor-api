@@ -1,0 +1,49 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AssemblyName>Microsoft.VisualStudio.Text.UI.Utilities</AssemblyName>
+    <RootNamespace>$(AssemblyName)</RootNamespace>
+    <NoWarn>649;436;618;8073;$(NoWarn)</NoWarn>
+    <AssemblyAttributeClsCompliant>true</AssemblyAttributeClsCompliant>
+    <TargetFramework>$(TargetFramework)</TargetFramework>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="System" />
+    <Reference Include="System.ComponentModel.Composition" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Drawing" />
+    <Reference Include="System.Runtime" />
+    <Reference Include="UIAutomationClient" />
+    <Reference Include="UIAutomationProvider" />
+    <Reference Include="UIAutomationTypes" />
+    <Reference Include="System.Xaml" />
+    <Reference Include="WindowsBase" />
+    <Reference Include="PresentationCore" />
+    <Reference Include="PresentationFramework" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="System.Collections.Immutable" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\Core\Def\CoreUtility.csproj" />
+    <ProjectReference Include="..\..\Def\TextData\TextData.csproj" />
+    <ProjectReference Include="..\..\Def\TextLogic\TextLogic.csproj" />
+    <ProjectReference Include="..\..\Def\TextUI\TextUI.csproj" />
+    <ProjectReference Include="..\..\Def\TextUIWpf\TextUIWpf.csproj" />
+    <ProjectReference Include="..\..\Def\Internal\Internal.csproj" />
+    <ProjectReference Include="..\..\Util\TextDataUtil\TextDataUtil.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Update="Strings.resx">
+      <Generator>PublicResXFileCodeGenerator</Generator>
+      <LastGenOutput>Strings.Designer.cs</LastGenOutput>
+    </EmbeddedResource>
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Update="Strings.Designer.cs">
+      <DesignTime>true</DesignTime>
+      <AutoGen>true</AutoGen>
+      <DependentUpon>Strings.resx</DependentUpon>
+    </Compile>
+  </ItemGroup>
+</Project>

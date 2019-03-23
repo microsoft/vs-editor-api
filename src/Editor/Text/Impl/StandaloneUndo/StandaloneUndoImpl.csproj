@@ -1,0 +1,28 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AssemblyName>Microsoft.VisualStudio.Text.Implementation.StandaloneUndo</AssemblyName>
+    <RootNamespace>Microsoft.VisualStudio.Text.Operations.Standalone</RootNamespace>
+    <NoWarn>649;436;$(NoWarn)</NoWarn>
+    <AssemblyAttributeClsCompliant>true</AssemblyAttributeClsCompliant>
+    <!-- The following four properties result in packaging this project and pushing it to the internal vs-impl feed -->
+    <PushToPublicFeed>true</PushToPublicFeed>
+    <NonSDKPackage>true</NonSDKPackage>
+    <NoRefAssembly>true</NoRefAssembly>
+    <IsPackable>true</IsPackable>
+    <NonShipping>false</NonShipping>
+    <TargetFramework>$(TargetFramework)</TargetFramework>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="System" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.ComponentModel.Composition" />
+    <Reference Include="System.Xaml" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\Core\Def\CoreUtility.csproj" />
+    <ProjectReference Include="..\..\Def\Internal\Internal.csproj" />
+    <ProjectReference Include="..\..\Def\TextData\TextData.csproj" />
+    <ProjectReference Include="..\..\Def\TextLogic\TextLogic.csproj" />
+  </ItemGroup>
+</Project>

@@ -24,5 +24,14 @@ namespace Microsoft.VisualStudio.Text.Implementation
             Microsoft.Win32.SafeHandles.SafeFileHandle hFile,
             out BY_HANDLE_FILE_INFORMATION lpFileInformation
         );
+
+        [DllImport("libc", EntryPoint = "fstat")]
+        internal static extern int DarwinStat(int fd, out darwin_stat_t buf);
+
+        [StructLayout(LayoutKind.Explicit, Size = 144)]
+        internal struct darwin_stat_t
+        {
+            [FieldOffset(10)] public ushort st_nlink;
+        }
     }
 }

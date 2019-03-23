@@ -135,5 +135,9 @@ namespace Microsoft.VisualStudio.Text.Editor
         /// </summary>
         public const string OverviewSourceImage = "OverviewSourceImageMargin";
 
+        /// <summary>
+        /// Name of the margin that shows potentially-actionable non-modal messages to the user.
+        /// </summary>
+        public const string InfoBar = "InfoBar";
     }
 }

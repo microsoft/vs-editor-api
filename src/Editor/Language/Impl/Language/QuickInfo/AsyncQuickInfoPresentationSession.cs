@@ -16,7 +16,7 @@
     using Microsoft.VisualStudio.Utilities;
 
     internal sealed class AsyncQuickInfoPresentationSession : AsyncQuickInfoSession,
-        IAsyncQuickInfoSession,
+        IAsyncQuickInfoSession2,
 #pragma warning disable 618
         ILegacyQuickInfoRecalculateSupport
 #pragma warning restore 618
@@ -26,7 +26,16 @@
 
         #region Reable/Writeable via UI Thread Only
 
-        internal IToolTipPresenter uiThreadOnlyPresenter;
+        IToolTipPresenter uiThreadOnlyPresenter;
+        IToolTipPresenter2 uiThreadOnlyPresenterV2;
+        internal IToolTipPresenter UIThreadOnlyPresenter
+        {
+            get => uiThreadOnlyPresenter;
+            set {
+                uiThreadOnlyPresenter = value;
+                uiThreadOnlyPresenterV2 = value as IToolTipPresenter2;
+            }
+        }
 
         #endregion
 
@@ -52,6 +61,9 @@
             this.toolTipService = toolTipService ?? throw new ArgumentNullException(nameof(toolTipService));
         }
 
+        public override bool IsMouseOverAggregated
+            => uiThreadOnlyPresenterV2 != null && uiThreadOnlyPresenterV2.IsMouseOverAggregated;
+
         public override async Task DismissAsync()
         {
             // Ensure that we have the UI thread. To avoid races, the rest of this method must be sync.
@@ -61,13 +73,12 @@
             if (currentState != QuickInfoSessionState.Dismissed)
             {
                 // Dismiss presenter.
-                var presenter = this.uiThreadOnlyPresenter;
+                var presenter = this.UIThreadOnlyPresenter;
                 if (presenter != null)
                 {
                     presenter.Dismissed -= this.OnDismissed;
-                    this.uiThreadOnlyPresenter.Dismiss();
-
-                    this.uiThreadOnlyPresenter = null;
+                    UIThreadOnlyPresenter.Dismiss();
+                    UIThreadOnlyPresenter = null;
                 }
             }
 
@@ -118,14 +129,14 @@
                 keepOpenFunc: this.ContentRequestsKeepOpen);
 
             // Create presenter if necessary.
-            if (this.uiThreadOnlyPresenter == null)
+            if (UIThreadOnlyPresenter == null)
             {
-                this.uiThreadOnlyPresenter = this.toolTipService.CreatePresenter(this.TextView, parameters);
-                this.uiThreadOnlyPresenter.Dismissed += this.OnDismissed;
+                UIThreadOnlyPresenter = this.toolTipService.CreatePresenter(this.TextView, parameters);
+                UIThreadOnlyPresenter.Dismissed += this.OnDismissed;
             }
 
             // Update presenter content.
-            this.uiThreadOnlyPresenter.StartOrUpdate(this.ApplicableToSpan, this.Content);
+            UIThreadOnlyPresenter.StartOrUpdate(this.ApplicableToSpan, this.Content);
 
             // Ensure that the presenter didn't dismiss the session.
             if (this.State != QuickInfoSessionState.Dismissed)

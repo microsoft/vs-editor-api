@@ -2,11 +2,11 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AssemblyName>Microsoft.VisualStudio.Text.Data</AssemblyName>
-    <TargetFramework>net46</TargetFramework>
     <RootNamespace>Microsoft.VisualStudio.Text</RootNamespace>
     <PushToPublicFeed>true</PushToPublicFeed>
     <NoWarn>649;436;$(NoWarn)</NoWarn>
     <AssemblyAttributeClsCompliant>true</AssemblyAttributeClsCompliant>
+    <TargetFramework>$(TargetFramework)</TargetFramework>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" />

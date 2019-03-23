@@ -14,12 +14,14 @@ namespace Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion
     /// Only one <see cref="IAsyncCompletionItemManager"/> is used in a given view.
     /// </remarks>
     /// <example>
+    /// <code>
     ///     [Export(typeof(IAsyncCompletionItemManagerProvider))]
     ///     [Name(nameof(MyCompletionItemManagerProvider))]
     ///     [ContentType("text")]
     ///     [TextViewRoles(PredefinedTextViewRoles.Editable)]
     ///     [Order(Before = "OtherCompletionItemManager")]
     ///     public class MyCompletionItemManagerProvider : IAsyncCompletionItemManagerProvider
+    /// </code>
     /// </example>
     public interface IAsyncCompletionItemManagerProvider
     {

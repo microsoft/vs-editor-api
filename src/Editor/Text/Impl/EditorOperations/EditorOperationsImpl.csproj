@@ -1,0 +1,43 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AssemblyName>Microsoft.VisualStudio.UI.Text.EditorOperations.Implementation</AssemblyName>
+    <RootNamespace>Microsoft.VisualStudio.UI.Text.EditorOperations.Implementation</RootNamespace>
+    <NoWarn>649;436;$(NoWarn)</NoWarn>
+    <AssemblyAttributeClsCompliant>true</AssemblyAttributeClsCompliant>
+    <TargetFramework>$(TargetFramework)</TargetFramework>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="System" />
+    <Reference Include="PresentationFramework" />
+    <Reference Include="PresentationCore" />
+    <Reference Include="System.Xaml" />
+    <Reference Include="WindowsBase" />
+    <Reference Include="System.ComponentModel.Composition" />
+    <Reference Include="System.Core" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\Def\TextData\TextData.csproj" />
+    <ProjectReference Include="..\..\Def\TextLogic\TextLogic.csproj" />
+    <ProjectReference Include="..\..\Def\TextUI\TextUI.csproj" />
+    <ProjectReference Include="..\..\Def\TextUIWpf\TextUIWpf.csproj" />
+    <ProjectReference Include="..\..\Def\Internal\Internal.csproj" />
+    <ProjectReference Include="..\..\..\Core\Def\CoreUtility.csproj" />
+    <ProjectReference Include="..\..\Util\TextLogicUtil\TextLogicUtil.csproj" />
+    <ProjectReference Include="..\..\Util\TextUIUtil\TextUIUtil.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Update="Strings.resx">
+      <CustomToolNamespace>Microsoft.VisualStudio.Text.Operations.Implementation</CustomToolNamespace>
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>Strings.Designer.cs</LastGenOutput>
+    </EmbeddedResource>
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Update="Strings.Designer.cs">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>Strings.resx</DependentUpon>
+    </Compile>
+  </ItemGroup>
+</Project>

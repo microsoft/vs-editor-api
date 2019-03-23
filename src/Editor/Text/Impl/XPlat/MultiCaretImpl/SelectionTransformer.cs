@@ -436,12 +436,18 @@ namespace Microsoft.VisualStudio.Text.MultiSelection.Implementation
             {
                 var newSelection = new Selection(point, select ? _selection.AnchorPoint : point, point, insertionPointAffinity);
 
-                // Using the ternary here to shortcut out if the snapshots are the same. There's a similar check in the
-                // MapSelectionToCurrentSnapshot method to avoid doing unneeded work, but even spinning up the method call can be expensive.
-                //_selection = (newSelection.InsertionPoint.Position.Snapshot == this.CurrentSnapshot)
-                //    ? newSelection
-                //    : MapSelectionToCurrentSnapshot(newSelection);
-                _selection = newSelection;
+                if (_broker.IsOldEditor)
+                {
+                    _selection = newSelection;
+                }
+                else
+                {
+                    // Using the ternary here to shortcut out if the snapshots are the same. There's a similar check in the
+                    // MapSelectionToCurrentSnapshot method to avoid doing unneeded work, but even spinning up the method call can be expensive.
+                    _selection = (newSelection.InsertionPoint.Position.Snapshot == this.CurrentSnapshot)
+                        ? newSelection
+                        : MapSelectionToCurrentSnapshot(newSelection);
+                }
 
                 _broker.QueueCaretUpdatedEvent(this);
             }

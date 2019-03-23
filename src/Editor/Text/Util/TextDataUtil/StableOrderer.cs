@@ -21,6 +21,11 @@ namespace Microsoft.VisualStudio.Utilities
                 return true;
             }
 
+            if (x.Metadata.After?.Contains (DefaultOrderings.Lowest) == true)
+            {
+                return true;
+            }
+
             return false;
         }
 

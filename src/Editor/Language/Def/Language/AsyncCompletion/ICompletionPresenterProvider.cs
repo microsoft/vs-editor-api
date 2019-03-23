@@ -14,12 +14,14 @@ namespace Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion
     /// Only one <see cref="ICompletionPresenterProvider"/> is used in a given view.
     /// </remarks>
     /// <example>
+    /// <code>
     ///     [Export(typeof(ICompletionPresenterProvider))]
     ///     [Name(nameof(MyCompletionPresenterProvider))]
     ///     [ContentType("any")]
     ///     [TextViewRoles(PredefinedTextViewRoles.Editable)]
     ///     [Order(Before = KnownCompletionNames.DefaultCompletionPresenter)]
     ///     public class MyCompletionPresenterProvider : ICompletionPresenterProvider
+    /// </code>
     /// </example>
     public interface ICompletionPresenterProvider
     {

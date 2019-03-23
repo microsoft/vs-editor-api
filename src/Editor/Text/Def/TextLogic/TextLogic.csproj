@@ -2,10 +2,10 @@
   <PropertyGroup>
     <AssemblyName>Microsoft.VisualStudio.Text.Logic</AssemblyName>
     <RootNamespace>$(AssemblyName)</RootNamespace>
-    <TargetFramework>net46</TargetFramework>
     <PushToPublicFeed>true</PushToPublicFeed>
     <NoWarn>649;436;$(NoWarn)</NoWarn>
     <AssemblyAttributeClsCompliant>true</AssemblyAttributeClsCompliant>
+    <TargetFramework>$(TargetFramework)</TargetFramework>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" />

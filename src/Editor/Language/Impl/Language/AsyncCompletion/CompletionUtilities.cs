@@ -29,10 +29,19 @@ namespace Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion.Implement
         /// <summary>
         /// Returns whether the <see cref="ITextView"/> is furnished by the debugger,
         /// e.g. it is a view in the breakpoint settings window or watch window.
+        /// We use this to pick an appropriate option with suggestion mode setting.
         /// </summary>
         /// <param name="textView">View to examine</param>
         /// <returns>True if the view has "DEBUGVIEW" text view role.</returns>
         internal static bool IsDebuggerTextView(ITextView textView) => textView.Roles.Contains("DEBUGVIEW");
+
+        /// <summary>
+        /// Returns whether the <see cref="ITextView"/> is in immediate window.
+        /// We use this to make the view temporarily writable during commit (it is typically read-only).
+        /// </summary>
+        /// <param name="textView">View to examine</param>
+        /// <returns>True if the view has "COMMANDVIEW" text view role.</returns>
+        internal static bool IsImmediateTextView(ITextView textView) => textView.Roles.Contains("COMMANDVIEW");
 
         static readonly EditorOptionKey<bool> NonBlockingCompletionOptionKey = new EditorOptionKey<bool>(PredefinedCompletionNames.NonBlockingCompletionOptionName);
         static readonly EditorOptionKey<bool> SuggestionModeOptionKey = new EditorOptionKey<bool>(PredefinedCompletionNames.SuggestionModeInCompletionOptionName);
@@ -77,10 +86,12 @@ namespace Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion.Implement
         internal static bool GetSuggestionModeOption(ITextView textView)
         {
             var options = textView.Options.GlobalOptions;
-            var optionKey = IsDebuggerTextView(textView) ? SuggestionModeInDebuggerCompletionOptionKey : SuggestionModeOptionKey;
+            var useDebuggerViewOption = IsDebuggerTextView(textView) || IsImmediateTextView(textView);
+            var optionKey = useDebuggerViewOption ? SuggestionModeInDebuggerCompletionOptionKey : SuggestionModeOptionKey;
+
             if (!(options.IsOptionDefined(optionKey, localScopeOnly: false)))
             {
-                var defaultValue = IsDebuggerTextView(textView) ? UseSuggestionModeInDebuggerCompletionDefaultValue : UseSuggestionModeDefaultValue;
+                var defaultValue = useDebuggerViewOption ? UseSuggestionModeInDebuggerCompletionDefaultValue : UseSuggestionModeDefaultValue;
                 options.SetOptionValue(optionKey, defaultValue);
             }
             return options.GetOptionValue(optionKey);
@@ -89,7 +100,8 @@ namespace Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion.Implement
         internal static void SetSuggestionModeOption(ITextView textView, bool value)
         {
             var options = textView.Options.GlobalOptions;
-            var optionKey = IsDebuggerTextView(textView) ? SuggestionModeInDebuggerCompletionOptionKey : SuggestionModeOptionKey;
+            var useDebuggerViewOption = IsDebuggerTextView(textView) || IsImmediateTextView(textView);
+            var optionKey = useDebuggerViewOption ? SuggestionModeInDebuggerCompletionOptionKey : SuggestionModeOptionKey;
             options.SetOptionValue(optionKey, value);
         }
 

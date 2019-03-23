@@ -1,4 +1,5 @@
 ﻿using System;
+using System.ComponentModel;
 using System.Diagnostics;
 using Microsoft.VisualStudio.Text.Adornments;
 
@@ -12,10 +13,12 @@ namespace Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion.Data
     /// using the same filter button must use the same reference to the instance of <see cref="CompletionFilter"/>.
     /// </remarks>
     /// <example>
+    /// <code>
     /// static CompletionFilter MyFilter = new CompletionFilter("My items", "m", MyItemsImageElement);
+    /// </code>
     /// </example>
     [DebuggerDisplay("{DisplayText}")]
-    public sealed class CompletionFilter
+    public sealed class CompletionFilter : INotifyPropertyChanged
     {
         /// <summary>
         /// Localized name of this filter.
@@ -53,5 +56,15 @@ namespace Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion.Data
             AccessKey = accessKey;
             Image = image;
         }
+
+        #region INotifyPropertyChanged members
+
+        // The properties of this class don't change,
+        // we're just implementing INotifyPropertyChanged to prevent WPF leaking memory.
+        #pragma warning disable CS0067
+        public event PropertyChangedEventHandler PropertyChanged;
+        #pragma warning restore CS0067
+
+        #endregion
     }
 }

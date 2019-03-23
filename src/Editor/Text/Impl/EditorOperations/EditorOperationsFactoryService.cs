@@ -14,9 +14,7 @@ namespace Microsoft.VisualStudio.Text.Operations.Implementation
     using Microsoft.VisualStudio.Text.Formatting;
     using Microsoft.VisualStudio.Utilities;
     using Microsoft.VisualStudio.Text.Outlining;
-#if WINDOWS
     using Microsoft.VisualStudio.Language.Intellisense.Utilities;
-#endif
 
     [Export(typeof(IEditorOperationsFactoryService))]
     internal sealed class EditorOperationsFactoryService : IEditorOperationsFactoryService
@@ -27,11 +25,9 @@ namespace Microsoft.VisualStudio.Text.Operations.Implementation
         [Import]
         internal ITextStructureNavigatorSelectorService TextStructureNavigatorFactory { get; set; }
 
-#if WINDOWS
         // This service should be optional: it is implemented on the VS side and other hosts may not implement it.
         [Import(AllowDefault = true)]
         internal IWaitIndicator WaitIndicator { get; set; }
-#endif
 
         [Import]
         internal ITextSearchService TextSearchService { get; set; }
@@ -48,11 +44,9 @@ namespace Microsoft.VisualStudio.Text.Operations.Implementation
         [Import]
         internal IEditorOptionsFactoryService EditorOptionsProvider { get; set; }
 
-#if WINDOWS
-        [Import(AllowDefault = true)]
-        internal IRtfBuilderService RtfBuilderService { get; set; }
+        //[Import]
+        //internal IRtfBuilderService RtfBuilderService { get; set; }
 
-#endif
         [Import]
         internal ISmartIndentationService SmartIndentationService { get; set; }
 

@@ -1,0 +1,30 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AssemblyName>Microsoft.VisualStudio.Text.EditorOptions.Implementation</AssemblyName>
+    <RootNamespace>$(AssemblyName)</RootNamespace>
+    <NoWarn>649;436;$(NoWarn)</NoWarn>
+    <AssemblyAttributeClsCompliant>true</AssemblyAttributeClsCompliant>
+    <TargetFramework>$(TargetFramework)</TargetFramework>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="WindowsBase" />
+    <Reference Include="PresentationCore" />
+    <Reference Include="PresentationFramework" />
+    <Reference Include="System.Xaml" />
+    <Reference Include="System" />
+    <Reference Include="System.ComponentModel.Composition" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\Core\Def\CoreUtility.csproj" />
+    <ProjectReference Include="..\..\Def\TextData\TextData.csproj" />
+    <ProjectReference Include="..\..\Def\TextLogic\TextLogic.csproj" />
+    <ProjectReference Include="..\..\Def\TextUI\TextUI.csproj" />
+    <ProjectReference Include="..\..\Def\TextUIWpf\TextUIWpf.csproj" />
+    <ProjectReference Include="..\..\Util\TextDataUtil\TextDataUtil.csproj" />
+    <ProjectReference Include="..\..\Def\Internal\Internal.csproj" />
+  </ItemGroup>
+</Project>

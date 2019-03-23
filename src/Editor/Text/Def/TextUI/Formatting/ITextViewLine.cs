@@ -29,7 +29,7 @@ namespace Microsoft.VisualStudio.Text.Formatting
     /// surface is displayed without any scaling transform, then 1 unit in the text rendering coordinate system
     /// corresponds to one pixel on the display.</para>
     /// </remarks>
-    public interface ITextViewLine
+    public interface ITextViewLine : IDisposable
     {
         #region Methods
 
@@ -234,6 +234,26 @@ namespace Microsoft.VisualStudio.Text.Formatting
         /// <returns>A sequence of adornment identity tags in order of their appearance on the line. The collection is always non-null but may be empty.</returns>
         /// <exception cref="System.ArgumentNullException"><paramref name="providerTag "/> is null.</exception>
         ReadOnlyCollection<object> GetAdornmentTags(object providerTag);
+
+        /// <summary>
+        /// Sets the Change property for this text line.
+        /// </summary>
+        /// <param name="change">The <see cref="TextViewLineChange"/>.</param>
+        void SetChange(TextViewLineChange change);
+
+        /// <summary>
+        /// Sets the position used to format the text in this formatted text line.
+        /// </summary>
+        /// <param name="top">The position for the top of the formatted text line.</param>
+        /// <exception cref="ObjectDisposedException">This <see cref="ITextViewLine"/> has been disposed.</exception>
+        void SetTop(double top);
+
+        /// <summary>
+        /// Sets the change in the position of the top of this formatted text line in the current
+        /// view layout and the previous view layour.
+        /// </summary>
+        /// <param name="deltaY">The new deltaY value for the formatted text line.</param>
+        void SetDeltaY(double deltaY);
         #endregion // Methods
 
         #region Properties
@@ -489,5 +509,21 @@ namespace Microsoft.VisualStudio.Text.Formatting
         }
 
         #endregion // Properties
+
+        /// <summary>
+        /// Sets the <see cref="ITextSnapshot"/>s upon which this formatted text line is based.
+        /// </summary>
+        /// <param name="visualSnapshot">the new snapshot for the line in the view model's visual buffer.</param>
+        /// <param name="editSnapshot">the new snapshot for the line in the view model's edit buffer.</param>
+        /// <remarks>The length of this text line is not allowed to change as a result of changing the snapshot.</remarks>
+        /// <exception cref="ObjectDisposedException">This <see cref="ITextViewLine"/> has been disposed.</exception>
+        void SetSnapshot(ITextSnapshot visualSnapshot, ITextSnapshot editSnapshot);
+
+        /// <summary>
+        /// Sets the line transform used to format the text in this formatted text line.
+        /// </summary>
+        /// <param name="transform">The line transform for this formatted text line.</param>
+        /// <exception cref="ObjectDisposedException">This <see cref="ITextViewLine"/> has been disposed.</exception>
+        void SetLineTransform(LineTransform transform);
     }
 }

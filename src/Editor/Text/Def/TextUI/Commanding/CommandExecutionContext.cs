@@ -12,16 +12,16 @@ namespace Microsoft.VisualStudio.Commanding
         /// <summary>
         /// Creates new instance of the <see cref="CommandExecutionContext"/>.
         /// </summary>
-        public CommandExecutionContext(IUIThreadOperationContext waitContext)
+        public CommandExecutionContext(IUIThreadOperationContext operationContext)
         {
-            this.WaitContext = waitContext ?? throw new ArgumentNullException(nameof(waitContext));
+            this.OperationContext = operationContext ?? throw new ArgumentNullException(nameof(operationContext));
         }
 
         /// <summary>
         /// Provides a context of executing a command handler on the UI thread, which
         /// enables two way shared cancellability and wait indication.
         /// </summary>
-        public IUIThreadOperationContext WaitContext { get; }
+        public IUIThreadOperationContext OperationContext { get; }
     }
 }
 

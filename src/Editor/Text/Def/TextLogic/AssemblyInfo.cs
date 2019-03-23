@@ -3,6 +3,7 @@
 //  Licensed under the MIT License. See License.txt in the project root for license information.
 //
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Runtime.ConstrainedExecution;
 using System.Runtime.Versioning;
 using System.Security.Permissions;
@@ -22,3 +23,7 @@ using System.Security.Permissions;
 [assembly: SecurityPermission (SecurityAction.RequestMinimum, Flags = SecurityPermissionFlag.Execution)]
 #pragma warning restore 618
 [assembly: ReliabilityContract(Consistency.MayCorruptProcess, Cer.MayFail)]
+
+[assembly: InternalsVisibleTo("Microsoft.VisualStudio.UI.Text.Commanding.Implementation, PublicKey=" + ThisAssembly.PublicKey)]
+[assembly: InternalsVisibleTo("Microsoft.VisualStudio.Platform.VSEditor, PublicKey=" + ThisAssembly.PublicKey)]
+[assembly: InternalsVisibleTo("Microsoft.VisualStudio.Editor.Implementation, PublicKey=" + ThisAssembly.PublicKey)]

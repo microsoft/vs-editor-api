@@ -19,7 +19,7 @@ namespace Microsoft.VisualStudio.Text.Utilities
     [Export]
     [Export(typeof(IGuardedOperations))]
     [PartCreationPolicy(CreationPolicy.Shared)]
-    public sealed class GuardedOperations : IGuardedOperations
+    internal sealed class GuardedOperations : IGuardedOperations
     {
         [ImportMany]
         private List<Lazy<IExtensionErrorHandler>> _errorHandlerExports = null;
@@ -30,11 +30,9 @@ namespace Microsoft.VisualStudio.Text.Utilities
         [Import]
         private JoinableTaskContext _joinableTaskContext;
 
-#if WINDOWS
         [Import(AllowDefault = true)]
         internal INonJoinableTaskTrackerInternal NonJoinableTaskTracker; // Optional in scenarios other than in VS process.
 
-#endif
         private FrugalList<IExtensionErrorHandler> _errorHandlers;
         private FrugalList<IExtensionPerformanceTracker> _perfTrackers;
 
@@ -772,7 +770,7 @@ namespace Microsoft.VisualStudio.Text.Utilities
             {
                 if (BreakOnFailures && Debugger.IsAttached)
                     Debugger.Break();
-                 Debug.Fail(message);
+                Debug.Fail(message);
             }
         }
     }

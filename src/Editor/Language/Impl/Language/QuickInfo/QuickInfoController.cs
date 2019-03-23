@@ -123,6 +123,11 @@
 
             if (session != null)
             {
+                if (session is IAsyncQuickInfoSession2 sessionV2 && sessionV2.IsMouseOverAggregated)
+                {
+                    return true;
+                }
+
                 // First check that the point and applicable span are from the same subject buffer,
                 // and then that they intersect.
                 if ((session.ApplicableToSpan != null) &&
@@ -135,15 +140,12 @@
                 // If this session has an interactive content give it a chance to keep the session alive.
                 if (session.HasInteractiveContent)
                 {
-                    foreach (var content in session.Content)
+                    foreach (var result in session.Content)
                     {
-                        foreach (var result in session.Content)
+                        if (result is IInteractiveQuickInfoContent interactiveContent
+                            && (interactiveContent.KeepQuickInfoOpen || interactiveContent.IsMouseOverAggregated))
                         {
-                            if (result is IInteractiveQuickInfoContent interactiveContent
-                                && (interactiveContent.KeepQuickInfoOpen || interactiveContent.IsMouseOverAggregated))
-                            {
-                                return true;
-                            }
+                            return true;
                         }
                     }
                 }

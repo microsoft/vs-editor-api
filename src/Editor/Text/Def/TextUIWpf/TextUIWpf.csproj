@@ -1,0 +1,36 @@
+<Project>
+  <PropertyGroup>
+    <!-- workaround for https://github.com/NuGet/Home/issues/5894 -->
+    <OriginalProjectName>TextUIWpf</OriginalProjectName>
+  </PropertyGroup>
+  <Import Sdk="Microsoft.NET.Sdk" Project="Sdk.props" />
+  <PropertyGroup>
+    <AssemblyName>Microsoft.VisualStudio.Text.UI.Wpf</AssemblyName>
+    <RootNamespace>$(AssemblyName)</RootNamespace>
+    <PushToPublicFeed>true</PushToPublicFeed>
+    <NoWarn>649;436;8073;$(NoWarn)</NoWarn>
+    <AssemblyAttributeClsCompliant>true</AssemblyAttributeClsCompliant>
+    <TargetFramework>$(TargetFramework)</TargetFramework>
+  </PropertyGroup>
+  <ItemGroup>
+    <Page Remove="themes\generic.xaml" />
+  </ItemGroup>
+  <ItemGroup>
+    <Reference Include="System" />
+    <Reference Include="System.ComponentModel.Composition" />
+    <Reference Include="UIAutomationProvider" />
+    <Reference Include="WindowsBase" />
+    <Reference Include="PresentationCore" />
+    <Reference Include="PresentationFramework" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.VisualStudio.Imaging.Interop.14.0.DesignTime" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\Core\Def\CoreUtility.csproj" />
+    <ProjectReference Include="..\TextData\TextData.csproj" />
+    <ProjectReference Include="..\TextLogic\TextLogic.csproj" />
+    <ProjectReference Include="..\TextUI\TextUI.csproj" />
+  </ItemGroup>
+  <Import Sdk="Microsoft.NET.Sdk" Project="Sdk.targets" />
+</Project>

@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AssemblyName>Microsoft.VisualStudio.Language.StandardClassification</AssemblyName>
+    <RootNamespace>$(AssemblyName)</RootNamespace>
+    <PushToPublicFeed>true</PushToPublicFeed>
+    <NoWarn>649;436;$(NoWarn)</NoWarn>
+    <AssemblyAttributeClsCompliant>true</AssemblyAttributeClsCompliant>
+    <TargetFramework>$(TargetFramework)</TargetFramework>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="System" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\Text\Def\TextLogic\TextLogic.csproj" />
+  </ItemGroup>
+</Project>

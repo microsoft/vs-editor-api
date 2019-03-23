@@ -37,6 +37,7 @@ namespace Microsoft.VisualStudio.Text.Differencing
         /// <para>If <paramref name="disableEditing"/> is false, then <paramref name="wrapRightBuffer"/> is ignored (and the right buffer will not be wrapped).</para>
         /// <para>If <paramref name="wrapLeftBuffer"/> is false, then the caller of this method is responsible for making sure <paramref name="leftBaseBuffer"/> is read-only.</para>
         /// <para>If <paramref name="disableEditing"/> is true and <paramref name="wrapRightBuffer"/> is false, then the caller of this method is responsible for making sure <paramref name="rightBaseBuffer"/> is read-only.</para>
+        /// <para>If <paramref name="wrapLeftBuffer"/> is true, then <paramref name="leftBaseBuffer"/> can be null.</para>
         /// </remarks>
         IDifferenceBuffer CreateDifferenceBuffer(ITextBuffer leftBaseBuffer, ITextBuffer rightBaseBuffer, StringDifferenceOptions options,
                                                  bool disableEditing = false, bool wrapLeftBuffer = true, bool wrapRightBuffer = true);

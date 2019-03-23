@@ -40,7 +40,7 @@ namespace Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion.Data
         /// Constructs <see cref="CompletionContext"/> with specified <see cref="CompletionItem"/>s,
         /// with recommendation to not use suggestion mode and to use use regular selection.
         /// </summary>
-        /// <param name="items">Available completion items. If none are available, use <code>CompletionContext.Default</code></param>
+        /// <param name="items">Available completion items. If none are available, use <c>CompletionContext.Default</c></param>
         public CompletionContext(ImmutableArray<CompletionItem> items)
             : this(items, suggestionItemOptions: null, selectionHint: InitialSelectionHint.RegularSelection)
         {
@@ -51,7 +51,7 @@ namespace Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion.Data
         /// with recommendation to use suggestion mode and to use regular selection.
         /// </summary>
         /// <param name="items">Available completion items</param>
-        /// <param name="suggestionItemOptions">Suggestion item options, or null to not use suggestion mode. Default is <code>null</code></param>
+        /// <param name="suggestionItemOptions">Suggestion item options, or null to not use suggestion mode. Default is <c>null</c></param>
         public CompletionContext(
             ImmutableArray<CompletionItem> items,
             SuggestionItemOptions suggestionItemOptions)
@@ -64,8 +64,8 @@ namespace Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion.Data
         /// with recommendation to use suggestion mode item and to use a specific selection mode.
         /// </summary>
         /// <param name="items">Available completion items</param>
-        /// <param name="suggestionItemOptions">Suggestion mode options, or null to not use suggestion mode. Default is <code>null</code></param>
-        /// <param name="selectionHint">Recommended selection mode. Suggestion mode automatically sets soft selection Default is <code>InitialSelectionHint.RegularSelection</code></param>
+        /// <param name="suggestionItemOptions">Suggestion mode options, or null to not use suggestion mode. Default is <c>null</c></param>
+        /// <param name="selectionHint">Recommended selection mode. Suggestion mode automatically sets soft selection Default is <c>InitialSelectionHint.RegularSelection</c></param>
         public CompletionContext(
             ImmutableArray<CompletionItem> items,
             SuggestionItemOptions suggestionItemOptions,

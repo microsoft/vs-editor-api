@@ -12,16 +12,17 @@
     public interface IEditorCommandHandlerServiceFactory
     {
         /// <summary>
-        /// Gets or creates a <see cref="IEditorCommandHandlerService"/> for a given <see cref="ITextView"/>.
+        /// Gets or creates an <see cref="IEditorCommandHandlerService"/> instance for a given <see cref="ITextView"/>.
         /// </summary>
+        /// <remarks>Only one <see cref="IEditorCommandHandlerService"/> instance is ever created for each <see cref="ITextView" />.</remarks>
         /// <param name="textView">A text view to get or create <see cref="IEditorCommandHandlerService"/> for.</param>
         IEditorCommandHandlerService GetService(ITextView textView);
 
         /// <summary>
-        /// Gets or creates a <see cref="IEditorCommandHandlerService"/> for a given <see cref="ITextView"/> and <see cref="ITextBuffer"/>.
+        /// Creates a new <see cref="IEditorCommandHandlerService"/> instance for a given <see cref="ITextView"/> and <see cref="ITextBuffer"/>.
         /// </summary>
-        /// <param name="textView">A text view to get or create <see cref="IEditorCommandHandlerService"/> for.</param>
-        /// <param name="subjectBuffer">A text buffer to get or create <see cref="IEditorCommandHandlerService"/> for.</param>
+        /// <param name="textView">A text view to create <see cref="IEditorCommandHandlerService"/> for.</param>
+        /// <param name="subjectBuffer">A text buffer to create <see cref="IEditorCommandHandlerService"/> for.</param>
         IEditorCommandHandlerService GetService(ITextView textView, ITextBuffer subjectBuffer);
     }
 }

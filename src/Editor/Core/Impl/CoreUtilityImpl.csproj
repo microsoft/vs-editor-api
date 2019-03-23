@@ -1,0 +1,44 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AssemblyName>Microsoft.VisualStudio.CoreUtilityImplementation</AssemblyName>
+    <RootNamespace>$(AssemblyName)</RootNamespace>
+    <NoWarn>649;436;$(NoWarn)</NoWarn>
+    <AssemblyAttributeClsCompliant>true</AssemblyAttributeClsCompliant>
+    <IsPackable>false</IsPackable>
+    <NonShipping>true</NonShipping>
+    <TargetFramework>$(TargetFramework)</TargetFramework>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="System" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Xml" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Xaml" />
+    <Reference Include="WindowsBase" />
+    <Reference Include="System.ComponentModel.Composition" />
+    <Reference Include="System.Runtime" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="System.Collections.Immutable" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\Text\Util\TextDataUtil\TextDataUtil.csproj" />
+    <ProjectReference Include="..\Def\CoreUtility.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Update="ContentType\Strings.resx">
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>ContentType\Strings.Designer.cs</LastGenOutput>
+      <LogicalName>Microsoft.VisualStudio.CoreUtilityImplementation.ContentType.Strings.resources</LogicalName>
+      <ManifestResourceName>Microsoft.VisualStudio.CoreUtilityImplementation.ContentType.Strings.resources</ManifestResourceName>
+    </EmbeddedResource>
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Update="ContentType\Strings.Designer.cs">
+      <DesignTime>true</DesignTime>
+      <AutoGen>true</AutoGen>
+      <DependentUpon>ContentType\Strings.resx</DependentUpon>
+    </Compile>
+  </ItemGroup>
+</Project>

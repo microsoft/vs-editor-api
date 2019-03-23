@@ -58,11 +58,11 @@ namespace Microsoft.VisualStudio.Text.EditorPrimitives.Implementation
             this.SelectRange(selectionStart.CurrentPosition, selectionEnd.CurrentPosition);
         }
 
-        public override void SelectAll()
+        public override void SelectAll(bool moveCaret = true)
         {
             // For select all, the selection always goes back to stream mode.
             this.AdvancedSelection.Mode = TextSelectionMode.Stream;
-            this.SelectRange(0, TextView.AdvancedTextView.TextSnapshot.Length);
+            this.SelectRange(0, TextView.AdvancedTextView.TextSnapshot.Length, moveCaret);
         }
 
         public override void ExtendSelection(TextPoint newEnd)
@@ -87,7 +87,7 @@ namespace Microsoft.VisualStudio.Text.EditorPrimitives.Implementation
             this.SelectRange(selectionStart, selectionEnd);
         }
 
-        private void SelectRange(int selectionStart, int selectionEnd)
+        private void SelectRange(int selectionStart, int selectionEnd, bool moveCaret = true)
         {
             SnapshotPoint startPoint = new SnapshotPoint(TextView.AdvancedTextView.TextSnapshot, selectionStart);
             SnapshotPoint endPoint = new SnapshotPoint(TextView.AdvancedTextView.TextSnapshot, selectionEnd);
@@ -97,11 +97,14 @@ namespace Microsoft.VisualStudio.Text.EditorPrimitives.Implementation
             ITextViewLine textViewLine = TextView.AdvancedTextView.GetTextViewLineContainingBufferPosition(endPoint);
             PositionAffinity affinity = (textViewLine.IsLastTextViewLineForSnapshotLine || (endPoint != textViewLine.End)) ? PositionAffinity.Successor : PositionAffinity.Predecessor;
 
-            Caret.MoveTo(endPoint, affinity);
-            TextView.AdvancedTextView.ViewScroller.EnsureSpanVisible(TextSelection.StreamSelectionSpan.SnapshotSpan,
-                                                                     (selectionStart <= selectionEnd) 
-                                                                     ? EnsureSpanVisibleOptions.MinimumScroll
-                                                                     : (EnsureSpanVisibleOptions.MinimumScroll | EnsureSpanVisibleOptions.ShowStart));
+            if (moveCaret)
+            {
+                Caret.MoveTo(endPoint, affinity);
+                TextView.AdvancedTextView.ViewScroller.EnsureSpanVisible(TextSelection.StreamSelectionSpan.SnapshotSpan,
+                                                                         (selectionStart <= selectionEnd)
+                                                                         ? EnsureSpanVisibleOptions.MinimumScroll
+                                                                         : (EnsureSpanVisibleOptions.MinimumScroll | EnsureSpanVisibleOptions.ShowStart));
+            }
         }
 
         public override void Clear()

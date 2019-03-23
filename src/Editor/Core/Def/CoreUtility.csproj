@@ -1,17 +1,22 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Project Sdk="Microsoft.NET.Sdk" ToolsVersion="15.0">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AssemblyName>Microsoft.VisualStudio.CoreUtility</AssemblyName>
-    <TargetFramework>net46</TargetFramework>
+    <RootNamespace>Microsoft.VisualStudio.Utilities</RootNamespace>
+    <PushToPublicFeed>true</PushToPublicFeed>
+    <NoWarn>649;436;$(NoWarn)</NoWarn>
+    <AssemblyAttributeClsCompliant>true</AssemblyAttributeClsCompliant>
+    <LocalizationEnabled>false</LocalizationEnabled>
+    <InsertNuget>true</InsertNuget>
+    <IncludeInOptProf>true</IncludeInOptProf>
+    <TargetFramework>$(TargetFramework)</TargetFramework>
   </PropertyGroup>
-
   <ItemGroup>
-    <PackageReference Include="Microsoft.VisualStudio.Threading" Version="$(MicrosoftVisualStudioThreadingVersion)" />
-    <PackageReference Include="Microsoft.VisualStudio.Validation" Version="$(MicrosoftVisualStudioValidationVersion)" />
-  </ItemGroup>
-
-  <ItemGroup>
+    <Reference Include="System" />
+    <Reference Include="System.Core" />
     <Reference Include="System.ComponentModel.Composition" />
   </ItemGroup>
-
+  <ItemGroup>
+    <PackageReference Include="Microsoft.VisualStudio.Threading" />
+  </ItemGroup>
 </Project>

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
@@ -25,6 +25,8 @@ namespace Microsoft.VisualStudio.UI.Text.Commanding.Implementation
         private readonly EditorCommandHandlerServiceFactory _factory;
         private readonly ITextView _textView;
         private readonly ICommandingTextBufferResolver _bufferResolver;
+        private readonly bool _isOldGtkEditor;
+        private readonly ITypingTelemetrySession _telemetrySession;
 
         private readonly static IReadOnlyList<ICommandHandlerAndMetadata> EmptyHandlerList = new List<ICommandHandlerAndMetadata>(0);
         private readonly static Action EmptyAction = delegate { };
@@ -43,8 +45,10 @@ namespace Microsoft.VisualStudio.UI.Text.Commanding.Implementation
             _commandHandlers = commandHandlers ?? throw new ArgumentNullException(nameof(commandHandlers));
             _factory = factory ?? throw new ArgumentNullException(nameof(factory));
             _textView = textView ?? throw new ArgumentNullException(nameof(textView));
+            _isOldGtkEditor = _textView.GetType ().FullName == "MonoDevelop.SourceEditor.ExtensibleTextEditor";
             _commandHandlersByTypeAndContentType = new Dictionary<(Type commandArgType, IContentType contentType), IReadOnlyList<ICommandHandlerAndMetadata>>();
             _bufferResolver = bufferResolver ?? throw new ArgumentNullException(nameof(bufferResolver));
+            _textView.Properties.TryGetProperty(typeof(ITypingTelemetrySession), out _telemetrySession);
         }
 
         public CommandState GetCommandState<T>(Func<ITextView, ITextBuffer, T> argsFactory, Func<CommandState> nextCommandHandler) where T : EditorCommandArgs
@@ -154,7 +158,9 @@ namespace Microsoft.VisualStudio.UI.Text.Commanding.Implementation
                     return;
                 }
 
+                _telemetrySession?.BeforeKeyProcessed();
                 ExecuteCommandHandlerChain(state, handlerChain, nextCommandHandler);
+                _telemetrySession?.AfterKeyProcessed();
             }
         }
 
@@ -361,6 +367,12 @@ namespace Microsoft.VisualStudio.UI.Text.Commanding.Implementation
                     var commandHandler = _factory.GuardedOperations.InstantiateExtension<ICommandHandler>(this, lazyCommandHandler);
                     if (commandHandler is ICommandHandler<T> || commandHandler is IChainedCommandHandler<T>)
                     {
+                        // The old editor in VSmac is not compatible with any command handlers except for those coming from Roslyn
+                        if (_isOldGtkEditor && !commandHandler.GetType().FullName.StartsWith("Microsoft.CodeAnalysis", StringComparison.Ordinal))
+                        {
+                            continue;
+                        }
+
                         if (newCommandHandlerList == null)
                         {
                             newCommandHandlerList = new FrugalList<ICommandHandlerAndMetadata>();
@@ -478,7 +490,7 @@ namespace Microsoft.VisualStudio.UI.Text.Commanding.Implementation
 
             public int CancelAfter
                 => _state.IsExecutingTypingCommand ?
-                _textView.Options.GetOptionValue<int>("MaximumTypingLatency") :
+                _textView.Options.GetOptionValue(DefaultOptions.MaximumTypingLatencyOptionId) :
                 Timeout.Infinite;
 
             public bool ShouldCancel()

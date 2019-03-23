@@ -26,7 +26,7 @@ namespace Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion.Data
 
         /// <summary>
         /// <param name="applicableToSpan"> Proposed location where completion will take place.
-        /// Return <code>default</code> if this <see cref="IAsyncCompletionSource"/> is not capable of providing location,
+        /// Return <c>default</c> if this <see cref="IAsyncCompletionSource"/> is not capable of providing location,
         /// or completion is invalid for location in question.</param>
         /// </summary>
         public SnapshotSpan ApplicableToSpan { get; }

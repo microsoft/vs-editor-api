@@ -8,17 +8,14 @@
 namespace Microsoft.VisualStudio.Text.Tagging.Implementation
 {
     using System;
-    using System.Collections;
     using System.Collections.Generic;
     using System.Diagnostics;
     using System.Linq;
     using System.Threading;
-    using System.Threading.Tasks;
     using Microsoft.VisualStudio.Text.Editor;
     using Microsoft.VisualStudio.Text.Projection;
     using Microsoft.VisualStudio.Text.Tagging;
     using Microsoft.VisualStudio.Text.Utilities;
-    using Microsoft.VisualStudio.Threading;
     using Microsoft.VisualStudio.Utilities;
 
     /// <summary>
@@ -31,9 +28,9 @@ namespace Microsoft.VisualStudio.Text.Tagging.Implementation
     internal sealed class TagAggregator<T> : IAccurateTagAggregator<T> where T : ITag
     {
         internal TagAggregatorFactoryService TagAggregatorFactoryService { get; private set; }
-        internal IDictionary<ITextBuffer, IList<ITagger<T>>> taggers;
+        internal readonly IDictionary<ITextBuffer, BufferState> bufferStates = new Dictionary<ITextBuffer, BufferState>();
         private readonly TagAggregatorOptions options;
-        private List<Tuple<ITagger<T>, int>> uniqueTaggers;
+        private readonly IDictionary<ITagger<T>, BoxedInt> uniqueTaggers = new Dictionary<ITagger<T>, BoxedInt>();
         internal ITextView textView;    // can be null
         internal JoinableTaskHelper joinableTaskHelper;
 
@@ -41,7 +38,7 @@ namespace Microsoft.VisualStudio.Text.Tagging.Implementation
 
         internal bool disposed;
         internal bool initialized;
-
+        internal int versionNumber = 0;
 
         public TagAggregator(TagAggregatorFactoryService factory, ITextView textView, IBufferGraph bufferGraph, TagAggregatorOptions options)
         {
@@ -56,9 +53,6 @@ namespace Microsoft.VisualStudio.Text.Tagging.Implementation
                 textView.Closed += this.OnTextView_Closed;
             }
 
-            taggers = new Dictionary<ITextBuffer, IList<ITagger<T>>>();
-            uniqueTaggers = new List<Tuple<ITagger<T>, int>>();
-
             if (((TagAggregatorOptions2)options).HasFlag(TagAggregatorOptions2.DeferTaggerCreation))
             {
                 this.joinableTaskHelper.RunOnUIThread((Action)(this.EnsureInitialized));
@@ -67,27 +61,11 @@ namespace Microsoft.VisualStudio.Text.Tagging.Implementation
             {
                 this.Initialize();
             }
-
-            this.BufferGraph.GraphBufferContentTypeChanged += new EventHandler<GraphBufferContentTypeChangedEventArgs>(BufferGraph_GraphBufferContentTypeChanged);
-            this.BufferGraph.GraphBuffersChanged += new EventHandler<GraphBuffersChangedEventArgs>(BufferGraph_GraphBuffersChanged);
         }
 
         private void Initialize()
         {
-            if (((TagAggregatorOptions2)this.options).HasFlag(TagAggregatorOptions2.NoProjection))
-            {
-                this.taggers[this.BufferGraph.TopBuffer] = GatherTaggers(this.BufferGraph.TopBuffer);
-            }
-            else
-            {
-                //Construct our initial list of taggers by getting taggers for every textBuffer in the graph
-                this.BufferGraph.GetTextBuffers(delegate (ITextBuffer buffer)
-                {
-                    this.taggers[buffer] = GatherTaggers(buffer);
-                    return false;
-                });
-            }
-
+            this.RegisterBufferGraph();
             this.initialized = true;
         }
 
@@ -115,14 +93,12 @@ namespace Microsoft.VisualStudio.Text.Tagging.Implementation
             if (this.disposed)
                 throw new ObjectDisposedException("TagAggregator");
 
-            if (this.uniqueTaggers.Count == 0)
-            {
-                return Enumerable.Empty<IMappingTagSpan<T>>();
-            }
-            else
+            if (initialized && (uniqueTaggers.Count > 0))
             {
                 return InternalGetTags(new NormalizedSnapshotSpanCollection(span), cancel: null);
             }
+
+            return Enumerable.Empty<IMappingTagSpan<T>>();
         }
 
         public IEnumerable<IMappingTagSpan<T>> GetTags(IMappingSpan span)
@@ -133,14 +109,12 @@ namespace Microsoft.VisualStudio.Text.Tagging.Implementation
             if (this.disposed)
                 throw new ObjectDisposedException("TagAggregator");
 
-            if (this.uniqueTaggers.Count == 0)
-            {
-                return Enumerable.Empty<IMappingTagSpan<T>>();
-            }
-            else
+            if (initialized && (uniqueTaggers.Count > 0))
             {
                 return InternalGetTags(span, cancel: null);
             }
+
+            return Enumerable.Empty<IMappingTagSpan<T>>();
         }
 
         public IEnumerable<IMappingTagSpan<T>> GetTags(NormalizedSnapshotSpanCollection snapshotSpans)
@@ -148,14 +122,12 @@ namespace Microsoft.VisualStudio.Text.Tagging.Implementation
             if (this.disposed)
                 throw new ObjectDisposedException("TagAggregator");
 
-            if ((this.uniqueTaggers.Count > 0) && (snapshotSpans.Count > 0))
+            if (initialized && (uniqueTaggers.Count > 0) && (snapshotSpans.Count > 0))
             {
                 return InternalGetTags(snapshotSpans, cancel: null);
             }
-            else
-            {
-                return Enumerable.Empty<IMappingTagSpan<T>>();
-            }
+
+            return Enumerable.Empty<IMappingTagSpan<T>>();
         }
 
         public event EventHandler<TagsChangedEventArgs> TagsChanged;
@@ -172,15 +144,10 @@ namespace Microsoft.VisualStudio.Text.Tagging.Implementation
                 throw new ObjectDisposedException("TagAggregator");
 
             this.EnsureInitialized();
-
-            if (this.uniqueTaggers.Count == 0)
-            {
-                return Enumerable.Empty<IMappingTagSpan<T>>();
-            }
-            else
-            {
+            if (uniqueTaggers.Count > 0)
                 return InternalGetTags(new NormalizedSnapshotSpanCollection(span), cancel);
-            }
+
+            return Enumerable.Empty<IMappingTagSpan<T>>();
         }
 
         public IEnumerable<IMappingTagSpan<T>> GetAllTags(IMappingSpan span, CancellationToken cancel)
@@ -192,15 +159,10 @@ namespace Microsoft.VisualStudio.Text.Tagging.Implementation
                 throw new ObjectDisposedException("TagAggregator");
 
             this.EnsureInitialized();
-
-            if (this.uniqueTaggers.Count == 0)
-            {
-                return Enumerable.Empty<IMappingTagSpan<T>>();
-            }
-            else
-            {
+            if (uniqueTaggers.Count > 0)
                 return InternalGetTags(span, cancel);
-            }
+
+            return Enumerable.Empty<IMappingTagSpan<T>>();
         }
 
         public IEnumerable<IMappingTagSpan<T>> GetAllTags(NormalizedSnapshotSpanCollection snapshotSpans, CancellationToken cancel)
@@ -210,14 +172,12 @@ namespace Microsoft.VisualStudio.Text.Tagging.Implementation
 
             this.EnsureInitialized();
 
-            if ((this.uniqueTaggers.Count > 0) && (snapshotSpans.Count > 0))
+            if ((uniqueTaggers.Count > 0) && (snapshotSpans.Count > 0))
             {
                 return InternalGetTags(snapshotSpans, cancel);
             }
-            else
-            {
-                return Enumerable.Empty<IMappingTagSpan<T>>();
-            }
+
+            return Enumerable.Empty<IMappingTagSpan<T>>();
         }
         #endregion
 
@@ -232,18 +192,20 @@ namespace Microsoft.VisualStudio.Text.Tagging.Implementation
                 if (this.textView != null)
                     this.textView.Closed -= this.OnTextView_Closed;
 
-                this.BufferGraph.GraphBufferContentTypeChanged -= BufferGraph_GraphBufferContentTypeChanged;
-                this.BufferGraph.GraphBuffersChanged -= BufferGraph_GraphBuffersChanged;
+                foreach (var bufferAndTaggers in bufferStates)
+                {
+                    this.UnregisterBuffer(bufferAndTaggers.Key, bufferAndTaggers.Value);
+                }
 
-                this.DisposeAllTaggers();
+                Debug.Assert(this.uniqueTaggers.Count == 0);
             }
             finally
             {
-                this.taggers = null;
+                this.bufferStates.Clear();
+                this.uniqueTaggers.Clear();
                 this.TagAggregatorFactoryService = null;
                 this.BufferGraph = null;
                 this.textView = null;
-                this.uniqueTaggers = null;
 
                 disposed = true;
             }
@@ -370,50 +332,6 @@ namespace Microsoft.VisualStudio.Text.Tagging.Implementation
             }
         }
 
-        /// <summary>
-        /// When buffers are added or removed from the buffer graph, we (1) dispose all
-        /// the removed buffers' taggers (if they are disposable) and (2) collect all
-        /// taggers on the new buffers.
-        /// </summary>
-        void BufferGraph_GraphBuffersChanged(object sender, GraphBuffersChangedEventArgs e)
-        {
-            if (this.disposed || (!this.initialized) || (((TagAggregatorOptions2)this.options).HasFlag(TagAggregatorOptions2.NoProjection)))
-                return;
-
-            foreach (ITextBuffer buffer in e.RemovedBuffers)
-            {
-                DisposeAllTaggersOverBuffer(buffer);
-                taggers.Remove(buffer);
-            }
-
-            foreach (ITextBuffer buffer in e.AddedBuffers)
-            {
-                taggers[buffer] = GatherTaggers(buffer);
-            }
-        }
-
-        /// <summary>
-        /// If the content type of any of the source buffers changes, we need to dispose
-        /// all the taggers on the buffer that we have cached (if they are disposable) and get
-        /// new ones.
-        /// </summary>
-        void BufferGraph_GraphBufferContentTypeChanged(object sender, GraphBufferContentTypeChangedEventArgs e)
-        {
-            if (this.disposed || !this.initialized || (((TagAggregatorOptions2)this.options).HasFlag(TagAggregatorOptions2.NoProjection) && (e.TextBuffer != this.BufferGraph.TopBuffer)))
-                return;
-
-            DisposeAllTaggersOverBuffer(e.TextBuffer);
-            taggers[e.TextBuffer] = GatherTaggers(e.TextBuffer);
-
-            // Send out an event to say that tags have changed over the entire text buffer, to
-            // be safe.
-            ITextSnapshot snapshot = e.TextBuffer.CurrentSnapshot;
-            SnapshotSpan entireSnapshot = new SnapshotSpan(snapshot, 0, snapshot.Length);
-            IMappingSpan span = this.BufferGraph.CreateMappingSpan(entireSnapshot, SpanTrackingMode.EdgeInclusive);
-
-            this.RaiseEvents(this, span);
-        }
-
         private void OnTextView_Closed(object sender, EventArgs args)
         {
             this.Dispose();
@@ -421,15 +339,27 @@ namespace Microsoft.VisualStudio.Text.Tagging.Implementation
         #endregion
 
         #region Helpers
-        private IEnumerable<IMappingTagSpan<T>> GetTagsForBuffer(KeyValuePair<ITextBuffer, IList<ITagger<T>>> bufferAndTaggers,
-                                                                 NormalizedSnapshotSpanCollection snapshotSpans,
+        private IEnumerable<IMappingTagSpan<T>> GetTagsForBuffer(NormalizedSnapshotSpanCollection snapshotSpans,
                                                                  ITextSnapshot root, CancellationToken? cancel)
         {
             ITextSnapshot snapshot = snapshotSpans[0].Snapshot;
-
-            for (int t = 0; t < bufferAndTaggers.Value.Count; ++t)
+            if (this.bufferStates.TryGetValue(snapshot.TextBuffer, out BufferState taggersForBuffer))
             {
-                ITagger<T> tagger = bufferAndTaggers.Value[t];
+                return this.GetTagsForBuffer(snapshotSpans, taggersForBuffer, root, cancel);
+            }
+            else
+            {
+                return Array.Empty<IMappingTagSpan<T>>();
+            }
+        }
+
+        private IEnumerable<IMappingTagSpan<T>> GetTagsForBuffer(NormalizedSnapshotSpanCollection snapshotSpans,
+                                                                 BufferState taggersForBuffer, ITextSnapshot root, CancellationToken? cancel)
+        {
+            ITextSnapshot snapshot = snapshotSpans[0].Snapshot;
+            for (int t = 0; t < taggersForBuffer.Taggers.Count; ++t)
+            {
+                ITagger<T> tagger = taggersForBuffer.Taggers[t];
                 IEnumerator<ITagSpan<T>> tags = null;
                 try
                 {
@@ -522,64 +452,80 @@ namespace Microsoft.VisualStudio.Text.Tagging.Implementation
 
         private IEnumerable<IMappingTagSpan<T>> InternalGetTags(NormalizedSnapshotSpanCollection snapshotSpans, CancellationToken? cancel)
         {
-            ITextSnapshot targetSnapshot = snapshotSpans[0].Snapshot;
-
             bool mapByContentType = (options & TagAggregatorOptions.MapByContentType) != 0;
-
-            foreach (var bufferAndTaggers in taggers)
+            var sourceSnapshot = snapshotSpans[0].Snapshot as IProjectionSnapshot;
+            if ((sourceSnapshot != null) && ((!mapByContentType) || sourceSnapshot.TextBuffer.ContentType.IsOfType("projection")))
             {
-                if (bufferAndTaggers.Value.Count > 0)
+                var allSpans = new Dictionary<ITextSnapshot, IList<Span>>();
+                allSpans.Add(sourceSnapshot, (NormalizedSpanCollection)snapshotSpans);
+
+                for (int i = 0; (i < snapshotSpans.Count); ++i)
                 {
-                    FrugalList<SnapshotSpan> targetSpans = new FrugalList<SnapshotSpan>();
-                    for (int s = 0; s < snapshotSpans.Count; ++s)
-                    {
-                        MappingHelper.MapDownToBufferNoTrack(snapshotSpans[s], bufferAndTaggers.Key, targetSpans, mapByContentType);
-                    }
-
-                    if (targetSpans.Count > 0)
-                    {
-                        NormalizedSnapshotSpanCollection targetSpanCollection =
-                            new NormalizedSnapshotSpanCollection(targetSpans);
-
-                        foreach (var tagSpan in this.GetTagsForBuffer(bufferAndTaggers, targetSpanCollection, targetSnapshot, cancel))
-                        {
-                            yield return tagSpan;
-                        }
-                    }
+                    ExtendSourceMap(sourceSnapshot, snapshotSpans[i], mapByContentType, allSpans);
                 }
+
+                return this.GetTagsForBuffers(allSpans, sourceSnapshot, cancel);
+            }
+            else
+            {
+                return this.GetTagsForBuffer(snapshotSpans, snapshotSpans[0].Snapshot, cancel);
+            }
+        }
+
+        private static void ExtendSourceMap(IProjectionSnapshot sourceSnapshot, Span sourceSpan, bool mapByContentType, Dictionary<ITextSnapshot, IList<Span>> allSpans)
+        {
+            var childSpans = sourceSnapshot.MapToSourceSnapshots(sourceSpan);
+            for (int c = 0; (c < childSpans.Count); ++c)
+            {
+                var childSpan = childSpans[c];
+                if (!allSpans.TryGetValue(childSpan.Snapshot, out IList<Span> spans))
+                {
+                    spans = new FrugalList<Span>();
+                    allSpans.Add(childSpan.Snapshot, spans);
+                }
+
+                spans.Add(childSpan);
+
+                if ((childSpan.Snapshot is IProjectionSnapshot childProjectionSnapshot) &&
+                    (!mapByContentType || childProjectionSnapshot.TextBuffer.ContentType.IsOfType("projection")))
+                {
+                    ExtendSourceMap(childProjectionSnapshot, childSpan, mapByContentType, allSpans);
+                }
+            }
+        }
+
+        private IEnumerable<IMappingTagSpan<T>> GetTagsForBuffers(Dictionary<ITextSnapshot, IList<Span>> allSpans, ITextSnapshot root, CancellationToken? cancel)
+        {
+            foreach (var kvp in allSpans)
+            {
+                var spans = new NormalizedSnapshotSpanCollection(kvp.Key, kvp.Value);
+                foreach (var t in this.GetTagsForBuffer(spans, root, cancel))
+                    yield return t;
+
+                if (cancel.HasValue && cancel.Value.IsCancellationRequested)
+                    yield break;
             }
         }
 
         private IEnumerable<IMappingTagSpan<T>> InternalGetTags(IMappingSpan mappingSpan, CancellationToken? cancel)
         {
-            foreach (var bufferAndTaggers in taggers)
+            foreach (var bufferAndState in bufferStates)
             {
-                if (bufferAndTaggers.Value.Count > 0)
+                if (bufferAndState.Value.Taggers.Count > 0)
                 {
-                    NormalizedSnapshotSpanCollection spans = mappingSpan.GetSpans(bufferAndTaggers.Key);
-
+                    var spans = mappingSpan.GetSpans(bufferAndState.Key);
                     if (spans.Count > 0)
                     {
-                        foreach (var tagSpan in this.GetTagsForBuffer(bufferAndTaggers, spans, null, cancel))
+                        foreach (var tag in this.GetTagsForBuffer(spans, bufferAndState.Value, null, cancel))
                         {
-                            yield return tagSpan;
+                            yield return tag;
                         }
+
+                        if (cancel.HasValue && cancel.Value.IsCancellationRequested)
+                            yield break;
                     }
                 }
             }
-        }
-
-        void DisposeAllTaggers()
-        {
-            foreach (var bufferAndTaggers in taggers)
-            {
-                DisposeAllTaggersOverBuffer(bufferAndTaggers.Value);
-            }
-        }
-
-        void DisposeAllTaggersOverBuffer(ITextBuffer buffer)
-        {
-            DisposeAllTaggersOverBuffer(taggers[buffer]);
         }
 
         void DisposeAllTaggersOverBuffer(IList<ITagger<T>> taggersOnBuffer)
@@ -590,13 +536,37 @@ namespace Microsoft.VisualStudio.Text.Tagging.Implementation
             }
         }
 
+        internal void RegisterBuffer(ITextBuffer textBuffer)
+        {
+            if (this.bufferStates.TryGetValue(textBuffer, out BufferState state))
+            {
+                // The buffer is already registered, bumps its version number to the current version.
+                state.VersionNumber = this.versionNumber;
+            }
+            else
+            {
+                textBuffer.ContentTypeChanged += OnContentTypeChanged;
+                if (textBuffer is IProjectionBuffer projection)
+                {
+                    projection.SourceBuffersChanged += OnSourceBuffersChanged;
+                }
+
+                this.bufferStates.Add(textBuffer, new BufferState(this.versionNumber, this.GatherTaggers(textBuffer)));
+            }
+        }
+
         internal IList<ITagger<T>> GatherTaggers(ITextBuffer textBuffer)
         {
-            List<ITagger<T>> newTaggers = new List<ITagger<T>>();
+            var newTaggers = new List<ITagger<T>>();
+            this.AddTaggers(textBuffer, newTaggers);
+            return newTaggers;
+        }
 
+        internal void AddTaggers(ITextBuffer textBuffer, IList<ITagger<T>> newTaggers)
+        {
             var bufferTaggerFactories = this.TagAggregatorFactoryService.GuardedOperations.FindEligibleFactories(this.TagAggregatorFactoryService.GetBufferTaggersForType(textBuffer.ContentType, typeof(T)),
-                                                                                                                 textBuffer.ContentType,
-                                                                                                                 this.TagAggregatorFactoryService.ContentTypeRegistryService);
+                                                                                                     textBuffer.ContentType,
+                                                                                                     this.TagAggregatorFactoryService.ContentTypeRegistryService);
 
             foreach (var factory in bufferTaggerFactories)
             {
@@ -643,29 +613,128 @@ namespace Microsoft.VisualStudio.Text.Tagging.Implementation
                     this.RegisterTagger(tagger, newTaggers);
                 }
             }
+        }
 
-            return newTaggers;
+        internal void UnregisterAndRemoveBuffer(ITextBuffer buffer)
+        {
+            if (this.bufferStates.TryGetValue(buffer, out BufferState t))
+            {
+                this.bufferStates.Remove(buffer);
+                this.UnregisterBuffer(buffer, t);
+            }
+        }
+
+        internal void UnregisterBuffer(ITextBuffer buffer, BufferState state)
+        {
+            buffer.ContentTypeChanged -= OnContentTypeChanged;
+            if (buffer is IProjectionBuffer projection)
+            {
+                projection.SourceBuffersChanged -= OnSourceBuffersChanged;
+            }
+
+            foreach (var tagger in state.Taggers)
+            {
+                this.UnregisterTagger(tagger);
+            }
+            state.Taggers.Clear();
+        }
+
+        private void OnSourceBuffersChanged(object sender, ProjectionSourceBuffersChangedEventArgs e)
+        {
+            // This is something of a hack. We can't use the buffer graph events for tracking when buffers are added
+            // or removed from the projection stack (the buffer events are fired after the corresponding text changed
+            // events so people getting tags inside the text change event would not see any tags on the newly added
+            // buffers). Instead, we update our buffer states by traversing the entire buffer graph whenever the
+            // source buffers for any projection buffer in the graph changes.
+            //
+            // This should be rare.
+
+            // Bump our version number so we can tell which BufferStates are unused.
+            ++(this.versionNumber);
+
+            this.RegisterBufferGraph();
+
+            // Now that all living buffers have been registerd (and had their version numbers bumped), find any stale buffers
+            // that have an old version number and remove them.
+            List<ITextBuffer> deadBuffers = null;
+            foreach (var kvp in this.bufferStates)
+            {
+                if (kvp.Value.VersionNumber != this.versionNumber)
+                {
+                    if (deadBuffers == null)
+                        deadBuffers = new List<ITextBuffer>(this.bufferStates.Count);
+                    deadBuffers.Add(kvp.Key);
+                }
+            }
+
+            if (deadBuffers != null)
+            {
+                foreach (var b in deadBuffers)
+                {
+                    this.UnregisterAndRemoveBuffer(b);
+                }
+            }
+        }
+
+        private void RegisterBufferGraph()
+        {
+            if (((TagAggregatorOptions2)this.options).HasFlag(TagAggregatorOptions2.NoProjection))
+            {
+                this.RegisterBuffer(this.BufferGraph.TopBuffer);
+            }
+            else
+            {
+                //Construct our initial list of taggers by getting taggers for every textBuffer in the graph
+                this.RegisterSnapshotAndChildren(this.BufferGraph.TopBuffer.CurrentSnapshot);
+            }
+        }
+
+        private void RegisterSnapshotAndChildren(ITextSnapshot snapshot)
+        {
+            this.RegisterBuffer(snapshot.TextBuffer);
+            if (snapshot is IProjectionSnapshot projection)
+            {
+                foreach (var child in projection.SourceSnapshots)
+                {
+                    this.RegisterSnapshotAndChildren(child);
+                }
+            }
+        }
+
+        private void OnContentTypeChanged(object sender, ContentTypeChangedEventArgs e)
+        {
+            // It is possible we have a situation where we are contained in another tagger. We both subscribe to the buffers content type changed event
+            // but the other tagger is disposed of first (and it disposes of us) so we need to guard against handling the event after being disposed of.
+            if (!this.disposed)
+            {
+                if (this.bufferStates.TryGetValue(e.After.TextBuffer, out BufferState state))
+                {
+                    foreach (var tagger in state.Taggers)
+                    {
+                        this.UnregisterTagger(tagger);
+                    }
+
+                    state.Taggers.Clear();
+                    this.AddTaggers(e.After.TextBuffer, state.Taggers);
+                }
+
+                // Send out an event to say that tags have changed over the entire text buffer, to
+                // be safe.
+                SnapshotSpan entireSnapshot = new SnapshotSpan(e.After, 0, e.After.Length);
+                IMappingSpan span = this.BufferGraph.CreateMappingSpan(entireSnapshot, SpanTrackingMode.EdgeInclusive);
+
+                this.RaiseEvents(this, span);
+            }
         }
 
         private void UnregisterTagger(ITagger<T> tagger)
         {
-            int taggerIndex = uniqueTaggers.FindIndex((tuple) => object.ReferenceEquals(tuple.Item1, tagger));
-
-            if (taggerIndex != -1)
+            if (this.uniqueTaggers.TryGetValue(tagger, out var count))
             {
-                Tuple<ITagger<T>, int> taggerData = this.uniqueTaggers[taggerIndex];
-
-                // Is there only one reference remaining for this item?
-                if (taggerData.Item2 == 1)
+                if (--(count.Value) == 0)
                 {
                     tagger.TagsChanged -= SourceTaggerTagsChanged;
-
-                    this.uniqueTaggers.RemoveAt(taggerIndex);
-                }
-                else
-                {
-                    // Decrease the ref count of the tagger by 1
-                    this.uniqueTaggers[taggerIndex] = Tuple.Create(tagger, taggerData.Item2 - 1);
+                    this.uniqueTaggers.Remove(tagger);
                 }
             }
             else
@@ -673,6 +742,9 @@ namespace Microsoft.VisualStudio.Text.Tagging.Implementation
                 Debug.Fail("The tagger should still be in the list of unique taggers.");
             }
 
+            // Note we are intentionally disposing of the object even if it continues to live on in uniqueTaggers. We'd only
+            // get that situation if two different tagger providers returned the same tagger (and, if that tagger implements
+            // IDisposable, then the expectation is that Dispose would be called for one for each time the tagger was "created").
             IDisposable disposable = tagger as IDisposable;
             if (disposable != null)
             {
@@ -685,24 +757,36 @@ namespace Microsoft.VisualStudio.Text.Tagging.Implementation
             if (tagger != null)
             {
                 newTaggers.Add(tagger);
-
-                int taggerIndex = this.uniqueTaggers.FindIndex((tuple) => object.ReferenceEquals(tuple.Item1, tagger));
-
-                // Only subscribe to the event if we've never seen this tagger before
-                if (taggerIndex == -1)
+                if (!this.uniqueTaggers.TryGetValue(tagger, out var count))
                 {
+                    count = new BoxedInt();
+                    this.uniqueTaggers.Add(tagger, count);
+
+                    // We only want to subscribe once to the tags changed event
+                    // (even if we get multiple instances of the same tagger).
                     tagger.TagsChanged += SourceTaggerTagsChanged;
+                }
 
-                    uniqueTaggers.Add(Tuple.Create(tagger, 1));
-                }
-                else
-                {
-                    // Increase the reference count for the existing tagger
-                    uniqueTaggers[taggerIndex] = Tuple.Create(tagger, uniqueTaggers[taggerIndex].Item2 + 1);
-                }
+                ++(count.Value);
             }
         }
 
+        class BoxedInt
+        {
+            public int Value;
+        }
+
+        internal class BufferState
+        {
+            public int VersionNumber;
+            public IList<ITagger<T>> Taggers;
+
+            public BufferState(int versionNumber, IList<ITagger<T>> taggers)
+            {
+                this.VersionNumber = versionNumber;
+                this.Taggers = taggers;
+            }
+        }
         #endregion
     }
 }

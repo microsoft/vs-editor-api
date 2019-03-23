@@ -53,4 +53,15 @@ namespace Microsoft.VisualStudio.Commanding
         /// <returns>Returns <c>true</c> if the command was handled, <c>false</c> otherwise.</returns>
         bool ExecuteCommand(T args, CommandExecutionContext executionContext);
     }
+
+    /// <summary>
+    /// A command handler that can opt out of <see cref="ICommandHandler{T}.ExecuteCommand(T, CommandExecutionContext)"/>.
+    /// </summary>
+    internal interface IDynamicCommandHandler<T> where T : CommandArgs
+    {
+        /// <summary>
+        /// Determines whether <see cref="ICommandHandler{T}.ExecuteCommand(T, CommandExecutionContext)"/> should be called.
+        /// </summary>
+        bool CanExecuteCommand(T args);
+    }
 }

@@ -34,9 +34,9 @@ namespace Microsoft.VisualStudio.Text.Editor
 
         /// <summary>
         /// When implemented in a derived class, selects all the text in the document. Ensures that the end point
-        /// of the selection is visible on screen.
+        /// of the selection is visible on screen if <paramref name="moveCaret"/> is <c>true</c>.
         /// </summary>
-        public abstract void SelectAll();
+        public abstract void SelectAll(bool moveCaret = true);
 
         /// <summary>
         /// When implemented in a derived class, extends the selection from its current start point to the new end point. Ensures

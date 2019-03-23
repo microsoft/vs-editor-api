@@ -80,6 +80,22 @@ namespace Microsoft.VisualStudio.Text.Editor.OptionsExtensionMethods
             return options.GetOptionValue<bool>(DefaultTextViewOptions.UseVisibleWhitespaceId);
         }
 
+        public static bool IsVisibleWhitespaceOnlyWhenSelectedEnabled(this IEditorOptions options)
+        {
+            if (options == null)
+                throw new ArgumentNullException(nameof(options));
+
+            return options.GetOptionValue<bool>(DefaultTextViewOptions.UseVisibleWhitespaceOnlyWhenSelectedId);
+        }
+
+        public static DefaultTextViewOptions.IncludeWhitespaces VisibleWhitespaceEnabledTypes(this IEditorOptions options)
+        {
+            if (options == null)
+                throw new ArgumentNullException(nameof(options));
+
+            return options.GetOptionValue<DefaultTextViewOptions.IncludeWhitespaces>(DefaultTextViewOptions.UseVisibleWhitespaceIncludeId);
+        }
+
         /// <summary>
         /// Determines whether the view prohibits all user input.
         /// </summary>
@@ -131,6 +147,17 @@ namespace Microsoft.VisualStudio.Text.Editor.OptionsExtensionMethods
                 throw new ArgumentNullException(nameof(options));
 
             return options.GetOptionValue<bool>(DefaultTextViewOptions.IsViewportLeftClippedId);
+        }
+
+        /// <summary>
+        /// Determines if the caret should be moved to the end of the selection after performing the "select all" operation.
+        /// </summary>
+        public static bool ShouldMoveCaretOnSelectAll(this IEditorOptions options)
+        {
+            if (options == null)
+                throw new ArgumentNullException(nameof(options));
+
+            return options.GetOptionValue(DefaultTextViewOptions.ShouldMoveCaretOnSelectAllId);
         }
         #endregion
     }
@@ -330,6 +357,29 @@ namespace Microsoft.VisualStudio.Text.Editor
         public const string UseVisibleWhitespaceName = "TextView/UseVisibleWhitespace";
 
         /// <summary>
+        /// Determines whether to show spaces, tabs and EndOfLine as visible glyphs only under selection.
+        /// </summary>
+        public static readonly EditorOptionKey<bool> UseVisibleWhitespaceOnlyWhenSelectedId = new EditorOptionKey<bool>(UseVisibleWhitespaceOnlyWhenSelectedName);
+        public const string UseVisibleWhitespaceOnlyWhenSelectedName = "TextView/UseVisibleWhitespace/OnlyWhenSelected";
+
+        /// <summary>
+        /// Determines whether to show spaces, tabs and EndOfLine as visible glyphs only for specific type of whitespace.
+        /// </summary>
+        public static readonly EditorOptionKey<IncludeWhitespaces> UseVisibleWhitespaceIncludeId = new EditorOptionKey<IncludeWhitespaces>(UseVisibleWhitespaceIncludeName);
+        public const string UseVisibleWhitespaceIncludeName = "TextView/UseVisibleWhitespace/Include";
+
+        [Flags]
+        public enum IncludeWhitespaces
+        {
+            None = 0x0,
+            Spaces = 0x1,
+            Tabs = 0x2,
+            LineEndings = 0x4,
+            Ideographics = 0x8,
+            All = 0xf,
+        }
+
+        /// <summary>
         /// Enables or disables the code block structure visualizer text adornment feature.
         /// </summary>
         public static readonly EditorOptionKey<bool> ShowBlockStructureId = new EditorOptionKey<bool>(ShowBlockStructureName);
@@ -383,6 +433,60 @@ namespace Microsoft.VisualStudio.Text.Editor
         /// </summary>
         public const string CaretWidthOptionName = "TextView/CaretWidth";
         public readonly static EditorOptionKey<double> CaretWidthId = new EditorOptionKey<double>(CaretWidthOptionName);
+
+        /// <summary>
+        /// Determines whether to enable the highlight current line adornment.
+        /// </summary>
+        public static readonly EditorOptionKey<bool> EnableHighlightCurrentLineId = new EditorOptionKey<bool>(EnableHighlightCurrentLineName);
+        public const string EnableHighlightCurrentLineName = "Adornments/HighlightCurrentLine/Enable";
+
+        /// <summary>
+        /// Determines whether to enable the highlight current line adornment.
+        /// </summary>
+        public static readonly EditorOptionKey<bool> EnableSimpleGraphicsId = new EditorOptionKey<bool>(EnableSimpleGraphicsName);
+        public const string EnableSimpleGraphicsName = "Graphics/Simple/Enable";
+
+        /// <summary>
+        /// Determines whether the opacity of text markers and selection is reduced in high contrast mode.
+        /// </summary>
+        public static readonly EditorOptionKey<bool> UseReducedOpacityForHighContrastOptionId = new EditorOptionKey<bool>(UseReducedOpacityForHighContrastOptionName);
+        public const string UseReducedOpacityForHighContrastOptionName = "UseReducedOpacityForHighContrast";
+
+        /// <summary>
+        /// Determines whether to enable mouse wheel zooming
+        /// </summary>
+        public static readonly EditorOptionKey<bool> EnableMouseWheelZoomId = new EditorOptionKey<bool>(EnableMouseWheelZoomName);
+        public const string EnableMouseWheelZoomName = "TextView/MouseWheelZoom";
+
+        /// <summary>
+        /// Determines the appearance category of a view, which selects a ClassificationFormatMap and EditorFormatMap.
+        /// </summary>
+        public static readonly EditorOptionKey<string> AppearanceCategory = new EditorOptionKey<string>(AppearanceCategoryName);
+        public const string AppearanceCategoryName = "Appearance/Category";
+
+        /// <summary>
+        /// Determines the view zoom level.
+        /// </summary>
+        public static readonly EditorOptionKey<double> ZoomLevelId = new EditorOptionKey<double>(ZoomLevelName);
+        public const string ZoomLevelName = "TextView/ZoomLevel";
+
+        /// <summary>
+        /// Determines whether to enable mouse click + modifier keypress for go to definition.
+        /// </summary>
+        public const string ClickGoToDefEnabledName = "TextView/ClickGoToDefEnabled";
+        public static readonly EditorOptionKey<bool> ClickGoToDefEnabledId = new EditorOptionKey<bool>(ClickGoToDefEnabledName);
+
+        /// <summary>
+        /// Determines whether to open definition target in Peek view for mouse click + modifier keypress.
+        /// </summary>
+        public const string ClickGoToDefOpensPeekName = "TextView/ClickGoToDefOpensPeek";
+        public static readonly EditorOptionKey<bool> ClickGoToDefOpensPeekId = new EditorOptionKey<bool>(ClickGoToDefOpensPeekName);
+
+        /// <summary>
+        /// The default option that determines whether to move the caret when performing the "select all" operation.
+        /// </summary>
+        public static readonly EditorOptionKey<bool> ShouldMoveCaretOnSelectAllId = new EditorOptionKey<bool>(ShouldMoveCaretOnSelectAllName);
+        public const string ShouldMoveCaretOnSelectAllName = "TextView/ShouldMoveCaretOnSelectAll";
         #endregion
     }
 
@@ -688,6 +792,42 @@ namespace Microsoft.VisualStudio.Text.Editor
         /// Gets the default text view host value.
         /// </summary>
         public override EditorOptionKey<bool> Key { get { return DefaultTextViewOptions.UseVisibleWhitespaceId; } }
+    }
+
+    /// <summary>
+    /// Defines the Use Visible Whitespace option.
+    /// </summary>
+    [Export(typeof(EditorOptionDefinition))]
+    [Name(DefaultTextViewOptions.UseVisibleWhitespaceOnlyWhenSelectedName)]
+    public sealed class UseVisibleWhitespaceOnlyWhenSelected : ViewOptionDefinition<bool>
+    {
+        /// <summary>
+        /// Gets the default value, which is <c>false</c>.
+        /// </summary>
+        public override bool Default { get { return false; } }
+
+        /// <summary>
+        /// Gets the default text view host value.
+        /// </summary>
+        public override EditorOptionKey<bool> Key { get { return DefaultTextViewOptions.UseVisibleWhitespaceOnlyWhenSelectedId; } }
+    }
+
+    /// <summary>
+    /// Defines the Use Visible Whitespace option.
+    /// </summary>
+    [Export(typeof(EditorOptionDefinition))]
+    [Name(DefaultTextViewOptions.UseVisibleWhitespaceIncludeName)]
+    public sealed class UseVisibleWhitespaceEnabledTypes : ViewOptionDefinition<DefaultTextViewOptions.IncludeWhitespaces>
+    {
+        /// <summary>
+        /// Gets the default value, which is <c>false</c>.
+        /// </summary>
+        public override DefaultTextViewOptions.IncludeWhitespaces Default { get { return DefaultTextViewOptions.IncludeWhitespaces.All; } }
+
+        /// <summary>
+        /// Gets the default text view host value.
+        /// </summary>
+        public override EditorOptionKey<DefaultTextViewOptions.IncludeWhitespaces> Key { get { return DefaultTextViewOptions.UseVisibleWhitespaceIncludeId; } }
     }
 
     /// <summary>
@@ -1025,5 +1165,165 @@ namespace Microsoft.VisualStudio.Text.Editor
         /// Gets the default text view host value.
         /// </summary>
         public override EditorOptionKey<bool> Key { get { return DefaultTextViewHostOptions.EnableFileHealthIndicatorOptionId; } }
+    }
+
+
+    /// <summary>
+    /// Represents the option to highlight the current line.
+    /// </summary>
+    [Export(typeof(EditorOptionDefinition))]
+    [Name(DefaultTextViewOptions.EnableHighlightCurrentLineName)]
+    public sealed class HighlightCurrentLineOption : EditorOptionDefinition<bool>
+    {
+        /// <summary>
+        /// Gets the default value.
+        /// </summary>
+        public override bool Default { get { return true; } }
+
+        /// <summary>
+        /// Gets the key for the highlight current line option.
+        /// </summary>
+        public override EditorOptionKey<bool> Key { get { return DefaultTextViewOptions.EnableHighlightCurrentLineId; } }
+    }
+
+    /// <summary>
+    /// Represents the option to draw a selection gradient as opposed to a solid color selection.
+    /// </summary>
+    [Export(typeof(EditorOptionDefinition))]
+    [Name(DefaultTextViewOptions.EnableSimpleGraphicsName)]
+    public sealed class SimpleGraphicsOption : EditorOptionDefinition<bool>
+    {
+        /// <summary>
+        /// Gets the default value.
+        /// </summary>
+        public override bool Default { get { return false; } }
+
+        /// <summary>
+        /// Gets the key for the simple graphics option.
+        /// </summary>
+        public override EditorOptionKey<bool> Key { get { return DefaultTextViewOptions.EnableSimpleGraphicsId; } }
+    }
+
+    [Export(typeof(EditorOptionDefinition))]
+    [Name(DefaultTextViewOptions.UseReducedOpacityForHighContrastOptionName)]
+    public sealed class UseReducedOpacityForHighContrastOption : EditorOptionDefinition<bool>
+    {
+        /// <summary>
+        /// Gets the default value.
+        /// </summary>
+        public override bool Default { get { return false; } }
+
+        /// <summary>
+        /// Gets the key for the use reduced opacity option.
+        /// </summary>
+        public override EditorOptionKey<bool> Key { get { return DefaultTextViewOptions.UseReducedOpacityForHighContrastOptionId; } }
+    }
+
+    /// <summary>
+    /// Defines the option to enable the mouse wheel zoom
+    /// </summary>
+    [Export(typeof(EditorOptionDefinition))]
+    [Name(DefaultTextViewOptions.EnableMouseWheelZoomName)]
+    public sealed class MouseWheelZoomEnabled : EditorOptionDefinition<bool>
+    {
+        /// <summary>
+        /// Gets the default value, which is <c>true</c>.
+        /// </summary>
+        public override bool Default { get { return true; } }
+
+        /// <summary>
+        /// Gets the wpf text view  value.
+        /// </summary>
+        public override EditorOptionKey<bool> Key { get { return DefaultTextViewOptions.EnableMouseWheelZoomId; } }
+    }
+
+    /// <summary>
+    /// Defines the appearance category.
+    /// </summary>
+    [Export(typeof(EditorOptionDefinition))]
+    [Name(DefaultTextViewOptions.AppearanceCategoryName)]
+    public sealed class AppearanceCategoryOption : EditorOptionDefinition<string>
+    {
+        /// <summary>
+        /// Gets the default value.
+        /// </summary>
+        public override string Default { get { return "text"; } }
+
+        /// <summary>
+        /// Gets the key for the appearance category option.
+        /// </summary>
+        public override EditorOptionKey<string> Key { get { return DefaultTextViewOptions.AppearanceCategory; } }
+    }
+
+    /// <summary>
+    /// Defines the zoomlevel.
+    /// </summary>
+    [Export(typeof(EditorOptionDefinition))]
+    [Name(DefaultTextViewOptions.ZoomLevelName)]
+    public sealed class ZoomLevel : EditorOptionDefinition<double>
+    {
+        /// <summary>
+        /// Gets the default value.
+        /// </summary>
+        public override double Default { get { return (int)ZoomConstants.DefaultZoom; } }
+
+        /// <summary>
+        /// Gets the key for the text view zoom level.
+        /// </summary>
+        public override EditorOptionKey<double> Key { get { return DefaultTextViewOptions.ZoomLevelId; } }
+    }
+
+    /// <summary>
+    /// Determines whether to enable mouse click + modifier keypress for go to definition.
+    /// </summary>
+    [Export(typeof(EditorOptionDefinition))]
+    [Name(DefaultTextViewOptions.ClickGoToDefEnabledName)]
+    public sealed class ClickGotoDefEnabledOption : EditorOptionDefinition<bool>
+    {
+        /// <summary>
+        /// Gets the default value.
+        /// </summary>
+        public override bool Default => true;
+
+        /// <summary>
+        /// Gets the key for the option.
+        /// </summary>
+        public override EditorOptionKey<bool> Key => DefaultTextViewOptions.ClickGoToDefEnabledId;
+    }
+
+    /// <summary>
+    /// Determines whether to open definition target in Peek view for mouse click + modifier keypress.
+    /// </summary>
+    [Export(typeof(EditorOptionDefinition))]
+    [Name(DefaultTextViewOptions.ClickGoToDefOpensPeekName)]
+    public sealed class ClickGotoDefOpensPeekOption : EditorOptionDefinition<bool>
+    {
+        /// <summary>
+        /// Gets the default value.
+        /// </summary>
+        public override bool Default => false;
+
+        /// <summary>
+        /// Gets the key for the option.
+        /// </summary>
+        public override EditorOptionKey<bool> Key => DefaultTextViewOptions.ClickGoToDefOpensPeekId;
+    }
+
+    /// <summary>
+    /// The option definition that determines if the caret should be moved to the end of the selection after performing the "select all" operation.
+    /// </summary>
+    [Export(typeof(EditorOptionDefinition))]
+    [Name(DefaultTextViewOptions.ShouldMoveCaretOnSelectAllName)]
+    internal sealed class ShouldMoveCaretOnSelectAll : EditorOptionDefinition<bool>
+    {
+        /// <summary>
+        /// Gets the default value (true).
+        /// </summary>
+        public override bool Default { get => true; }
+
+        /// <summary>
+        /// Gets the editor option key.
+        /// </summary>
+        public override EditorOptionKey<bool> Key => DefaultTextViewOptions.ShouldMoveCaretOnSelectAllId;
     }
 }

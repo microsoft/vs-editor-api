@@ -34,6 +34,12 @@ namespace Microsoft.VisualStudio.Text.MultiSelection.Implementation
         {
             Factory = factory;
             _textView = textView;
+
+            if (textView.ToString().Contains("ExtensibleTextEditor"))
+            {
+                IsOldEditor = true;
+            }
+
             _currentSnapshot = _textView.TextSnapshot;
             var documentStart = new VirtualSnapshotPoint(_textView.TextSnapshot, 0);
             _primaryTransformer = new SelectionTransformer(this, new Selection(documentStart));
@@ -45,6 +51,8 @@ namespace Microsoft.VisualStudio.Text.MultiSelection.Implementation
             _textView.LayoutChanged += OnTextViewLayoutChanged;
             _textView.Closed += OnTextViewClosed;
         }
+
+        internal bool IsOldEditor { get; set; }
 
         private IEditorOptions EditorOptions
         {
@@ -60,37 +68,43 @@ namespace Microsoft.VisualStudio.Text.MultiSelection.Implementation
 
         private void OnTextViewLayoutChanged(object sender, TextViewLayoutChangedEventArgs e)
         {
-            if (CurrentSnapshot != e.NewSnapshot)
+            if (IsOldEditor)
             {
-                CurrentSnapshot = e.NewSnapshot;
+                if (CurrentSnapshot != e.NewSnapshot)
+                {
+                    CurrentSnapshot = e.NewSnapshot;
+                }
+
+                return;
             }
-            //using (var batchOp = BeginBatchOperation())
-            //{
-            //    // If we get a text change, we need to go through all the selections and update them to be in the
-            //    // new snapshot. If there is just a visual change, we could still need to update selections because
-            //    // word wrap or collapsed regions might have moved around.
-            //    if (CurrentSnapshot != e.NewSnapshot)
-            //    {
-            //        CurrentSnapshot = e.NewSnapshot;
-            //    }
-            //    else if (e.NewViewState.VisualSnapshot != e.OldViewState.VisualSnapshot)
-            //    {
-            //        // Box selection is special. Moving _boxSelection is easy, but InnerSetBoxSelection will totally
-            //        // reset all the selections. It's easier to go a different path here than it is to special case
-            //        // NormalizeSelections, which is also called when adding an individual selection.
-            //        if (IsBoxSelection)
-            //        {
-            //            // MapToSnapshot does take the visual buffer into account as well. Calling it here should do the right thing
-            //            // for collapsed regions and word wrap.
-            //            _boxSelection.Selection = _boxSelection.Selection.MapToSnapshot(_currentSnapshot, _textView);
-            //            InnerSetBoxSelection();
-            //        }
-            //        else
-            //        {
-            //            NormalizeSelections(true);
-            //        }
-            //    }
-            //}
+
+            using (var batchOp = BeginBatchOperation())
+            {
+                // If we get a text change, we need to go through all the selections and update them to be in the
+                // new snapshot. If there is just a visual change, we could still need to update selections because
+                // word wrap or collapsed regions might have moved around.
+                if (CurrentSnapshot != e.NewSnapshot)
+                {
+                    CurrentSnapshot = e.NewSnapshot;
+                }
+                else if (e.NewViewState.VisualSnapshot != e.OldViewState.VisualSnapshot)
+                {
+                    // Box selection is special. Moving _boxSelection is easy, but InnerSetBoxSelection will totally
+                    // reset all the selections. It's easier to go a different path here than it is to special case
+                    // NormalizeSelections, which is also called when adding an individual selection.
+                    if (IsBoxSelection)
+                    {
+                        // MapToSnapshot does take the visual buffer into account as well. Calling it here should do the right thing
+                        // for collapsed regions and word wrap.
+                        _boxSelection.Selection = _boxSelection.Selection.MapToSnapshot(_currentSnapshot, _textView);
+                        InnerSetBoxSelection();
+                    }
+                    else
+                    {
+                        NormalizeSelections(true);
+                    }
+                }
+            }
         }
 
         private void OnTextViewClosed(object sender, EventArgs e)
@@ -413,8 +427,11 @@ namespace Microsoft.VisualStudio.Text.MultiSelection.Implementation
 
         private void FireSessionUpdated()
         {
-            //var changesFromNormalization = NormalizeSelections();
-            //_fireEvents = _fireEvents || changesFromNormalization;
+            if (!IsOldEditor)
+            {
+                var changesFromNormalization = NormalizeSelections();
+                _fireEvents = _fireEvents || changesFromNormalization;
+            }
 
             // Perform merges as late as possible so that each region can act independently for operations.
             MergeSelections();

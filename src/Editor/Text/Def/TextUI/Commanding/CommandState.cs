@@ -2,7 +2,12 @@
 
 namespace Microsoft.VisualStudio.Commanding
 {
+    /// <summary>
+    /// Returned by <see cref="ICommandHandler{T}.GetCommandState(T)"/> and determines the state of the command.
+    /// </summary>
+#pragma warning disable CA1815 // Override equals and operator equals on value types
     public struct CommandState
+#pragma warning restore CA1815 // Override equals and operator equals on value types
     {
         /// <summary>
         /// If true, the command state is unspecified and should not be taken into account.

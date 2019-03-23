@@ -1,0 +1,26 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AssemblyName>Microsoft.VisualStudio.Language</AssemblyName>
+    <RootNamespace>Microsoft.VisualStudio.Language.Intellisense</RootNamespace>
+    <PushToPublicFeed>true</PushToPublicFeed>
+    <AssemblyAttributeClsCompliant>true</AssemblyAttributeClsCompliant>
+    <TargetFramework>$(TargetFramework)</TargetFramework>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="System" />
+    <Reference Include="System.ComponentModel.Composition" />
+    <Reference Include="System.Core" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="StreamJsonRpc" />
+    <PackageReference Include="System.Collections.Immutable" />
+    <PackageReference Include="Newtonsoft.Json" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\Core\Def\CoreUtility.csproj" />
+    <ProjectReference Include="..\..\..\Text\Def\TextData\TextData.csproj" />
+    <ProjectReference Include="..\..\..\Text\Def\TextLogic\TextLogic.csproj" />
+    <ProjectReference Include="..\..\..\Text\Def\TextUI\TextUI.csproj" />
+  </ItemGroup>
+</Project>

@@ -10,7 +10,7 @@
     /// <remarks>
     /// This type is proffered to the IDE via an <see cref="IToolTipPresenterFactory"/> and is
     /// always constructed and called purely on the UI thread. Each <see cref="IToolTipPresenter"/>
-    /// is a single-use object that is responsible for converting the given content to 
+    /// is a single-use object that is responsible for converting the given content to
     /// into platform-specific UI elements and displaying them in a popup UI.
     /// </remarks>
     public interface IToolTipPresenter

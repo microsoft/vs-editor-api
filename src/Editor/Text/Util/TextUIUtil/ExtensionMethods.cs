@@ -81,7 +81,7 @@ namespace Microsoft.VisualStudio.Text.MultiSelection
                         //The indentation specified by the smart indent service is desired column position of the caret. Find out how much virtual space
                         //need to be at the end of the line to satisfy that.
                         // TODO: need a way to determine column width in xplat scenarios, bug https://devdiv.visualstudio.com/DevDiv/_workitems/edit/637741
-                        double columnWidth = 7;
+                        double columnWidth = (textView is ITextView3 textView3) ? textView3.FormattedLineSource.ColumnWidth : throw new NotSupportedException();
                         indentationWidth = Math.Max(0.0, (((double)indentation.Value) * columnWidth - textLine.TextWidth));
 
                         // if the coordinate is specified by the user and the user has selected a coordinate to the left

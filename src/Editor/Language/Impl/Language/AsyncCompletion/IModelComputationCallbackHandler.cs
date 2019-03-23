@@ -6,6 +6,8 @@ namespace Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion.Implement
     internal interface IModelComputationCallbackHandler<TModel>
     {
         Task UpdateUI(TModel model, CancellationToken token);
-        void Dismiss();
+        void DismissDueToCancellation();
+        void DismissDueToError();
+        void ComputationFinished(TModel transformedModel);
     }
 }

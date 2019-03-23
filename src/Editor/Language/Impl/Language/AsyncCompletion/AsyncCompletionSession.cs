@@ -91,6 +91,11 @@ namespace Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion.Implement
         private readonly CompletionSessionTelemetry _telemetry;
 
         /// <summary>
+        /// Records noteworthy event which led to committing or dismissing
+        /// </summary>
+        CompletionSessionState _finalSessionState;
+
+        /// <summary>
         /// Self imposed maximum delay for commits due to user double-clicking completion item in the UI
         /// </summary>
         private static readonly TimeSpan MaxCommitDelayWhenClicked = TimeSpan.FromSeconds(1);
@@ -108,7 +113,6 @@ namespace Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion.Implement
         public event EventHandler<CompletionItemEventArgs> ItemCommitted;
         public event EventHandler Dismissed;
         public event EventHandler<ComputedCompletionItemsEventArgs> ItemsUpdated;
-        public event EventHandler ReceivedCompletionContext;
 
         public ITextView TextView => _textView;
 
@@ -117,10 +121,17 @@ namespace Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion.Implement
 
         public PropertyCollection Properties { get; }
 
-        public AsyncCompletionSession(SnapshotSpan initialApplicableToSpan, ImmutableArray<char> potentialCommitChars,
-            JoinableTaskContext joinableTaskContext, ICompletionPresenterProvider presenterProvider,
-            IList<(IAsyncCompletionSource, SnapshotPoint)> completionSources, IList<(IAsyncCompletionCommitManager, ITextBuffer)> commitManagers,
-            IAsyncCompletionItemManager completionService, AsyncCompletionBroker broker, ITextView textView, CompletionSessionTelemetry telemetry,
+        public AsyncCompletionSession(
+            SnapshotSpan initialApplicableToSpan,
+            ImmutableArray<char> potentialCommitChars,
+            JoinableTaskContext joinableTaskContext,
+            ICompletionPresenterProvider presenterProvider,
+            IList<(IAsyncCompletionSource, SnapshotPoint)> completionSources,
+            IList<(IAsyncCompletionCommitManager, ITextBuffer)> commitManagers,
+            IAsyncCompletionItemManager completionService,
+            AsyncCompletionBroker broker,
+            ITextView textView,
+            CompletionSessionTelemetry telemetry,
             IGuardedOperations guardedOperations)
         {
             _potentialCommitChars = potentialCommitChars;
@@ -137,24 +148,75 @@ namespace Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion.Implement
             PageStepSize = presenterProvider?.Options.ResultsPerPage ?? 1;
             _textView.Caret.PositionChanged += OnCaretPositionChanged;
             Properties = new PropertyCollection();
+            _telemetry.E2EStopwatch.Start();
+        }
+
+        /// <summary>
+        /// Creates a minimal instance of <see cref="AsyncCompletionSession"/> which is capable of
+        /// holding properties and communicating with <see cref="IAsyncCompletionSource"/>s.
+        /// This session must be dismissed when no longer needed.
+        /// </summary>
+        internal static AsyncCompletionSession CreateAggregatingSession(
+            SnapshotSpan applicableToSpan,
+            JoinableTaskContext joinableTaskContext,
+            List<(IAsyncCompletionSource Source, SnapshotPoint Point)> completionSources,
+            AsyncCompletionBroker broker,
+            ITextView textView,
+            CompletionSessionTelemetry telemetry,
+            IGuardedOperations guardedOperations)
+        {
+            return new AsyncCompletionSession(
+                applicableToSpan,
+                default,
+                joinableTaskContext,
+                default,
+                completionSources,
+                default,
+                default,
+                broker,
+                textView,
+                telemetry,
+                guardedOperations);
         }
 
         bool IAsyncCompletionSession.ShouldCommit(char typedChar, SnapshotPoint triggerLocation, CancellationToken token)
         {
+            if (IsDismissed)
+                return false;
             if (!JoinableTaskContext.IsOnMainThread)
                 throw new InvalidOperationException($"This method must be callled on the UI thread.");
-
             if (!_potentialCommitChars.Contains(typedChar))
                 return false;
 
-            var mappingPoint = _textView.BufferGraph.CreateMappingPoint(triggerLocation, PointTrackingMode.Negative);
-            return _commitManagers
-                .Select(n => (n.Item1, mappingPoint.GetPoint(n.Item2, PositionAffinity.Predecessor)))
-                .Where(n => n.Item2.HasValue)
-                .Any(n => _guardedOperations.CallExtensionPoint(
-                    errorSource: n.Item1,
-                    call: () => n.Item1.ShouldCommitCompletion(this, n.Item2.Value, typedChar, token),
-                    valueOnThrow: false));
+            var rootSnapshot = AsyncCompletionBroker.GetRootSnapshot(TextView);
+            var points = MappingHelper.GetPointsAtLocation(triggerLocation, rootSnapshot);
+            for (int i = 0; i < _commitManagers.Count; i++)
+            {
+                var commitManager = _commitManagers[i].Item1;
+
+                // Among current SnapshotPoints, pick the one which matches the commit manager's buffer
+                SnapshotPoint relevantPoint = default;
+                var pointsEnumerator = points.GetEnumerator();
+                while (pointsEnumerator.MoveNext())
+                {
+                    if (pointsEnumerator.Current.Snapshot.TextBuffer == _commitManagers[i].Item2)
+                    {
+                        relevantPoint = pointsEnumerator.Current;
+                        break;
+                    }
+                }
+                if (relevantPoint == default)
+                    continue;
+
+                var shouldCommit = _guardedOperations.CallExtensionPoint(
+                    errorSource: commitManager,
+                    call: () => commitManager.ShouldCommitCompletion(this, relevantPoint, typedChar, token),
+                    valueOnThrow: false);
+
+                if (shouldCommit)
+                    return true;
+            }
+            return false;
         }
 
         bool IAsyncCompletionSession.CommitIfUnique(CancellationToken token)
@@ -180,6 +242,7 @@ namespace Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion.Implement
             }
             else if (lastModel.UniqueItem != null)
             {
+                _finalSessionState = CompletionSessionState.CommittedThroughCompleteWord;
                 var behavior = CommitItem(default, lastModel.UniqueItem, ApplicableToSpan, token);
                 if (behavior == CommitBehavior.CancelCommit)
                 {
@@ -194,6 +257,7 @@ namespace Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion.Implement
             }
             else if (!lastModel.PresentedItems.IsDefaultOrEmpty && lastModel.PresentedItems.Length == 1)
             {
+                _finalSessionState = CompletionSessionState.CommittedThroughCompleteWord;
                 var behavior = CommitItem(default, lastModel.PresentedItems[0].CompletionItem, ApplicableToSpan, token);
                 if (behavior == CommitBehavior.CancelCommit)
                 {
@@ -225,10 +289,11 @@ namespace Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion.Implement
             // We are in either low latency mode or suggestion mode
             // user did not press tab, and we don't have results yet
             // => dismiss
-            if (_computation.RecentModel == default
+            if ((_computation.RecentModel == default || _computation.RecentModel.Uninitialized)
                 && (CompletionUtilities.GetSuggestionModeOption(_textView) || CompletionUtilities.GetNonBlockingCompletionOption(_textView))
                 && !(typedChar.Equals(default) || typedChar.Equals('\t')))
             {
+                _finalSessionState = CompletionSessionState.DismissedDueToNonBlockingMode;
                 ((IAsyncCompletionSession)this).Dismiss();
                 return CommitBehavior.RaiseFurtherReturnKeyAndTabKeyCommandHandlers;
             }
@@ -251,17 +316,29 @@ namespace Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion.Implement
 
             if (lastModel == null)
             {
+                // Typically, we return default model when the token is canceled.
+                // To provide accurate telemetry, check the tokens
+                if (token.IsCancellationRequested || _computationCancellation.IsCancellationRequested)
+                {
+                    _finalSessionState = CompletionSessionState.DismissedDueToCancellation;
+                }
                 ((IAsyncCompletionSession)this).Dismiss();
                 return CommitBehavior.None;
             }
             else if (lastModel.Uninitialized)
             {
                 ((IAsyncCompletionSession)this).Dismiss();
-                return CommitBehavior.None;
+                return CommitBehavior.RaiseFurtherReturnKeyAndTabKeyCommandHandlers;
             }
-            else if (lastModel.UseSoftSelection && !(typedChar.Equals(default) || typedChar.Equals('\t')) )
+            else if (lastModel.UseSoftSelection
+                && !(typedChar.Equals(default)
+                    || typedChar.Equals('\t')
+                    || TypedCharShouldNotDismissInSoftSelection(typedChar)))
             {
-                // In soft selection mode, user commits explicitly (click, tab, e.g. not tied to a text change). Otherwise, we dismiss the session
+                // In soft selection mode, allow commit under the following circumstances:
+                // 1. User commits explicitly (click, tab)
+                // 2. User typed a character which is excluded from list of potential commit characters in the given session
+                // Otherwise, dismiss the session
                 ((IAsyncCompletionSession)this).Dismiss();
                 return CommitBehavior.RaiseFurtherReturnKeyAndTabKeyCommandHandlers;
             }
@@ -273,6 +350,7 @@ namespace Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion.Implement
             else if (lastModel.SelectSuggestionItem)
             {
                 // Commit the suggestion mode item
+                _finalSessionState = CompletionSessionState.CommittedSuggestionItem;
                 return CommitItem(typedChar, lastModel.SuggestionItem, ApplicableToSpan, token);
             }
             else if (lastModel.PresentedItems.IsDefaultOrEmpty)
@@ -284,6 +362,7 @@ namespace Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion.Implement
             else
             {
                 // Regular commit
+                _finalSessionState = CompletionSessionState.Committed;
                 return CommitItem(typedChar, lastModel.PresentedItems[lastModel.SelectedIndex].CompletionItem, ApplicableToSpan, token);
             }
         }
@@ -322,14 +401,20 @@ namespace Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion.Implement
                     managerWhoCommitted = commitManager.Item1;
                     break;
                 }
+                if (token.IsCancellationRequested)
+                {
+                    break;
+                }
             }
-            if (!commitHandled)
+            if (!commitHandled && !token.IsCancellationRequested)
             {
                 // Fallback if item is still not committed.
                 InsertIntoBuffer(_textView, applicableToSpan, itemToCommit.InsertText);
             }
 
             _telemetry.UiStopwatch.Stop();
+            _telemetry.E2EStopwatch.Stop();
+
             _guardedOperations.RaiseEvent(this, ItemCommitted, new CompletionItemEventArgs(itemToCommit));
             _telemetry.RecordCommitted(_telemetry.UiStopwatch.ElapsedMilliseconds, managerWhoCommitted);
 
@@ -356,6 +441,17 @@ namespace Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion.Implement
             bufferEdit.Apply();
         }
 
+        private bool TypedCharShouldNotDismissInSoftSelection(char typedChar)
+        {
+            if (typedChar == default)
+                return false;
+            if (Properties.TryGetProperty<ImmutableArray<char>>("ExcludedCommitCharacters", out var excludedChars))
+            {
+                return excludedChars.Contains(typedChar);
+            }
+            return false;
+        }
+
         public void Dismiss()
         {
             if (IsDismissed)
@@ -363,9 +459,18 @@ namespace Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion.Implement
 
             IsDismissed = true;
             _broker.ForgetSession(this);
-            _guardedOperations.RaiseEvent(this, Dismissed);
             _textView.Caret.PositionChanged -= OnCaretPositionChanged;
             _computationCancellation.Cancel();
+
+            // This method may be invoked on any thread. We promised extenders we will raise Dismissed event on UI thread.
+            if (Dismissed != null)
+            {
+                JoinableTaskContext.Factory.Run(async () =>
+                {
+                    await JoinableTaskContext.Factory.SwitchToMainThreadAsync();
+                    _guardedOperations.RaiseEvent(this, Dismissed);
+                });
+            }
 
             if (_gui != null)
             {
@@ -385,9 +490,13 @@ namespace Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion.Implement
                         _telemetry.RecordClosing(_telemetry.UiStopwatch.ElapsedMilliseconds);
 
                         await Task.Yield();
-                        _telemetry.Save(_completionItemManager, _presenterProvider);
+                        _telemetry.Save(_completionItemManager, _presenterProvider, _finalSessionState);
                     });
                 _gui = null;
+            }
+            else
+            {
+                _telemetry.Save(_completionItemManager, _presenterProvider, _finalSessionState);
             }
         }
 
@@ -399,19 +508,8 @@ namespace Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion.Implement
             if (!JoinableTaskContext.IsOnMainThread)
                 throw new InvalidOperationException($"This method must be callled on the UI thread.");
 
+            var rootSnapshot = AsyncCompletionBroker.GetRootSnapshot(TextView);
             commandToken.Register(_computationCancellation.Cancel);
-
-            var rootSnapshot = TextView.TextSnapshot;
-            if (TextView.Properties.ContainsProperty("CompletionRoot"))
-            {
-                // In certain scenarios, TextView.TextSnapshot is not the appropriate snapshot to use.
-                // For example, in the watch window (C# debugger), TextView.TextSnapshot corresponds to the single line for the expression.
-                // Roslyn uses the property bag to indicate the correct snapshot to use.
-                if (TextView.Properties.TryGetProperty("CompletionRoot", out ITextBuffer rootBuffer))
-                {
-                    rootSnapshot = rootBuffer.CurrentSnapshot;
-                }
-            }
 
             _canChangeApplicableToSpan = false; // Don't allow changing the ApplicableToSpan from now on.
 
@@ -467,21 +565,41 @@ namespace Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion.Implement
 
         public void SelectDown()
         {
+            if (_computation.RecentModel == default || _computation.RecentModel.Uninitialized)
+            {
+                // https://github.com/dotnet/roslyn/issues/31131 Dismiss completion so that up and down gestures are not blocked
+                Dismiss();
+            }
             _computation.Enqueue((model, token) => UpdateSelectedItem(model, +1, token), updateUi: true);
         }
 
         public void SelectPageDown()
         {
+            if (_computation.RecentModel == default || _computation.RecentModel.Uninitialized)
+            {
+                // https://github.com/dotnet/roslyn/issues/31131 Dismiss completion so that up and down gestures are not blocked
+                Dismiss();
+            }
             _computation.Enqueue((model, token) => UpdateSelectedItem(model, +PageStepSize, token), updateUi: true);
         }
 
         public void SelectUp()
         {
+            if (_computation.RecentModel == default || _computation.RecentModel.Uninitialized)
+            {
+                // https://github.com/dotnet/roslyn/issues/31131 Dismiss completion so that up and down gestures are not blocked
+                Dismiss();
+            }
             _computation.Enqueue((model, token) => UpdateSelectedItem(model, -1, token), updateUi: true);
         }
 
         public void SelectPageUp()
         {
+            if (_computation.RecentModel == default || _computation.RecentModel.Uninitialized)
+            {
+                // https://github.com/dotnet/roslyn/issues/31131 Dismiss completion so that up and down gestures are not blocked
+                Dismiss();
+            }
             _computation.Enqueue((model, token) => UpdateSelectedItem(model, -PageStepSize, token), updateUi: true);
         }
 
@@ -527,6 +645,7 @@ namespace Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion.Implement
                 if (_computation == null)
                     return;
                 var expiringTokenSource = new CancellationTokenSource(MaxCommitDelayWhenClicked);
+                _finalSessionState = CompletionSessionState.CommittedThroughClick;
                 CommitItem(default, args.Item, ApplicableToSpan, expiringTokenSource.Token);
             }
             catch (Exception ex)
@@ -543,6 +662,7 @@ namespace Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion.Implement
 
         private void OnGuiClosed(object sender, CompletionClosedEventArgs args)
         {
+            _finalSessionState = CompletionSessionState.DismissedThroughUI;
             Dismiss();
         }
 
@@ -602,6 +722,7 @@ namespace Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion.Implement
                             _gui.Open(this, new CompletionPresentationViewModel(model.PresentedItems, model.Filters,
                                 model.SelectedIndex, ApplicableToSpan, model.UseSoftSelection, model.DisplaySuggestionItem,
                                 model.SelectSuggestionItem, model.SuggestionItem, SuggestionItemOptions));
+                            _telemetry.E2EStopwatch.Stop();
                         });
                 }
             }
@@ -618,41 +739,43 @@ namespace Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion.Implement
         }
 
         /// <summary>
-        /// Creates a new model and populates it with initial data
+        /// Gets <see cref="CompletionContext"/> from available <see cref="IAsyncCompletionSource"/>s
         /// </summary>
-        private async Task<CompletionModel> GetInitialModel(CompletionTrigger trigger, SnapshotPoint triggerLocation, ITextSnapshot rootSnapshot, CancellationToken token)
+        /// <returns>Aggregate data built from all received <see cref="CompletionContext"/>s</returns>
+        internal async Task<CompletionSourceConnectionResult>ConnectToCompletionSources(CompletionTrigger trigger, SnapshotPoint triggerLocation, ITextSnapshot rootSnapshot, CancellationToken token)
         {
             bool sourceUsesSuggestionMode = false;
             SuggestionItemOptions requestedSuggestionItemOptions = null;
             InitialSelectionHint initialSelectionHint = InitialSelectionHint.RegularSelection;
             var initialItemsBuilder = ImmutableArray.CreateBuilder<CompletionItem>();
 
+            // We use rootSnapshot to obtain buffers that participate in comple
+            var points = MappingHelper.GetPointsAtLocation(triggerLocation, rootSnapshot);
+
             for (int i = 0; i < _completionSources.Count; i++)
             {
-                var index = i; // Capture i, since it will change during the async call
+                var sourceAndLocation = _completionSources[i]; // Capture the source, since `i` will change during the async call
 
                 _telemetry.ComputationStopwatch.Restart();
                 var context = await _guardedOperations.CallExtensionPointAsync(
-                    errorSource: _completionSources[index].Source,
+                    errorSource: sourceAndLocation.Source,
                     asyncCall: () =>
                     {
-                        var mappingPoint = MappingPointSnapshot.Create(
-                            root: rootSnapshot,
-                            anchor: triggerLocation,
-                            trackingMode: PointTrackingMode.Positive,
-                            graph: TextView.BufferGraph);
+                        // from the set of points I got above, get the point which matches the buffer
+                        var mappedPoint = points.FirstOrDefault(n => n.Snapshot.TextBuffer == sourceAndLocation.Point.Snapshot.TextBuffer);
+                        if (mappedPoint == default)
+                            return Task.FromResult(CompletionContext.Empty);
 
-                        var triggerLocationOnSubjectBuffer = mappingPoint.GetPoint(_completionSources[index].Point.Snapshot.TextBuffer, PositionAffinity.Predecessor);
-
-                        if (!triggerLocationOnSubjectBuffer.HasValue)
-                            return null;
-                        return _completionSources[index].Source.GetCompletionContextAsync(this, trigger, triggerLocationOnSubjectBuffer.Value, ApplicableToSpan.GetSpan(triggerLocation.Snapshot), token);
+                        // Don't use rootSnapshot: ApplicableToSpan is defined on the triggerLocation's snapshot
+                        return sourceAndLocation.Source.GetCompletionContextAsync(this, trigger, mappedPoint, ApplicableToSpan.GetSpan(triggerLocation.Snapshot), token);
                     },
                     valueOnThrow: null
                 ).ConfigureAwait(true);
                 _telemetry.ComputationStopwatch.Stop();
-                _telemetry.RecordObtainingSourceContext(_completionSources[index].Source, _telemetry.ComputationStopwatch.ElapsedMilliseconds);
+                _telemetry.RecordObtainingSourceContext(sourceAndLocation.Source, _telemetry.ComputationStopwatch.ElapsedMilliseconds);
 
+                if (token.IsCancellationRequested)
+                    return CompletionSourceConnectionResult.Canceled;
                 if (context == null)
                     continue;
 
@@ -668,49 +791,59 @@ namespace Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion.Implement
                 if (requestedSuggestionItemOptions == null && context.SuggestionItemOptions != null)
                     requestedSuggestionItemOptions = context.SuggestionItemOptions;
             }
+            return new CompletionSourceConnectionResult(sourceUsesSuggestionMode, requestedSuggestionItemOptions, initialSelectionHint, initialItemsBuilder.ToImmutable());
+        }
+
+        /// <summary>
+        /// Creates a new model and populates it with initial data
+        /// </summary>
+        private async Task<CompletionModel> GetInitialModel(CompletionTrigger trigger, SnapshotPoint triggerLocation, ITextSnapshot rootSnapshot, CancellationToken token)
+        {
+            var completionData = await ConnectToCompletionSources(trigger, triggerLocation, rootSnapshot, token).ConfigureAwait(true);
 
             // Do not continue without items
-            if (initialItemsBuilder.Count == 0)
+            if (completionData.IsCanceled)
+            {
+                return default;
+            }
+            else if (completionData.InitialCompletionItems.IsDefaultOrEmpty)
             {
                 return CompletionModel.GetUninitializedModel(triggerLocation.Snapshot);
             }
-            ReceivedCompletionContext?.Invoke(this, EventArgs.Empty);
 
             // If no source provided suggestion item options, provide default options for suggestion mode
-            SuggestionItemOptions = requestedSuggestionItemOptions ?? DefaultSuggestionModeOptions;
+            SuggestionItemOptions = completionData.RequestedSuggestionItemOptions ?? DefaultSuggestionModeOptions;
 
             // Store the data that won't change throughout the session
             InitialTrigger = trigger;
             SuggestionModeCompletionItemSource = new SuggestionModeCompletionItemSource(SuggestionItemOptions);
 
-            var initialCompletionItems = initialItemsBuilder.ToImmutable();
-
-            var availableFilters = initialCompletionItems
+            var availableFilters = completionData.InitialCompletionItems
                 .SelectMany(n => n.Filters)
                 .Distinct()
                 .Select(n => new CompletionFilterWithState(n, true))
                 .ToImmutableArray();
 
             var viewUsesSuggestionMode = CompletionUtilities.GetSuggestionModeOption(_textView);
-            var useSuggestionMode = sourceUsesSuggestionMode || viewUsesSuggestionMode;
+            var useSuggestionMode = completionData.SourceUsesSuggestionMode || viewUsesSuggestionMode;
             // Select suggestion item only if source explicity provided it. This means that debugger view or ctrl+alt+space won't select the suggestion item.
-            var selectSuggestionItem = sourceUsesSuggestionMode;
+            var selectSuggestionItem = completionData.SourceUsesSuggestionMode;
             // Use soft selection if suggestion item is present, unless source selects that item. Also, use soft selection if source wants to.
-            var useSoftSelection = useSuggestionMode && !selectSuggestionItem || initialSelectionHint == InitialSelectionHint.SoftSelection;
+            var useSoftSelection = useSuggestionMode && !selectSuggestionItem || completionData.InitialSelectionHint == InitialSelectionHint.SoftSelection;
 
             _telemetry.ComputationStopwatch.Restart();
             var sortedList = await _guardedOperations.CallExtensionPointAsync(
                 errorSource: _completionItemManager,
                 asyncCall: () => _completionItemManager.SortCompletionListAsync(
                     session: this,
-                    data: new AsyncCompletionSessionInitialDataSnapshot(initialCompletionItems, triggerLocation.Snapshot, InitialTrigger),
+                    data: new AsyncCompletionSessionInitialDataSnapshot(completionData.InitialCompletionItems, triggerLocation.Snapshot, InitialTrigger),
                     token: token),
-                valueOnThrow: initialCompletionItems).ConfigureAwait(true);
+                valueOnThrow: completionData.InitialCompletionItems).ConfigureAwait(true);
             _telemetry.ComputationStopwatch.Stop();
-            _telemetry.RecordProcessing(_telemetry.ComputationStopwatch.ElapsedMilliseconds, initialCompletionItems.Length);
+            _telemetry.RecordProcessing(_telemetry.ComputationStopwatch.ElapsedMilliseconds, completionData.InitialCompletionItems.Length);
             _telemetry.RecordKeystroke();
 
-            return new CompletionModel(initialCompletionItems, sortedList, triggerLocation.Snapshot,
+            return new CompletionModel(completionData.InitialCompletionItems, sortedList, triggerLocation.Snapshot,
                 availableFilters, useSoftSelection, useSuggestionMode, selectSuggestionItem, suggestionItem: null);
         }
 
@@ -720,11 +853,11 @@ namespace Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion.Implement
         private void HandleCaretPositionChanged(CaretPosition caretPosition)
         {
             var currentTaskId = _lastFilteringTaskId;
-            _computation?.Enqueue((model, token) => UpdateCaretPosition(model, caretPosition, currentTaskId, token), updateUi: true);
+            _computation?.Enqueue((model, token) => UpdateCaretPosition(model, caretPosition, token), updateUi: true);
         }
 
 #pragma warning disable CS1998 // Async method lacks 'await' operators and will run synchronously
-        private async Task<CompletionModel> UpdateCaretPosition(CompletionModel model, CaretPosition caretPosition, int taskId, CancellationToken token)
+        private async Task<CompletionModel> UpdateCaretPosition(CompletionModel model, CaretPosition caretPosition, CancellationToken token)
 #pragma warning restore CS1998 // Async method lacks 'await' operators and will run synchronously
         {
             if (token.IsCancellationRequested || model == null)
@@ -737,6 +870,7 @@ namespace Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion.Implement
             if (!ApplicableToSpan.GetSpan(caretSnapshot).IntersectsWith(new SnapshotSpan(immediateCaretPosition, 0)))
             {
                 // Caret is outside of the applicable to span
+                _finalSessionState = CompletionSessionState.DismissedDueToCaretLeaving;
                 Dismiss();
             }
             else if (immediateCaretPosition == immediateSpanStart && !_inCaretLocationFallback)
@@ -745,18 +879,12 @@ namespace Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion.Implement
                 _selectionModeBeforeCaretLocationFallback = model.UseSoftSelection;
                 updatedModel = model.WithSoftSelection(true);
                 _inCaretLocationFallback = true;
-
-                if (taskId == _lastFilteringTaskId)
-                    RaiseCompletionItemsComputedEvent(updatedModel);
             }
             else if (immediateCaretPosition != immediateSpanStart && _inCaretLocationFallback)
             {
                 // Caret is within the applicable to span; leave the special soft selection mode
                 updatedModel = model.WithSoftSelection(_selectionModeBeforeCaretLocationFallback);
                 _inCaretLocationFallback = false;
-
-                if (taskId == _lastFilteringTaskId)
-                    RaiseCompletionItemsComputedEvent(updatedModel);
             }
             return updatedModel;
         }
@@ -785,9 +913,8 @@ namespace Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion.Implement
             if (token.IsCancellationRequested || model == null)
                 return default;
 
-            var instantaneousSnapshot = updateLocation.Snapshot;
-
             // Dismiss if we are outside of the applicable span
+            var instantaneousSnapshot = updateLocation.Snapshot;
             var currentlyApplicableToSpan = ApplicableToSpan.GetSpan(instantaneousSnapshot);
             if (updateLocation < currentlyApplicableToSpan.Start
                 || updateLocation > currentlyApplicableToSpan.End)
@@ -800,6 +927,7 @@ namespace Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion.Implement
                 && model.ApplicableToSpanWasEmpty
                 && (trigger.Reason == CompletionTriggerReason.Deletion || trigger.Reason == CompletionTriggerReason.Backspace))
             {
+                _finalSessionState = CompletionSessionState.DismissedDueToBackspace;
                 ((IAsyncCompletionSession)this).Dismiss();
                 return model;
             }
@@ -809,6 +937,7 @@ namespace Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion.Implement
                 if (_inCaretLocationFallback)
                 {
                     // If user was previously at the beginning of the span, this backspace will dismiss completion
+                    _finalSessionState = CompletionSessionState.DismissedDueToBackspace;
                     ((IAsyncCompletionSession)this).Dismiss();
                     return model;
                 }
@@ -832,11 +961,18 @@ namespace Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion.Implement
             {
                 // Attempt to get new completion items
                 model = await GetInitialModel(trigger, updateLocation, rootSnapshot, token).ConfigureAwait(true);
+                if (model == default) // This happens when computation has been cancelled
+                {
+                    _finalSessionState = CompletionSessionState.DismissedDueToCancellation;
+                    ((IAsyncCompletionSession)this).Dismiss();
+                    return model;
+                }
             }
 
             // If we still have no items, dismiss, unless there is another task queued (because user has typed).
             if (model.Uninitialized)
             {
+                _finalSessionState = CompletionSessionState.DismissedUninitialized;
                 var dismissed = await TryDismissSafely(thisId).ConfigureAwait(true);
                 return model;
             }
@@ -864,6 +1000,7 @@ namespace Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion.Implement
             // Error cases are handled by logging them above and dismissing the session.
             if (filteredCompletion == null)
             {
+                _finalSessionState = CompletionSessionState.DismissedDuringFiltering;
                 ((IAsyncCompletionSession)this).Dismiss();
                 return model;
             }
@@ -872,7 +1009,8 @@ namespace Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion.Implement
             if (filteredCompletion.SelectedItemIndex == -1 && !model.DisplaySuggestionItem)
             {
                 _guardedOperations.HandleException(errorSource: _completionItemManager,
-                    e: new InvalidOperationException($"{nameof(IAsyncCompletionItemManager)} recommends selecting suggestion item when there is no suggestion item."));
+                    e: new InvalidOperationException($"{nameof(IAsyncCompletionItemManager)} recommended selecting suggestion item when there is no suggestion item."));
+                _finalSessionState = CompletionSessionState.DismissedDuringFiltering;
                 ((IAsyncCompletionSession)this).Dismiss();
                 return model;
             }
@@ -981,14 +1119,12 @@ namespace Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion.Implement
             var enteredText = currentlyApplicableToSpan.GetText();
             var suggestionItem = new CompletionItem(enteredText, SuggestionModeCompletionItemSource);
 
-            var updatedModel = model.WithSnapshotItemsAndFilters(updateLocation.Snapshot, returnedItems, filteredCompletion.UniqueItem, suggestionItem, filteredCompletion.Filters);
-            RaiseCompletionItemsComputedEvent(updatedModel);
-            return updatedModel;
+            return model.WithSnapshotItemsAndFilters(updateLocation.Snapshot, returnedItems, filteredCompletion.UniqueItem, suggestionItem, filteredCompletion.Filters);
         }
 
         /// <summary>
         /// Dismisses this <see cref="AsyncCompletionSession"/> only if called from the last task.
-        /// If there are any extra tasks, this method will return <code>false</code>
+        /// If there are any extra tasks, this method will return <c>false</c>
         /// </summary>
         /// <param name="currentTaskId"></param>
         /// <returns></returns>
@@ -1047,9 +1183,7 @@ namespace Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion.Implement
                 return model;
             }
 
-            var updatedModel = model.WithFilters(filteredCompletion.Filters).WithPresentedItems(filteredCompletion.Items, filteredCompletion.SelectedItemIndex);
-            RaiseCompletionItemsComputedEvent(updatedModel);
-            return updatedModel;
+            return model.WithFilters(filteredCompletion.Filters).WithPresentedItems(filteredCompletion.Items, filteredCompletion.SelectedItemIndex);
         }
 
 #pragma warning disable CS1998 // Async method lacks 'await' operators and will run synchronously
@@ -1079,24 +1213,34 @@ namespace Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion.Implement
 
             if (offset > 0) // Scrolling down. Stop at last index and don't wrap around.
             {
-                if (currentIndex == lastIndex)
-                    return model.WithSoftSelection(false); // Don't wrap around, but ensure that this item is fully selected
+                if (model.UseSoftSelection && currentIndex > -1)
+                {
+                    return model.WithSoftSelection(false); // Switch from soft selection to full selection
+                }
+                else if (currentIndex == lastIndex)
+                {
+                    return model; // Don't wrap around
+                }
 
                 var newIndex = currentIndex + offset;
                 return model.WithSelectedIndex(Math.Min(newIndex, lastIndex));
             }
             else // Scrolling up. Stop at first index and don't wrap around.
             {
+                if (model.UseSoftSelection && currentIndex > -1)
+                {
+                    return model.WithSoftSelection(false); // Switch from soft selection to full selection
+                }
                 if (currentIndex < FirstIndex) // Suggestion mode item is selected.
                 {
-                    return model.WithSoftSelection(false); // Don't wrap around, but ensure that this item is fully selected
+                    return model; // Don't wrap around
                 }
                 else if (currentIndex == FirstIndex) // The first item is selected.
                 {
                     if (model.DisplaySuggestionItem) // If there is a suggestion, select it.
                         return model.WithSuggestionItemSelected();
                     else
-                        return model.WithSoftSelection(false); // Don't wrap around, but ensure that this item is fully selected
+                        return model; // Don't wrap around
                 }
                 var newIndex = currentIndex + offset;
                 return model.WithSelectedIndex(Math.Max(newIndex, FirstIndex));
@@ -1115,9 +1259,7 @@ namespace Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion.Implement
             _telemetry.RecordScrolling();
             if (suggestionItemSelected)
             {
-                var updatedModel = model.WithSuggestionItemSelected();
-                RaiseCompletionItemsComputedEvent(updatedModel);
-                return updatedModel;
+                return model.WithSuggestionItemSelected();
             }
             else
             {
@@ -1125,9 +1267,7 @@ namespace Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion.Implement
                 {
                     if (model.PresentedItems[i].CompletionItem == selectedItem)
                     {
-                        var updatedModel = model.WithSelectedIndex(i);
-                        RaiseCompletionItemsComputedEvent(updatedModel);
-                        return updatedModel;
+                        return model.WithSelectedIndex(i);
                     }
                 }
                 // This item is not in the model
@@ -1135,11 +1275,23 @@ namespace Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion.Implement
             }
         }
 
-        private void RaiseCompletionItemsComputedEvent(CompletionModel model)
+        void IModelComputationCallbackHandler<CompletionModel>.ComputationFinished(CompletionModel model)
         {
             if (ItemsUpdated == null)
                 return;
             ThreadPool.QueueUserWorkItem(new WaitCallback(RaiseCompletionItemsComputedEventOnBackground), model);
+        }
+
+        void IModelComputationCallbackHandler<CompletionModel>.DismissDueToCancellation()
+        {
+            _finalSessionState = CompletionSessionState.DismissedDueToCancellation;
+            Dismiss();
+        }
+
+        void IModelComputationCallbackHandler<CompletionModel>.DismissDueToError()
+        {
+            _finalSessionState = CompletionSessionState.DismissedDueToUnhandledError;
+            Dismiss();
         }
 
         private void RaiseCompletionItemsComputedEventOnBackground(object parameter)

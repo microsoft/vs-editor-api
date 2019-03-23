@@ -26,5 +26,11 @@
         /// Descends from <see cref="InteractivePopup"/> and <see cref="Editor"/>
         /// </summary>
         public const string Completion = nameof(Completion);
+
+        /// <summary>
+        /// Definition of IntelliSense Completion.
+        /// Descends from <see cref="InteractivePopup"/> and <see cref="Editor"/>
+        /// </summary>
+        public const string AsyncCompletion = nameof(AsyncCompletion);
     }
 }

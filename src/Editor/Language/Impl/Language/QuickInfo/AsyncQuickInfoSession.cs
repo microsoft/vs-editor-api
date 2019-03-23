@@ -109,6 +109,8 @@
             }
         }
 
+        public virtual bool IsMouseOverAggregated => false;
+
         public virtual async Task DismissAsync()
         {
             // Ensure that we have the UI thread. To avoid races, the rest of this method must be sync.
@@ -398,6 +400,24 @@
                             newApplicableToSpan,
                             applicableToSpan);
                     }
+                }
+            }
+
+            // Scope the applicableToSpan down to just the current line to ensure that interactions
+            // with interactive controls such as lightbulb are not impeded by the tip appearing
+            // far away from the mouse.
+            if (newApplicableToSpan != null)
+            {
+                var currentSnapshot = newApplicableToSpan.TextBuffer.CurrentSnapshot;
+                var spanStart = newApplicableToSpan.GetStartPoint(currentSnapshot);
+                var spanEnd = newApplicableToSpan.GetEndPoint(currentSnapshot);
+                var triggerPointLine = this.triggerPoint.GetPoint(currentSnapshot).GetContainingLine();
+                var triggerPointLineExtent = triggerPointLine.Extent;
+                var newStart = Math.Max(triggerPointLineExtent.Start, spanStart);
+                var newEnd = Math.Min(triggerPointLineExtent.End, spanEnd);
+                if (newStart <= newEnd)
+                {
+                    newApplicableToSpan = currentSnapshot.CreateTrackingSpan(Span.FromBounds(newStart, newEnd), SpanTrackingMode.EdgeInclusive);
                 }
             }
 

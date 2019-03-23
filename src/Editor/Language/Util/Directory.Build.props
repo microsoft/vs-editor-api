@@ -1,8 +1,0 @@
-<Project>
-  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory).., Directory.Build.props))\Directory.Build.props" Condition="'$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory).., Directory.Build.props))' != ''" />
-
-  <PropertyGroup>
-    <NonShipping>true</NonShipping>
-    <IsPackable>false</IsPackable>
-  </PropertyGroup>
-</Project>

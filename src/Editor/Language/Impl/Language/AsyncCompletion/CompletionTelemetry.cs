@@ -25,6 +25,11 @@ namespace Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion.Implement
         /// </summary>
         internal Stopwatch UiStopwatch { get; } = new Stopwatch();
 
+        /// <summary>
+        /// Tracks time spent between triggering session and displaying UI or committing the item, whichever is sooner.
+        /// </summary>
+        internal Stopwatch E2EStopwatch { get; } = new Stopwatch();
+
         // Names of parts that participated in completion
         internal string ItemManagerName { get; private set; }
         internal string PresenterProviderName { get; private set; }
@@ -58,15 +63,23 @@ namespace Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion.Implement
         // The following work is a mix of "Get Context" and "Processing" and blocks UI thread
         internal long BlockingComputationDuration { get; private set; }
 
+        // Additional data for the E2E telemetry
+        public CompletionSessionState CompletionState { get; private set; }
+
         // Additional parameters related to work done by IAsyncCompletionItemManager
         internal bool UserEverScrolled { get; private set; }
         internal bool UserEverSetFilters { get; private set; }
         internal int FinalItemCount { get; private set; }
         internal int NumberOfKeystrokes { get; private set; }
 
-        public CompletionSessionTelemetry(CompletionTelemetryHost telemetryHost)
+        // Additional parameters related to headless operation
+        internal bool Headless { get; private set; }
+        private const string HeadlessCallNamePrefix = "HEADLESS ";
+
+        public CompletionSessionTelemetry(CompletionTelemetryHost telemetryHost, bool headless = false)
         {
             _telemetryHost = telemetryHost;
+            Headless = headless;
         }
 
         internal void RecordProcessing(long duration, int itemCount)
@@ -120,10 +133,12 @@ namespace Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion.Implement
 
         internal void Save(
             IAsyncCompletionItemManager itemManager,
-            ICompletionPresenterProvider presenterProvider)
+            ICompletionPresenterProvider presenterProvider,
+            CompletionSessionState state)
         {
             ItemManagerName = CompletionTelemetryHost.GetItemManagerName(itemManager);
             PresenterProviderName = CompletionTelemetryHost.GetPresenterProviderName(presenterProvider);
+            CompletionState = state;
             _telemetryHost.Add(this);
         }
 
@@ -136,12 +151,16 @@ namespace Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion.Implement
         internal void RecordObtainingSourceSpan(IAsyncCompletionSource source, long elapsedMilliseconds)
         {
             var name = CompletionTelemetryHost.GetSourceName(source);
+            if (Headless)
+                name = HeadlessCallNamePrefix + name;
             ItemSourceSetupDuration[name] = elapsedMilliseconds;
         }
 
         internal void RecordObtainingSourceContext(IAsyncCompletionSource source, long elapsedMilliseconds)
         {
             var name = CompletionTelemetryHost.GetSourceName(source);
+            if (Headless)
+                name = HeadlessCallNamePrefix + name;
             ItemSourceGetContextDuration[name] = elapsedMilliseconds;
         }
 
@@ -216,18 +235,49 @@ namespace Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion.Implement
             internal long MaxClosingTime;
         }
 
+        private class AggregateE2EData
+        {
+            internal int Committed;
+            internal int CommittedThroughClick;
+            internal int CommittedThroughCompleteWord;
+            internal int CommittedSuggestionItem;
+            internal int Dismissed;
+            internal int DismissedDueToBackspace;
+            internal int DismissedDueToCancellation;
+            internal int DismissedDueToCaretLeaving;
+            internal int DismissedDuringFiltering;
+            internal int DismissedDueToNonBlockingMode;
+            internal int DismissedDueToUnhandledError;
+            internal int DismissedThroughUI;
+            internal int DismissedUninitialized;
+
+            internal int HistogramBucket25;
+            internal int HistogramBucket50;
+            internal int HistogramBucket100;
+            internal int HistogramBucket250;
+            internal int HistogramBucket500;
+            internal int HistogramBucket1000;
+            internal int HistogramBucket2000;
+            internal int HistogramBucketLast;
+            internal int HistogramBucketCanceled;
+            internal int HistogramBucketInvalid;
+        }
+
         Dictionary<string, AggregateCommitManagerData> CommitManagerData = new Dictionary<string, AggregateCommitManagerData>();
         Dictionary<string, AggregateItemManagerData> ItemManagerData = new Dictionary<string, AggregateItemManagerData>();
         Dictionary<string, AggregatePresenterData> PresenterData = new Dictionary<string, AggregatePresenterData>();
         Dictionary<string, AggregateSourceData> SourceData = new Dictionary<string, AggregateSourceData>();
+        AggregateE2EData E2EData = new AggregateE2EData();
 
         private readonly ILoggingServiceInternal _logger;
         private readonly AsyncCompletionBroker _broker;
+        private readonly string _textViewContentType;
 
-        public CompletionTelemetryHost(ILoggingServiceInternal logger, AsyncCompletionBroker broker)
+        public CompletionTelemetryHost(ILoggingServiceInternal logger, AsyncCompletionBroker broker, string textViewContentType)
         {
             _logger = logger;
             _broker = broker;
+            _textViewContentType = textViewContentType;
         }
 
         internal static string GetSourceName(IAsyncCompletionSource source) => source?.GetType().ToString() ?? string.Empty;
@@ -248,6 +298,7 @@ namespace Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion.Implement
             AddItemManagerData(telemetry, ItemManagerData);
             AddCommitManagerData(telemetry, CommitManagerData);
             AddPresenterData(telemetry, PresenterData);
+            AddE2EData(telemetry, E2EData);
         }
 
         /// <summary>
@@ -329,6 +380,35 @@ namespace Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion.Implement
                     (PresenterMaxClosing, data.Value.MaxClosingTime)
                 );
             }
+
+            _logger.PostEvent(TelemetryEventType.Operation,
+                E2EEventName,
+                TelemetryResult.Success,
+                (E2EContentType, _textViewContentType),
+                (E2EBucket25, E2EData.HistogramBucket25),
+                (E2EBucket50, E2EData.HistogramBucket50),
+                (E2EBucket100, E2EData.HistogramBucket100),
+                (E2EBucket250, E2EData.HistogramBucket250),
+                (E2EBucket500, E2EData.HistogramBucket500),
+                (E2EBucket1000, E2EData.HistogramBucket1000),
+                (E2EBucket2000, E2EData.HistogramBucket2000),
+                (E2EBucketLast, E2EData.HistogramBucketLast),
+                (E2EBucketCanceled, E2EData.HistogramBucketCanceled),
+                (E2EBucketInvalid, E2EData.HistogramBucketInvalid),
+                (E2ECommittedStandard, E2EData.Committed),
+                (E2ECommittedClick, E2EData.CommittedThroughClick),
+                (E2ECommittedCompleteWord, E2EData.CommittedThroughCompleteWord),
+                (E2ECommittedSuggestionItem, E2EData.CommittedSuggestionItem),
+                (E2EDismissedStandard, E2EData.Dismissed),
+                (E2EDismissedBackspace, E2EData.DismissedDueToBackspace),
+                (E2EDismissedCancellation, E2EData.DismissedDueToCancellation),
+                (E2EDismissedCaretLeaving, E2EData.DismissedDueToCaretLeaving),
+                (E2EDismissedFiltering, E2EData.DismissedDuringFiltering),
+                (E2EDismissedNonBlocking, E2EData.DismissedDueToNonBlockingMode),
+                (E2EDismissedUnhandledError, E2EData.DismissedDueToUnhandledError),
+                (E2EDismissedUI, E2EData.DismissedThroughUI),
+                (E2EDismissedUninitialized, E2EData.DismissedUninitialized)
+            );
         }
 
         /// <summary>
@@ -442,6 +522,79 @@ namespace Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion.Implement
             aggregatePresenterData.MaxClosingTime = Math.Max(aggregatePresenterData.MaxClosingTime, telemetry.ClosingDuration);
         }
 
+        private static void AddE2EData(CompletionSessionTelemetry telemetry, AggregateE2EData e2eData)
+        {
+            switch (telemetry.CompletionState)
+            {
+                case CompletionSessionState.Committed:
+                    e2eData.Committed++;
+                    break;
+                case CompletionSessionState.CommittedSuggestionItem:
+                    e2eData.CommittedSuggestionItem++;
+                    break;
+                case CompletionSessionState.CommittedThroughClick:
+                    e2eData.CommittedThroughClick++;
+                    break;
+                case CompletionSessionState.CommittedThroughCompleteWord:
+                    e2eData.CommittedThroughCompleteWord++;
+                    break;
+                case CompletionSessionState.DismissedDueToBackspace:
+                    e2eData.DismissedDueToBackspace++;
+                    break;
+                case CompletionSessionState.DismissedDueToCancellation:
+                    e2eData.DismissedDueToCancellation++;
+                    break;
+                case CompletionSessionState.DismissedDueToCaretLeaving:
+                    e2eData.DismissedDueToCaretLeaving++;
+                    break;
+                case CompletionSessionState.DismissedDuringFiltering:
+                    e2eData.DismissedDuringFiltering++;
+                    break;
+                case CompletionSessionState.DismissedDueToNonBlockingMode:
+                    e2eData.DismissedDueToNonBlockingMode++;
+                    break;
+                case CompletionSessionState.DismissedDueToUnhandledError:
+                    e2eData.DismissedDueToUnhandledError++;
+                    break;
+                case CompletionSessionState.DismissedThroughUI:
+                    e2eData.DismissedThroughUI++;
+                    break;
+                case CompletionSessionState.DismissedUninitialized:
+                    e2eData.DismissedUninitialized++;
+                    break;
+                default:
+                    e2eData.Dismissed++;
+                    break;
+            }
+
+            if (telemetry.CompletionState == CompletionSessionState.DismissedDueToCancellation)
+            {
+                e2eData.HistogramBucketCanceled++;
+            }
+            else
+            {
+                var E2eDuration = telemetry.E2EStopwatch.ElapsedMilliseconds;
+                if (E2eDuration == 0)
+                    e2eData.HistogramBucketInvalid++;
+                else if (E2eDuration <= 25)
+                    e2eData.HistogramBucket25++;
+                else if (E2eDuration <= 50)
+                    e2eData.HistogramBucket50++;
+                else if (E2eDuration <= 100)
+                    e2eData.HistogramBucket100++;
+                else if (E2eDuration <= 250)
+                    e2eData.HistogramBucket250++;
+                else if (E2eDuration <= 500)
+                    e2eData.HistogramBucket500++;
+                else if (E2eDuration <= 1000)
+                    e2eData.HistogramBucket1000++;
+                else if (E2eDuration <= 2000)
+                    e2eData.HistogramBucket2000++;
+                else
+                    e2eData.HistogramBucketLast++;
+            }
+        }
+
         // Property and event names
         internal const string PresenterEventName = "VS/Editor/Completion/PresenterData";
         internal const string PresenterName = "Property.Presenter.Name";
@@ -474,5 +627,91 @@ namespace Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion.Implement
         internal const string SourceAverageGetContextDuration = "Property.Source.GetContextDuration";
         internal const string SourceAverageSetupDuration = "Property.Source.SetupDuration";
         internal const string SourceMaxSetupDuration = "Property.Source.MaxSetupDuration";
+
+        internal const string E2EEventName = "VS/Editor/Completion/E2EData";
+        internal const string E2EContentType = "Property.E2E.ContentType";
+        internal const string E2EBucket25 = "Property.E2E.Bucket.25";
+        internal const string E2EBucket50 = "Property.E2E.Bucket.50";
+        internal const string E2EBucket100 = "Property.E2E.Bucket.100";
+        internal const string E2EBucket250 = "Property.E2E.Bucket.250";
+        internal const string E2EBucket500 = "Property.E2E.Bucket.500";
+        internal const string E2EBucket1000 = "Property.E2E.Bucket.1000";
+        internal const string E2EBucket2000 = "Property.E2E.Bucket.2000";
+        internal const string E2EBucketLast = "Property.E2E.Bucket.Last";
+        internal const string E2EBucketCanceled = "Property.E2E.Bucket.Canceled";
+        internal const string E2EBucketInvalid = "Property.E2E.Bucket.Invalid";
+        internal const string E2ECommittedStandard = "Property.E2E.Committed.Standard";
+        internal const string E2ECommittedClick = "Property.E2E.Committed.ThroughClick";
+        internal const string E2ECommittedCompleteWord = "Property.E2E.Committed.CompleteWord";
+        internal const string E2ECommittedSuggestionItem = "Property.E2E.Committed.SuggestionItem";
+        internal const string E2EDismissedStandard = "Property.E2E.Dismissed.Standard";
+        internal const string E2EDismissedBackspace = "Property.E2E.Dismissed.Backspace";
+        internal const string E2EDismissedCancellation = "Property.E2E.Dismissed.Cancellation";
+        internal const string E2EDismissedCaretLeaving = "Property.E2E.Dismissed.CaretLeaving";
+        internal const string E2EDismissedFiltering = "Property.E2E.Dismissed.Filtering";
+        internal const string E2EDismissedNonBlocking = "Property.E2E.Dismissed.NonBlocking";
+        internal const string E2EDismissedUnhandledError = "Property.E2E.Dismissed.UnhandledError";
+        internal const string E2EDismissedUI = "Property.E2E.Dismissed.UI";
+        internal const string E2EDismissedUninitialized = "Property.E2E.Dismissed.Uninitialized";
+    }
+
+    /// <summary>
+    /// Represents state of the session at the end of its life.
+    /// It is set during the operation of the session and published when session dismisses.
+    /// </summary>
+    internal enum CompletionSessionState
+    {
+        /// <summary>
+        /// Nothing significant has happened
+        /// </summary>
+        Default,
+        /// <summary>
+        /// Session committed through typing, enter, tab or programmatically
+        /// </summary>
+        Committed,
+        /// <summary>
+        /// Session committed by double clicking the UI
+        /// </summary>
+        CommittedThroughClick,
+        /// <summary>
+        /// Session committed through complete word gesture (Ctrl+Space)
+        /// </summary>
+        CommittedThroughCompleteWord,
+        /// <summary>
+        /// Session committed when typing suggestion item
+        /// </summary>
+        CommittedSuggestionItem,
+        /// <summary>
+        /// Session dismissed because user erased its contents
+        /// </summary>
+        DismissedDueToBackspace,
+        /// <summary>
+        /// Session dismissed because user moved caret outside of the applicable to span
+        /// </summary>
+        DismissedDueToCaretLeaving,
+        /// <summary>
+        /// Session dismissed because a cancellation token was canceled
+        /// </summary>
+        DismissedDueToCancellation,
+        /// <summary>
+        /// Session dismissed because there was an issue filtering
+        /// </summary>
+        DismissedDuringFiltering,
+        /// <summary>
+        /// Session dismissed because computation has not finished before attempt to commit.
+        /// </summary>
+        DismissedDueToNonBlockingMode,
+        /// <summary>
+        /// Session dismissed because an error brought down the computation
+        /// </summary>
+        DismissedDueToUnhandledError,
+        /// <summary>
+        /// Session dismissed because UI closed, likely by losing focus
+        /// </summary>
+        DismissedThroughUI,
+        /// <summary>
+        /// Session dismissed because it never received completion data
+        /// </summary>
+        DismissedUninitialized,
     }
 }

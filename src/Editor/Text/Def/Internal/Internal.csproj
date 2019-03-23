@@ -1,0 +1,49 @@
+﻿<Project>
+  <PropertyGroup>
+    <!-- workaround for https://github.com/NuGet/Home/issues/5894 -->
+    <OriginalProjectName>Internal</OriginalProjectName>
+  </PropertyGroup>
+  <Import Sdk="Microsoft.NET.Sdk" Project="Sdk.props" />
+  <PropertyGroup>
+    <AssemblyName>Microsoft.VisualStudio.Text.Internal</AssemblyName>
+    <RootNamespace>$(AssemblyName)</RootNamespace>
+
+    <!-- Assembly is inserted and shipped but not a VS SDK package. -->
+    <PushToPublicFeed>true</PushToPublicFeed>
+    <NonSDKPackage>true</NonSDKPackage>
+
+    <NoWarn>649;436;$(NoWarn)</NoWarn>
+    <AssemblyAttributeClsCompliant>true</AssemblyAttributeClsCompliant>
+    <TargetFramework>$(TargetFramework)</TargetFramework>
+  </PropertyGroup>
+  <ItemGroup>
+    <Page Remove="themes\**" />
+  </ItemGroup>
+  <ItemGroup>
+    <Reference Include="System" />
+    <Reference Include="System.Runtime" />
+    <Reference Include="System.ComponentModel.Composition" />
+    <Reference Include="System.Drawing" />
+    <Reference Include="System.Xaml" />
+    <Reference Include="System.Core" />
+    <Reference Include="WindowsBase" />
+    <Reference Include="PresentationCore" />
+    <Reference Include="PresentationFramework" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.VisualStudio.ImageCatalog" />
+    <PackageReference Include="Microsoft.VisualStudio.Imaging" />
+    <PackageReference Include="Microsoft.VisualStudio.Imaging.Interop.14.0.DesignTime" />
+    <PackageReference Include="Microsoft.VisualStudio.Threading" />
+    <PackageReference Include="Microsoft.VisualStudio.Utilities" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\Core\Def\CoreUtility.csproj" />
+    <ProjectReference Include="..\TextData\TextData.csproj" />
+    <ProjectReference Include="..\TextLogic\TextLogic.csproj" />
+    <ProjectReference Include="..\TextUI\TextUI.csproj" />
+    <ProjectReference Include="..\..\Def\TextUIWpf\TextUIWpf.csproj" />
+    <ProjectReference Include="..\..\..\Language\Def\Intellisense\IntellisenseDef.csproj" />
+  </ItemGroup>
+  <Import Sdk="Microsoft.NET.Sdk" Project="Sdk.targets" />
+</Project>

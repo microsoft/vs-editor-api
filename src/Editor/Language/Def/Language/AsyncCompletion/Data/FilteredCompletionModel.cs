@@ -69,7 +69,7 @@ namespace Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion.Data
         /// <param name="selectedItemIndex">Recommended item index to select. -1 selects suggestion item.</param>
         /// <param name="filters">Completion filters with their availability and selection state. Default is empty array.</param>
         /// <param name="selectionHint">Allows <see cref="IAsyncCompletionItemManager"/> to influence the selection mode. Default is <see cref="UpdateSelectionHint.NoChange" /></param>
-        /// <param name="uniqueItem">Provides <see cref="CompletionItem"/> to commit using "commit if unique" command despite displaying more than one item. Default is <code>null</code></param>
+        /// <param name="uniqueItem">Provides <see cref="CompletionItem"/> to commit using "commit if unique" command despite displaying more than one item. Default is <c>null</c></param>
         public FilteredCompletionModel(
             ImmutableArray<CompletionItemWithHighlight> items,
             int selectedItemIndex,

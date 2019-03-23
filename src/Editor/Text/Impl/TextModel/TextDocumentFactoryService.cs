@@ -17,6 +17,7 @@ namespace Microsoft.VisualStudio.Text.Implementation
     using Microsoft.VisualStudio.Utilities;
     using System.Diagnostics;
     using Microsoft.VisualStudio.Text.Editor;
+    using System.Runtime.InteropServices;
 
     [Export(typeof(ITextDocumentFactoryService))]
     internal sealed partial class TextDocumentFactoryService : ITextDocumentFactoryService
@@ -35,6 +36,7 @@ namespace Microsoft.VisualStudio.Text.Implementation
         #endregion
 
         internal static Encoding DefaultEncoding = Encoding.Default; // Exposed for unit tests.
+        static Encoding UTF8WithoutBOM = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false);
 
         #region ITextDocumentFactoryService Members
 
@@ -141,7 +143,15 @@ namespace Microsoft.VisualStudio.Text.Implementation
                             // Valid UTF8 but no extended characters, so it's valid ASCII.
                             // We don't use ASCII here because of the following scenario:
                             // The user with a non-ENU system encoding opens a code file with ASCII-only contents
-                            chosenEncoding = DefaultEncoding;
+                            if (RuntimeInformation.IsOSPlatform (OSPlatform.Windows))
+                                chosenEncoding = DefaultEncoding;
+                            else
+                                // To get to this line, it means file doesn't have BOM
+                                // On Windows DefaultEncoding is "ASCII" which doesn't have BOM
+                                // On non-Windows systems DefaultEncoding is UTF8 which emits BOM on save
+                                // which is something we don't want(on file that didn't have BOM to save BOM)
+                                // So instead we use "new UTF8Encoding (encoderShouldEmitUTF8Identifier: false)", which means don't emit BOM when saving.
+                                chosenEncoding = UTF8WithoutBOM;
                         }
                     }
                     catch (DecoderFallbackException)

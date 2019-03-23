@@ -179,28 +179,41 @@ namespace Microsoft.VisualStudio.Text.Implementation
                 try
                 {
                     originalFileStream = new FileStream(filePath, FileMode.Open, FileAccess.ReadWrite, FileShare.None);
-
-                    //Even thoug SafeFileHandle is an IDisposable, we don't dispose of it since that closes the strem.
+                    //Even though SafeFileHandle is an IDisposable, we don't dispose of it since that closes the stream.
                     var safeHandle = originalFileStream.SafeFileHandle;
                     if (!(safeHandle.IsClosed || safeHandle.IsInvalid))
                     {
-                        try
+                        uint numberOfHardLinks = 1;
+                        bool statWasSuccessful = false;
+
+                        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
                         {
-                            BY_HANDLE_FILE_INFORMATION fi;
-                            if (NativeMethods.GetFileInformationByHandle(safeHandle, out fi))
+                            if (NativeMethods.GetFileInformationByHandle(safeHandle, out var fi))
                             {
-                                if (fi.NumberOfLinks <= 1)
-                                {
-                                    // The file we're trying to write to doesn't have any hard links ... clear out the originalFileStream
-                                    // as a clue.
-                                    originalFileStream.Dispose();
-                                    originalFileStream = null;
-                                }
+                                statWasSuccessful = true;
+                                numberOfHardLinks = fi.NumberOfLinks;
                             }
                         }
-                        catch (EntryPointNotFoundException)
+                        else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
                         {
-                            // The code is being executed on a non-Windows platform, assume all is good
+                            if (NativeMethods.DarwinStat((int)safeHandle.DangerousGetHandle(), out var statbuf) == 0)
+                            {
+                                statWasSuccessful = true;
+                                numberOfHardLinks = statbuf.st_nlink;
+                            }
+                        }
+                        else
+                        {
+                            throw new PlatformNotSupportedException("Implement fstat support for Linux");
+                        }
+
+                        if (!statWasSuccessful)
+                            throw new InvalidOperationException("Unable to determine if file has any hard links");
+
+                        if (numberOfHardLinks <= 1)
+                        {
+                            // The file we're trying to write to doesn't have any hard links...
+                            // clear out the originalFileStream as a clue.
                             originalFileStream.Dispose();
                             originalFileStream = null;
                         }
