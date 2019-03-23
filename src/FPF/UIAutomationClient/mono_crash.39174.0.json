@@ -1,0 +1,164 @@
+{
+  "protocol_version" : "0.0.1",
+  "configuration" : {
+    "version" : "5.14.0.105 (2018-04/6d28c8f9621 Fri May 25 04:39:29 EDT 2018)",
+    "tlc" : "normal",
+    "sigsgev" : "altstack",
+    "notifications" : "kqueue",
+    "architecture" : "x86",
+    "disabled_features" : "none",
+    "smallconfig" : "disabled",
+    "bigarrays" : "disabled",
+    "softdebug" : "enabled",
+    "interpreter" : "enabled",
+    "llvm_support" : "3.6.0svn-mono-master/8b1520c8aae"
+  },
+  "memory" : {
+    "Resident Size" : "53665792",
+    "Virtual Size" : "765874176",
+    "minor_gc_time" : "118023",
+    "major_gc_time" : "52511",
+    "minor_gc_count" : "2",
+    "major_gc_count" : "1",
+    "major_gc_time_concurrent" : "0"
+  },
+  "threads" : [
+    {
+      "is_managed" : false,
+      "managed_thread_ptr" : "0x7d24503c",
+      "thread_info_addr" : "0x7e23b800",
+      "native_thread_id" : "0xa983e1c0",
+      "ctx" : {
+        "IP" : "0xa73bd476",
+        "SP" : "0xbffd021c",
+        "BP" : "0xbffd0268"
+      },
+      "unmanaged_frames" : [
+        {
+          "native_address" : "0xbfc6f"
+        },
+        {
+          "native_address" : "0x21588a"
+        },
+        {
+          "native_address" : "0x126a89"
+        },
+        {
+          "native_address" : "outside mono-sgen"
+        },
+        {
+          "native_address" : "outside mono-sgen"
+        },
+        {
+          "native_address" : "0x266968"
+        },
+        {
+          "native_address" : "0x14cc5"
+        },
+        {
+          "native_address" : "0x8657d"
+        },
+        {
+          "native_address" : "0x2297"
+        },
+        {
+          "native_address" : "0x20c5"
+        },
+        {
+          "native_address" : "outside mono-sgen"
+        }
+      ]
+    },
+    {
+      "is_managed" : false,
+      "managed_thread_ptr" : "0x7da36e3c",
+      "thread_info_addr" : "0x7da36200",
+      "thread_name" : "Finalizer",
+      "native_thread_id" : "0xb06a2000",
+      "ctx" : {
+        "IP" : "0x2a8158",
+        "SP" : "0xb06a1ac0",
+        "BP" : "0xb06a1ac8"
+      },
+      "managed_frames" : [
+        {
+          "native_address" : "0x278158"
+        },
+        {
+          "native_address" : "outside mono-sgen",
+          "unmanaged_name" : "(wrapper managed-to-native) System.Runtime.InteropServices.GCHandle:CheckCurrentDomain (int)"
+        },
+        {
+          "is_managed" : "true",
+          "assembly" : "mscorlib",
+          "token" : "0x600466e",
+          "native_offset" : "0x23",
+          "il_offset" : "0x00018"
+        },
+        {
+          "is_managed" : "true",
+          "assembly" : "mscorlib",
+          "token" : "0x6004678",
+          "native_offset" : "0x17",
+          "il_offset" : "0x00000"
+        },
+        {
+          "is_managed" : "true",
+          "assembly" : "System",
+          "token" : "0x60033aa",
+          "native_offset" : "0x23",
+          "il_offset" : "0x00000"
+        },
+        {
+          "native_address" : "outside mono-sgen",
+          "unmanaged_name" : "(wrapper native-to-managed) System.IO.Compression.DeflateStreamNative:UnmanagedWrite (intptr,int,intptr)"
+        },
+        {
+          "native_address" : "outside mono-sgen"
+        },
+        {
+          "native_address" : "outside mono-sgen",
+          "unmanaged_name" : "(wrapper managed-to-native) System.IO.Compression.DeflateStreamNative:CloseZStream (intptr)"
+        },
+        {
+          "is_managed" : "true",
+          "assembly" : "System",
+          "token" : "0x6004142",
+          "native_offset" : "0x13",
+          "il_offset" : "0x00000"
+        },
+        {
+          "is_managed" : "true",
+          "assembly" : "mscorlib",
+          "token" : "0x6004637",
+          "native_offset" : "0x1bc",
+          "il_offset" : "0x000a3"
+        },
+        {
+          "is_managed" : "true",
+          "assembly" : "mscorlib",
+          "token" : "0x6004636",
+          "native_offset" : "0x23",
+          "il_offset" : "0x00008"
+        },
+        {
+          "is_managed" : "true",
+          "assembly" : "mscorlib",
+          "token" : "0x6004630",
+          "native_offset" : "0x2b",
+          "il_offset" : "0x0000a"
+        },
+        {
+          "is_managed" : "true",
+          "assembly" : "mscorlib",
+          "token" : "0x6004629",
+          "native_offset" : "0x18",
+          "il_offset" : "0x00000"
+        },
+        {
+          "native_address" : "outside mono-sgen",
+          "unmanaged_name" : "(wrapper runtime-invoke) object:runtime_invoke_virtual_void__this__ (object,intptr,intptr,intptr)"
+        }
+      ]
+    }
+  ]}

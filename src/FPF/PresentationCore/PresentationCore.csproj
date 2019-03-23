@@ -1,0 +1,10 @@
+﻿<Project Sdk="Xamarin.Mac.Sdk">
+  <PropertyGroup>
+    <TargetFramework>$(TargetFramework)</TargetFramework>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\UIAutomationProvider\UIAutomationProvider.csproj" />
+    <ProjectReference Include="..\UIAutomationTypes\UIAutomationTypes.csproj" />
+    <ProjectReference Include="..\WindowsBase\WindowsBase.csproj" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,14 @@
+<Project Sdk="Xamarin.Mac.Sdk">
+  <PropertyGroup>
+    <NoWarn>1699,67,618</NoWarn>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <DefineConstants>TRACE;NET_4_0;NET_4_5;NET_4_6;MONO;WIN_PLATFORM;MULTIPLEX_OS</DefineConstants>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <PublicSign>false</PublicSign>
+    <TargetFramework>$(TargetFramework)</TargetFramework>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="System.Xml" />
+    <Reference Include="System.Xaml" />
+  </ItemGroup>
+</Project>
