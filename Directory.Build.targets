@@ -1,0 +1,5 @@
+<Project>
+  <Import
+    Condition="'$(MSBuildProjectExtension)' == '.csproj'"
+    Project="$(RepoRootPath)build\Project.targets"/>
+</Project>

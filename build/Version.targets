@@ -1,0 +1,96 @@
+<Project>
+  <ItemGroup>
+    <PackageReference Include="GitInfo" Version="2.0.20">
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+  </ItemGroup>
+
+  <PropertyGroup>
+    <PrepareForBuildDependsOn>WriteVersions;$(PrepareForBuildDependsOn)</PrepareForBuildDependsOn>
+  </PropertyGroup>
+
+  <Target
+    Name="WriteVersions"
+    DependsOnTargets="SetVersions">
+    <ItemGroup>
+      <VersionProperty Include="Version">
+        <Value>$(Version)</Value>
+      </VersionProperty>
+      <VersionProperty Include="PackageVersion">
+        <Value>$(PackageVersion)</Value>
+      </VersionProperty>
+    </ItemGroup>
+    <ItemGroup>
+      <VersionLines Include="&lt;Project&gt;"/>
+      <VersionLines Include="%20%20&lt;PropertyGroup&gt;"/>
+      <VersionLines Include="%20%20%20%20&lt;%(VersionProperty.Identity)&gt;%(VersionProperty.Value)&lt;/%(VersionProperty.Identity)&gt;"/>
+      <VersionLines Include="%20%20&lt;/PropertyGroup&gt;"/>
+      <VersionLines Include="&lt;/Project&gt;"/>
+    </ItemGroup>
+    <MakeDir
+      Directories="$(RepoObjPath)" />
+    <WriteLinesToFile
+      Overwrite="true"
+      Lines="@(VersionLines)"
+      File="$(RepoObjPath)Version.props"/>
+  </Target>
+
+  <Target
+    Name="SetVersions"
+    DependsOnTargets="GitVersion"
+    Condition="'$(GitInfoImported)' == 'true' And '$(ExcludeRestorePackageImports)' != 'true'">
+    <!-- Prefer the PR branch, then the source branch, falling back to local git if not in ADO -->
+    <PropertyGroup>
+      <GitBranch Condition="'$(SYSTEM_PULLREQUEST_TARGETBRANCH)' != ''">$(SYSTEM_PULLREQUEST_TARGETBRANCH)</GitBranch>
+      <GitBranch Condition="'$(SYSTEM_PULLREQUEST_TARGETBRANCH)' == '' and '$(BUILD_SOURCEBRANCHNAME)' != ''">$(BUILD_SOURCEBRANCHNAME)</GitBranch>
+    </PropertyGroup>
+
+    <!-- Now construct a list of various semver metadata -->
+    <ItemGroup>
+      <VersionMetadata
+        Condition="'$(GitCommits)' != '0'"
+        Include="$(GitCommits)"/>
+
+      <VersionMetadata
+        Condition="$(InAzureDevOps) and '$(BUILD_REASON)' == 'PullRequest'"
+        Include="pr.$(BUILD_SOURCEBRANCH.Substring(10).TrimEnd('/merge'))"/>
+
+      <VersionMetadata Include="sha.$(GitCommit)"/>
+
+      <VersionMetadata
+        Condition="$(InAzureDevOps)"
+        Include="ado.$(BUILD_BUILDID)"/>
+    </ItemGroup>
+
+    <!-- Assemble and assign the various version formats -->
+    <PropertyGroup>
+      <VersionMetadataLabel>@(VersionMetadata -> '%(Identity)', '-')</VersionMetadataLabel>
+      <VersionMetadataPlusLabel Condition="'$(VersionMetadataLabel)' != ''">+$(VersionMetadataLabel)</VersionMetadataPlusLabel>
+      <PackageVersion>$(GitBaseVersionMajor).$(GitBaseVersionMinor).$(GitBaseVersionPatch)$(GitSemVerDashLabel)</PackageVersion>
+      <Version>$(PackageVersion)$(VersionMetadataPlusLabel)</Version>
+    </PropertyGroup>
+
+    <Message
+      Importance="high"
+      Text="Version $(Version)"/>
+    <Message
+      Importance="high"
+      Text="PackageVersion $(PackageVersion)"/>
+  </Target>
+
+  <Target
+    Name="_GitBaseVersionFromAzureDevOpsBuildNumber"
+    Condition="$(InAzureDevOps)"
+    AfterTargets="_GitBaseVersionFile">
+    <PropertyGroup>
+      <AdoBuildNumberMajor>$([System.Version]::Parse('$(BUILD_BUILDNUMBER)').Major)</AdoBuildNumberMajor>
+      <AdoBuildNumberMinor>$([System.Version]::Parse('$(BUILD_BUILDNUMBER)').Minor)</AdoBuildNumberMinor>
+      <AdoBuildNumberMinor Condition="$(AdoBuildNumberMinor) &lt; 10">0$(GitBaseVersionMinor)</AdoBuildNumberMinor>
+      <GitBaseVersion Condition="'$(GitBaseVersion)' == ''">0.0.0</GitBaseVersion>
+      <GitBaseVersionMajor>$([System.Version]::Parse('$(GitBaseVersion)').Major)</GitBaseVersionMajor>
+      <GitBaseVersionMinor>$([System.Version]::Parse('$(GitBaseVersion)').Minor)</GitBaseVersionMinor>
+      <GitBaseVersionPatch>$(AdoBuildNumberMajor)$(AdoBuildNumberMinor)</GitBaseVersionPatch>
+      <GitBaseVersion>$(GitBaseVersionMajor).$(GitBaseVersionMinor).$(GitBaseVersionPatch)</GitBaseVersion>
+    </PropertyGroup>
+  </Target>
+</Project>

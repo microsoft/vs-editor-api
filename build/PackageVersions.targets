@@ -1,0 +1,41 @@
+<Project>
+  <!-- Very core dependencies -->
+  <ItemGroup>
+    <PackageReference Update="Microsoft.VisualStudio.Composition" Version="15.8.112"/>
+    <PackageReference Update="Microsoft.VisualStudio.ImageCatalog" Version="15.8.28010"/>
+    <PackageReference Update="Microsoft.VisualStudio.Imaging" Version="15.0.26606"/>
+    <PackageReference Update="Microsoft.VisualStudio.Imaging.Interop.14.0.DesignTime" Version="14.3.25408"/>
+    <PackageReference Update="Microsoft.VisualStudio.Threading" Version="15.8.192"/>
+    <PackageReference Update="Microsoft.VisualStudio.Utilities" Version="15.0.26606"/>
+    <PackageReference Update="Microsoft.VisualStudio.Validation" Version="15.3.15"/>
+    <PackageReference Update="System.Collections.Immutable" Version="1.3.1"/>
+  </ItemGroup>
+
+  <!-- Used only by src/Editor/Language/Def/Language/CodeLens/Remoting -->
+  <ItemGroup>
+    <PackageReference Update="Newtonsoft.Json" Version="9.0.1"/>
+    <PackageReference Update="StreamJsonRpc" Version="1.3.23"/>
+  </ItemGroup>
+
+  <!-- Used only by src/Editor/Consolidated -->
+  <ItemGroup>
+    <PackageReference Update="Xamarin.BuildConsolidator" Version="0.17.0"/>
+  </ItemGroup>
+
+  <!-- Standalone Editor -->
+  <ItemGroup>
+    <PackageReference Update="Microsoft.CodeAnalysis.Features" Version="$(NuGetVersionRoslyn)"/>
+    <PackageReference Update="Microsoft.CodeAnalysis.CSharp.Features" Version="$(NuGetVersionRoslyn)"/>
+    <PackageReference Update="Microsoft.CodeAnalysis.EditorFeatures" Version="$(NuGetVersionRoslyn)"/>
+    <PackageReference Update="Microsoft.CodeAnalysis.EditorFeatures.Text" Version="$(NuGetVersionRoslyn)"/>
+    <PackageReference Update="Microsoft.CodeAnalysis.Workspaces.Common" Version="$(NuGetVersionRoslyn)"/>
+    <PackageReference Update="Serilog.Sinks.Console" Version="3.1.1"/>
+
+    <!-- These specifically are needed by Roslyn but are not pulled in implicitly via NuGet -->
+    <PackageReference Update="ICSharpCode.Decompiler" Version="4.0.0.4285-beta1"/>
+    <PackageReference Update="Microsoft.ServiceHub.Client" Version="1.2.64"/>
+    <PackageReference Update="Mono.Cecil" Version="0.10.0"/>
+    <PackageReference Update="stdole" Version="7.0.3301"/>
+    <PackageReference Update="SQLitePCLRaw.bundle_green" Version="1.1.11"/>
+  </ItemGroup>
+</Project>

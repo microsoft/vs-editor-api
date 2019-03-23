@@ -1,0 +1,81 @@
+<Project>
+  <Import Project="Version.props"/>
+
+  <PropertyGroup>
+    <BaseOutputPath>$(RepoBinPath)$(RepoSrcRelativeProjectDirectory)</BaseOutputPath>
+    <OutputPath>$(BaseOutputPath)$(Configuration)\</OutputPath>
+
+    <BaseIntermediateOutputPath>$(RepoObjPath)$(RepoSrcRelativeProjectDirectory)</BaseIntermediateOutputPath>
+    <IntermediateOutputPath>$(BaseIntermediateOutputPath)$(Configuration)\</IntermediateOutputPath>
+
+    <PackageOutputPath>$(RepoArtifactsPath)nuget\</PackageOutputPath>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <TargetFramework>net472</TargetFramework>
+    <LangVersion>7.3</LangVersion>
+    <DefineConstants Condition="$([MSBuild]::IsOSPlatform('OSX')) == 'true'">__MACOS__;$(DefineConstants)</DefineConstants>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+
+
+    <!-- BEGIN UPSTREAM NOWARNS -->
+
+    <!-- Temporarily disable warnings about malformed XML Doc Comments -->
+    <NoWarn>$(NoWarn);1573;1591;1572;1570;</NoWarn>
+        <!-- Temporarily disable VS threading warnings until we have time to baseline. -->
+    <NoWarn>$(NoWarn);VSTHRD001;VSTHRD002;VSTHRD010;VSTHRD012;VSTHRD100;VSTHRD103;VSTHRD105;VSTHRD106;VSTHRD108;VSTHRD110;VSTHRD200;</NoWarn>
+    <!-- Temporarily disable obsolete code warning until we have time to baseline. -->
+    <NoWarn>$(NoWarn);0618</NoWarn>
+
+    <!--
+    Disable overly pedantic analyzer warnings
+    CA1308 - Normalize strings to upper case: Seems to be motivated by security concerns that do not apply to editor.
+    CA1001 - Types that own disposable fields should be disposable: Too noisy due to MEF imported disposable types, such as JoinableTaskContext.
+    CA1724 - Type names should not conflict with namespaces: Too noisy due to sub-namespaces and classes containing common words like 'Utilities'.
+    CA1707 - Identifers should not contain underscores: Too noisy due to lots of CLSID constants containing underscores.
+    CA1040 - Avoid empty interfaces: Empty interfaces are used in several places to capture API contracts that cannot be enfored with attributes.
+    CA2225 - Operator overloads have named alternates: Needed for compat with non-C# languages, but not a priority for editor extensibility.
+    CA1716 - Identifiers should not match keywords: A bunch of already-shipped APIs conflict with VB keywords, but VB interop is not a priority.
+    CA1018 - Attributes should specify attribute usage: The analyzer gives false positives for attributes usages that are inherited.
+    -->
+    <NoWarn>$(NoWarn);CA1308;CA1001;CA1724;CA1707;CA1040;CA2225;CA1716;CA1018</NoWarn>
+
+    <!-- END UPSTREAM NOWARNS -->
+
+
+    <!-- Disable does not need a CLSCompliant attribute because the assembly does not have a CLSCompliant attribute -->
+    <NoWarn>$(NoWarn);3021</NoWarn>
+    <NoPackageAnalysis>true</NoPackageAnalysis>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <AssemblyVersion>16.0.0.0</AssemblyVersion>
+    <PublicSign>true</PublicSign>
+    <SignAssembly>true</SignAssembly>
+    <DelaySign>false</DelaySign>
+    <AssemblyOriginatorKeyFile Condition="'$(AssemblyOriginatorKeyFile)' == ''">$(MSBuildThisFileDirectory)msfinal.snk</AssemblyOriginatorKeyFile>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <Company>Microsoft Corporation</Company>
+    <Copyright>© Microsoft Corporation. All rights reserved.</Copyright>
+    <Product>Microsoft® Visual Studio®</Product>
+    <NeutralLanguage>en-US</NeutralLanguage>
+    <Authors>Microsoft</Authors>
+    <PackageIconUrl>https://aka.ms/VsExtensibilityIcon</PackageIconUrl>
+
+    <Description>Microsoft® Visual Studio® Editor Platform</Description>
+    <PackageProjectUrl>https://aka.ms/vsextensibility</PackageProjectUrl>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="$(MSBuildThisFileDirectory)ThisAssembly.cs" />
+    <Compile
+      Condition="'$(BuildingInsideVisualStudio)' == 'true' and Exists('$(IntermediateOutputPath)$(MSBuildProjectName).AssemblyInfo$(DefaultLanguageSourceExtension)')"
+      Include="$(IntermediateOutputPath)$(MSBuildProjectName).AssemblyInfo$(DefaultLanguageSourceExtension)"
+      Visible="false" />
+  </ItemGroup>
+</Project>

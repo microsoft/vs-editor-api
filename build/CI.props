@@ -1,0 +1,9 @@
+<Project>
+  <PropertyGroup>
+    <InAzureDevOps>false</InAzureDevOps>
+    <InAzureDevOps Condition="'$(TF_BUILD)' == 'true'">true</InAzureDevOps>
+
+    <InCI>false</InCI>
+    <InCI Condition="$(InAzureDevOps)">true</InCI>
+  </PropertyGroup>
+</Project>

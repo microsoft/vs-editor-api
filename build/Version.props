@@ -1,0 +1,10 @@
+<Project>
+  <Import
+    Project="$(RepoObjPath)Version.props"
+    Condition="Exists('$(RepoObjPath)Version.props')"/>
+  <PropertyGroup>
+    <GitSkipCache>true</GitSkipCache>
+    <Version Condition="'$(Version)' == ''">0.0.0</Version>
+    <PackageVersion Condition="'$(PackageVersion)' == ''">0.0.0</PackageVersion>
+  </PropertyGroup>
+</Project>

@@ -1,0 +1,21 @@
+<Project>
+  <PropertyGroup>
+    <IsWindows>$([MSBuild]::IsOSPlatform('Windows'))</IsWindows>
+    <IsMac>$([MSBuild]::IsOSPlatform('OSX'))</IsMac>
+    <IsLinux>$([MSBuild]::IsOSPlatform('Linux'))</IsLinux>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <MonoInstallRootDirectory Condition="$(IsMac)">$([MSBuild]::NormalizeDirectory('/Library/Frameworks/Mono.framework/Versions/Current'))</MonoInstallRootDirectory>
+    <HaveMono Condition="'$(HaveMono)' == '' And '$(MonoInstallRootDirectory)' != '' And Exists('$(MonoInstallRootDirectory)VERSION')">true</HaveMono>
+    <HaveMono Condition="'$(HaveMono)' == ''">false</HaveMono>
+
+    <HaveXamarinMac Condition="'$(HaveXamarinMac)' == '' And $(IsMac) And Exists('/Library/Frameworks/Xamarin.Mac.framework/Versions/Current/Version')">true</HaveXamarinMac>
+    <HaveXamarinMac Condition="'$(HaveXamarinMac)' == ''">false</HaveXamarinMac>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <NuGet Condition="'$(NuGet)' == ''">$([MSBuild]::NormalizePath($(MSBuildThisFileDirectory)))..\tools\_artifacts\nuget.exe</NuGet>
+    <NuGet Condition="!Exists('$(NuGet)')">nuget</NuGet>
+  </PropertyGroup>
+</Project>

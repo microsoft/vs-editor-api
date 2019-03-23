@@ -1,0 +1,37 @@
+<Project>
+  <PropertyGroup>
+    <Configuration Condition="'$(Configuration)' == ''">Debug</Configuration>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <RepoRootPath>$([MSBuild]::NormalizePath($(MSBuildThisFileDirectory)))</RepoRootPath>
+
+    <AzureDevOpsArtifactsStagingDirectory>$([System.Environment]::GetEnvironmentVariable('BUILD_ARTIFACTSTAGINGDIRECTORY'))</AzureDevOpsArtifactsStagingDirectory>
+    <RepoArtifactsPath Condition="'$(AzureDevOpsArtifactsStagingDirectory)' != ''">$([MSBuild]::EnsureTrailingSlash('$(AzureDevOpsArtifactsStagingDirectory)'))</RepoArtifactsPath>
+    <RepoArtifactsPath Condition="'$(RepoArtifactsPath)' == ''">$(RepoRootPath)_artifacts\</RepoArtifactsPath>
+
+    <RepoBinPath>$(RepoRootPath)bin\</RepoBinPath>
+    <RepoObjPath>$(RepoRootPath)obj\</RepoObjPath>
+    <RepoSrcPath>$(RepoRootPath)src\</RepoSrcPath>
+    <RepoLocalNuGetFeedPath>$(RepoRootPath)build\nuget-feed\</RepoLocalNuGetFeedPath>
+
+    <RepoSrcRelativeProjectDirectory Condition="$(MSBuildProjectDirectory.Length) >= $(RepoSrcPath.Length)">$(MSBuildProjectDirectory.Substring($(RepoSrcPath.Length)))\</RepoSrcRelativeProjectDirectory>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <NuGetVersionRoslyn>3.0.0-beta4-19128-02</NuGetVersionRoslyn>
+    <NuGetVersionVSEditor Condition="$(NuGetVersionVSEditor) == ''">16.0.379-g4a55b0e4f2</NuGetVersionVSEditor>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <InMonoDevelopTree Condition="Exists('$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildProjectDirectory), MonoDevelop.props))')">true</InMonoDevelopTree>
+    <UsePlatformEditorBinaries Condition="$(OS) == 'Windows_NT' AND $(InMonoDevelopTree) == 'true'">true</UsePlatformEditorBinaries>
+  </PropertyGroup>
+
+  <Import Project="$(RepoRootPath)build\Environment.props"/>
+  <Import Project="$(RepoRootPath)build\CI.props"/>
+
+  <Import
+    Condition="'$(MSBuildProjectExtension)' == '.csproj'"
+    Project="$(RepoRootPath)build\Project.props"/>
+</Project>

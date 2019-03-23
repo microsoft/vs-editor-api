@@ -1,0 +1,36 @@
+<Project>
+  <Import Sdk="Microsoft.Build.Traversal" Project="Sdk.props"/>
+  <Import Sdk="Xamarin.MSBuild.Sdk" Project="Sdk.props"/>
+  <Import Project="build\Version.props"/>
+
+  <ItemGroup>
+    <SolutionConfiguration Include="macOS">
+      <Configuration>Debug</Configuration>
+      <IsWindows>false</IsWindows>
+      <HaveXamarinMac>true</HaveXamarinMac>
+    </SolutionConfiguration>
+    <SolutionConfiguration Include="Windows">
+      <Configuration>Debug</Configuration>
+      <IsWindows>true</IsWindows>
+      <HaveXamarinMac>false</HaveXamarinMac>
+    </SolutionConfiguration>
+  </ItemGroup>
+
+  <PropertyGroup>
+    <GenerateSolutionAfterBuild>true</GenerateSolutionAfterBuild>
+  </PropertyGroup>
+
+  <Import Project="ProjectReferences.projitems"/>
+
+  <Target
+    Name="DeepClean"
+    AfterTargets="Clean">
+    <RemoveDir Directories="bin"/>
+    <RemoveDir Directories="obj"/>
+    <RemoveDir Directories="_artifacts"/>
+  </Target>
+
+  <Import Sdk="Microsoft.Build.Traversal" Project="Sdk.targets"/>
+  <Import Sdk="Xamarin.MSBuild.Sdk" Project="Sdk.targets"/>
+  <Import Project="build\Version.targets"/>
+</Project>

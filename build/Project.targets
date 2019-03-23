@@ -1,0 +1,59 @@
+<Project>
+  <Import Project="PackageVersions.targets"/>
+
+  <Target Name="DumpPaths">
+    <Message Text="RepoRootPath: $(RepoRootPath)"/>
+    <Message Text="RepoObjPath: $(RepoObjPath)"/>
+    <Message Text="RepoBinPath: $(RepoBinPath)"/>
+    <Message Text="BaseOutputPath: $(BaseOutputPath)"/>
+    <Message Text="OutputPath: $(OutputPath)"/>
+    <Message Text="BaseIntermediateOutputPath: $(BaseIntermediateOutputPath)"/>
+    <Message Text="IntermediateOutputPath: $(IntermediateOutputPath)"/>
+  </Target>
+
+  <PropertyGroup>
+    <FPFRootPath>$(RepoRootPath)src\FPF\</FPFRootPath>
+    <FPFOutputPath>$(RepoBinPath)FPF\$(Configuration)\$(TargetFramework)\</FPFOutputPath>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="$([MSBuild]::IsOSPlatform('OSX')) == 'true'">
+    <AssemblySearchPaths>
+      $(FPFOutputPath);
+      $(AssemblySearchPaths);
+    </AssemblySearchPaths>
+  </PropertyGroup>
+
+  <Target
+    Name="PrepareFPFProjectReferences"
+    BeforeTargets="AssignProjectConfiguration"
+    Condition="$([MSBuild]::IsOSPlatform('OSX'))">
+    <ItemGroup>
+      <ProjectReference
+        Condition="'%(Reference.Identity)' == 'WindowsBase'"
+        Include="$(FPFRootPath)WindowsBase\WindowsBase.csproj"/>
+      <ProjectReference
+        Condition="'%(Reference.Identity)' == 'PresentationCore'"
+        Include="$(FPFRootPath)PresentationCore\PresentationCore.csproj"/>
+      <ProjectReference
+        Condition="'%(Reference.Identity)' == 'PresentationFramework'"
+        Include="$(FPFRootPath)PresentationFramework\PresentationFramework.csproj"/>
+      <ProjectReference
+        Condition="'%(Reference.Identity)' == 'UIAutomationClient'"
+        Include="$(FPFRootPath)UIAutomationClient\UIAutomationClient.csproj"/>
+      <ProjectReference
+        Condition="'%(Reference.Identity)' == 'UIAutomationProvider'"
+        Include="$(FPFRootPath)UIAutomationProvider\UIAutomationProvider.csproj"/>
+      <ProjectReference
+        Condition="'%(Reference.Identity)' == 'UIAutomationTypes'"
+        Include="$(FPFRootPath)UIAutomationTypes\UIAutomationTypes.csproj"/>
+    </ItemGroup>
+    <ItemGroup>
+      <Reference Remove="WindowsBase"/>
+      <Reference Remove="PresentationCore"/>
+      <Reference Remove="PresentationFramework"/>
+      <Reference Remove="UIAutomationClient"/>
+      <Reference Remove="UIAutomationProvider"/>
+      <Reference Remove="UIAutomationTypes"/>
+    </ItemGroup>
+  </Target>
+</Project>
