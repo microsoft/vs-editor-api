@@ -471,6 +471,18 @@ namespace Microsoft.VisualStudio.Text.Editor
         public const string ZoomLevelName = "TextView/ZoomLevel";
 
         /// <summary>
+        /// Determines the minimum view zoom level.
+        /// </summary>
+        public static readonly EditorOptionKey<double> MinZoomLevelId = new EditorOptionKey<double>(MinZoomLevelName);
+        public const string MinZoomLevelName = "TextView/MinZoomLevel";
+
+        /// <summary>
+        /// Determines the maximum view zoom level.
+        /// </summary>
+        public static readonly EditorOptionKey<double> MaxZoomLevelId = new EditorOptionKey<double>(MaxZoomLevelName);
+        public const string MaxZoomLevelName = "TextView/MaxZoomLevel";
+
+        /// <summary>
         /// Determines whether to enable mouse click + modifier keypress for go to definition.
         /// </summary>
         public const string ClickGoToDefEnabledName = "TextView/ClickGoToDefEnabled";
@@ -1271,6 +1283,42 @@ namespace Microsoft.VisualStudio.Text.Editor
         /// Gets the key for the text view zoom level.
         /// </summary>
         public override EditorOptionKey<double> Key { get { return DefaultTextViewOptions.ZoomLevelId; } }
+    }
+
+    /// <summary>
+    /// Defines the minimum zoomlevel.
+    /// </summary>
+    [Export(typeof(EditorOptionDefinition))]
+    [Name(DefaultTextViewOptions.MinZoomLevelName)]
+    public sealed class MinZoomLevel : EditorOptionDefinition<double>
+    {
+        /// <summary>
+        /// Gets the default value.
+        /// </summary>
+        public override double Default => ZoomConstants.MinZoom;
+
+        /// <summary>
+        /// Gets the key for the text view zoom level.
+        /// </summary>
+        public override EditorOptionKey<double> Key => DefaultTextViewOptions.MinZoomLevelId;
+    }
+
+    /// <summary>
+    /// Defines the maximum zoomlevel.
+    /// </summary>
+    [Export(typeof(EditorOptionDefinition))]
+    [Name(DefaultTextViewOptions.MaxZoomLevelName)]
+    public sealed class MaxZoomLevel : EditorOptionDefinition<double>
+    {
+        /// <summary>
+        /// Gets the default value.
+        /// </summary>
+        public override double Default => ZoomConstants.MaxZoom;
+
+        /// <summary>
+        /// Gets the key for the text view zoom level.
+        /// </summary>
+        public override EditorOptionKey<double> Key => DefaultTextViewOptions.MaxZoomLevelId;
     }
 
     /// <summary>

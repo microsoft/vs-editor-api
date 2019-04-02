@@ -3228,28 +3228,30 @@ namespace Microsoft.VisualStudio.Text.Operations.Implementation
             _undoHistory.CurrentTransaction.AddUndo(beforeTextBufferChangeUndoPrimitive);
         }
 
-        public bool CanZoomIn => CanZoomTo && _textView.ZoomLevel < ZoomConstants.MaxZoom;
+        public bool CanZoomIn => CanZoomTo && _textView.ZoomLevel < _textView.Options.GlobalOptions.MaxZoom();
 
         public void ZoomIn()
         {
             if (CanZoomIn)
             {
-                double zoomLevel = Math.Min(_textView.ZoomLevel * ZoomConstants.ScalingFactor, ZoomConstants.MaxZoom);
-                if (zoomLevel < ZoomConstants.MaxZoom || Math.Abs(zoomLevel - ZoomConstants.MaxZoom) < 0.00001)
+                var maxZoom = _textView.Options.GlobalOptions.MaxZoom();
+                double zoomLevel = Math.Min(_textView.ZoomLevel * ZoomConstants.ScalingFactor, maxZoom);
+                if (zoomLevel < maxZoom || Math.Abs(zoomLevel - maxZoom) < 0.00001)
                 {
                     _textView.Options.GlobalOptions.SetOptionValue(DefaultTextViewOptions.ZoomLevelId, zoomLevel);
                 }
             }
         }
 
-        public bool CanZoomOut => CanZoomTo && _textView.ZoomLevel > ZoomConstants.MinZoom;
+        public bool CanZoomOut => CanZoomTo && _textView.ZoomLevel > _textView.Options.GlobalOptions.MinZoom();
 
         public void ZoomOut()
         {
             if (CanZoomOut)
             {
-                double zoomLevel = Math.Max(_textView.ZoomLevel / ZoomConstants.ScalingFactor, ZoomConstants.MinZoom);
-                if (zoomLevel > ZoomConstants.MinZoom || Math.Abs(zoomLevel - ZoomConstants.MinZoom) < 0.00001)
+                var minZoom = _textView.Options.GlobalOptions.MinZoom();
+                double zoomLevel = Math.Max(_textView.ZoomLevel / ZoomConstants.ScalingFactor, minZoom);
+                if (zoomLevel > minZoom || Math.Abs(zoomLevel - minZoom) < 0.00001)
                 {
                     _textView.Options.GlobalOptions.SetOptionValue(DefaultTextViewOptions.ZoomLevelId, zoomLevel);
                 }
@@ -3262,7 +3264,7 @@ namespace Microsoft.VisualStudio.Text.Operations.Implementation
         {
             if (CanZoomTo)
             {
-                _textView.Options.GlobalOptions.SetOptionValue(DefaultTextViewOptions.ZoomLevelId, zoomLevel);
+                _textView.Options.GlobalOptions.SetZoomLevel(zoomLevel);
             }
         }
 

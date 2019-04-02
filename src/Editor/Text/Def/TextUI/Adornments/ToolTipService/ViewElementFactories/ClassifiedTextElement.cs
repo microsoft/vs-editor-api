@@ -37,5 +37,19 @@
         /// A sequence of classified runs of text.
         /// </summary>
         public IEnumerable<ClassifiedTextRun> Runs { get; }
+
+        /// <summary>
+        /// Creates a new element with a hyperlink.
+        /// </summary>
+        /// <param name="text">The text rendered by this run.</param>
+        /// <param name="tooltip">The tooltip for the hyperlink.</param>
+        /// <param name="navigationAction">The action to execute on navigation.</param>
+        /// <returns><see cref="ClassifiedTextElement"/> containing the hyperlink.</returns>
+        public static ClassifiedTextElement CreateHyperlink(string text, string tooltip, Action navigationAction)
+        {
+            Requires.NotNull(text, nameof(text));
+            Requires.NotNull(navigationAction, nameof(navigationAction));
+            return new ClassifiedTextElement(new ClassifiedTextRun("url", text, navigationAction, tooltip));
+        }
     }
 }
