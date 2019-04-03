@@ -162,4 +162,12 @@
       <Private>$(ReferencesVSEditorCopyToOutput)</Private>
     </ProjectReference>
   </ItemGroup>
+
+  <!-- Cocoa Interfaces -->
+  <ItemGroup Condition="$(HaveXamarinMac)">
+    <ProjectReference Include="$(MSBuildThisFileDirectory)src\Editor\Text\Def\TextUIWpf\TextUIWpf.csproj">
+      <SolutionFolder>Cocoa</SolutionFolder>
+      <Private>$(ReferencesVSEditorCopyToOutput)</Private>
+    </ProjectReference>
+  </ItemGroup>
 </Project>
