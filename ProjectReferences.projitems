@@ -165,7 +165,7 @@
 
   <!-- Cocoa Interfaces -->
   <ItemGroup Condition="$(HaveXamarinMac)">
-    <ProjectReference Include="$(MSBuildThisFileDirectory)src\Editor\Text\Def\TextUIWpf\TextUIWpf.csproj">
+    <ProjectReference Include="$(MSBuildThisFileDirectory)src\Editor\Text\Def\TextUICocoa\TextUICocoa.csproj">
       <SolutionFolder>Cocoa</SolutionFolder>
       <Private>$(ReferencesVSEditorCopyToOutput)</Private>
     </ProjectReference>
