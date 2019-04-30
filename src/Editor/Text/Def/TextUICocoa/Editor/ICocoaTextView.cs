@@ -31,5 +31,7 @@ namespace Microsoft.VisualStudio.Text.Editor
         /// Occurs when the <see cref="ZoomLevel"/> is set.
         /// </summary>
         event EventHandler<ZoomLevelChangedEventArgs> ZoomLevelChanged;
+
+        NSCursor Cursor { get; set; }
     }
 }
