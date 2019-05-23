@@ -133,77 +133,24 @@ namespace Microsoft.VisualStudio.Text.Editor
         /// <param name="e">The event arguments.</param>
         public virtual void PostprocessMouseLeave(MouseEvent e) { }
 
-        /// <summary>
-        /// Handles the drag leave event before the default handler.
-        /// </summary>
-        /// <param name="e">The event arguments.</param>
-        public virtual void PreprocessDragLeave(MouseEvent e) { }
+        public virtual void PreprocessDraggingEntered(DragEvent e) { }
+        public virtual void PostprocessDraggingEntered(DragEvent e) { }
 
-        /// <summary>
-        /// Handles the drag leave event after the default handler.
-        /// </summary>
-        /// <param name="e">The event arguments.</param>
-        public virtual void PostprocessDragLeave(MouseEvent e) { }
+        public virtual void PreprocessDraggingUpdated(DragEvent e) { }
+        public virtual void PostprocessDraggingUpdated(DragEvent e) { }
 
-        /// <summary>
-        /// Handles the drag over event before the default handler.
-        /// </summary>
-        /// <param name="e">The event arguments.</param>
-        public virtual void PreprocessDragOver(MouseEvent e) { }
+        public virtual void PreprocessDraggingExited(DragEvent e) { }
+        public virtual void PostprocessDraggingExited(DragEvent e) { }
 
-        /// <summary>
-        /// Handles the drag over event after the default handler.
-        /// </summary>
-        /// <param name="e">The event arguments.</param>
-        public virtual void PostprocessDragOver(MouseEvent e) { }
+        public virtual void PreprocessPrepareForDragOperation(DragEvent e) { }
+        public virtual void PostprocessPrepareForDragOperation(DragEvent e) { }
 
-        /// <summary>
-        /// Handles the drag enter event before the default handler.
-        /// </summary>
-        /// <param name="e">The event arguments.</param>
-        public virtual void PreprocessDragEnter(MouseEvent e) { }
+        public virtual void PreprocessPerformDragOperation(DragEvent e) { }
+        public virtual void PostprocessPerformDragOperation(DragEvent e) { }
 
-        /// <summary>
-        /// Handles the drag enter event after the default handler.
-        /// </summary>
-        /// <param name="e">The event arguments.</param>
-        public virtual void PostprocessDragEnter(MouseEvent e) { }
 
-        /// <summary>
-        /// Handles the drop event before the default handler.
-        /// </summary>
-        /// <param name="e">The event arguments.</param>
-        public virtual void PreprocessDrop(MouseEvent e) { }
-
-        /// <summary>
-        /// Handles the drop event after the default handler.
-        /// </summary>
-        /// <param name="e">The event arguments.</param>
-        public virtual void PostprocessDrop(MouseEvent e) { }
-
-        /// <summary>
-        /// Handles the query continue drag event before the default handler.
-        /// </summary>
-        /// <param name="e">The event arguments.</param>
-        public virtual void PreprocessQueryContinueDrag(MouseEvent e) { }
-
-        /// <summary>
-        /// Handles the query continue drag event after the default handler.
-        /// </summary>
-        /// <param name="e">The event arguments.</param>
-        public virtual void PostprocessQueryContinueDrag(MouseEvent e) { }
-
-        /// <summary>
-        /// Handles the feedback event before the default handler.
-        /// </summary>
-        /// <param name="e">The event arguments.</param>
-        public virtual void PreprocessGiveFeedback(MouseEvent e) { }
-
-        /// <summary>
-        /// Handles the feedback event after the default handler.
-        /// </summary>
-        /// <param name="e">The event arguments.</param>
-        public virtual void PostprocessGiveFeedback(MouseEvent e) { }
+        public virtual void PreprocessDraggingEnded(DragEvent e) { }
+        public virtual void PostprocessDraggingEnded(DragEvent e) { }
 
         #endregion
     }
