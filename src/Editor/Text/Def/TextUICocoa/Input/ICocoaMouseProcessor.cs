@@ -170,100 +170,22 @@ namespace Microsoft.VisualStudio.Text.Editor
         /// </param>
         void PostprocessMouseLeave(MouseEvent e);
 
-        /// <summary>
-        /// Handles a drag leave event before the default handler.
-        /// </summary>
-        /// <param name="e">
-        /// A <see cref="MouseEvent"/> describing the drag operation.
-        /// </param>
-        void PreprocessDragLeave(MouseEvent e);
+        void PreprocessDraggingEntered(DragEvent e);
+        void PostprocessDraggingEntered(DragEvent e);
 
-        /// <summary>
-        /// Handles a drag leave event after the default handler.
-        /// </summary>
-        /// <param name="e">
-        /// A <see cref="MouseEvent"/> describing the drag operation.
-        /// </param>
-        void PostprocessDragLeave(MouseEvent e);
+        void PreprocessDraggingUpdated(DragEvent e);
+        void PostprocessDraggingUpdated(DragEvent e);
 
-        /// <summary>
-        /// Handles a drag over event before the default handler.
-        /// </summary>
-        /// <param name="e">
-        /// A <see cref="MouseEvent"/> describing the drag operation.
-        /// </param>
-        void PreprocessDragOver(MouseEvent e);
+        void PreprocessDraggingExited(DragEvent e);
+        void PostprocessDraggingExited(DragEvent e);
 
-        /// <summary>
-        /// Handles a drag over event after the default handler.
-        /// </summary>
-        /// <param name="e">
-        /// A <see cref="MouseEvent"/> describing the drag operation.
-        /// </param>
-        void PostprocessDragOver(MouseEvent e);
+        void PreprocessPrepareForDragOperation(DragEvent e);
+        void PostprocessPrepareForDragOperation(DragEvent e);
 
-        /// <summary>
-        /// Handles a drag enter event before the default handler.
-        /// </summary>
-        /// <param name="e">
-        /// A <see cref="MouseEvent"/> describing the drag operation.
-        /// </param>
-        void PreprocessDragEnter(MouseEvent e);
+        void PreprocessPerformDragOperation(DragEvent e);
+        void PostprocessPerformDragOperation(DragEvent e);
 
-        /// <summary>
-        /// Handles a drag enter event after the default handler.
-        /// </summary>
-        /// <param name="e">
-        /// A <see cref="MouseEvent"/> describing the drag operation.
-        /// </param>
-        void PostprocessDragEnter(MouseEvent e);
-
-        /// <summary>
-        /// Handles a drop event before the default handler.
-        /// </summary>
-        /// <param name="e">
-        /// <see cref="MouseEvent"/> describing the drag operation.
-        /// </param>
-        void PreprocessDrop(MouseEvent e);
-
-        /// <summary>
-        /// Handles a drop event after the default handler.
-        /// </summary>
-        /// <param name="e">
-        /// A <see cref="MouseEvent"/> describing the drag operation.
-        /// </param>
-        void PostprocessDrop(MouseEvent e);
-
-        /// <summary>
-        /// Handles a QueryContinueDrag event before the default handler. 
-        /// </summary>
-        /// <param name="e">
-        /// A <see cref="MouseEvent"/> describing the drag operation.
-        /// </param>
-        void PreprocessQueryContinueDrag(MouseEvent e);
-
-        /// <summary>
-        /// Handles a QueryContinueDrag event after the default handler. 
-        /// </summary>
-        /// <param name="e">
-        /// A <see cref="MouseEvent"/> describing the drag operation.
-        /// </param>
-        void PostprocessQueryContinueDrag(MouseEvent e);
-
-        /// <summary>
-        /// Handles a GiveFeedback event before the default handler. 
-        /// </summary>
-        /// <param name="e">
-        /// A <see cref="MouseEvent"/> describing the drag operation.
-        /// </param>
-        void PreprocessGiveFeedback(MouseEvent e);
-
-        /// <summary>
-        /// Handles a GiveFeedback event after the default handler. 
-        /// </summary>
-        /// <param name="e">
-        /// A <see cref="MouseEvent"/> describing the drag operation.
-        /// </param>
-        void PostprocessGiveFeedback(MouseEvent e);
+        void PreprocessDraggingEnded(DragEvent e);
+        void PostprocessDraggingEnded(DragEvent e);
     }
 }
