@@ -270,6 +270,9 @@ namespace Microsoft.VisualStudio.Text.Editor.Commanding
 
         public const string TransposeLine = "transposeLine:";
 
+        /// <summary>⌘L</summary>
+        public const string GoToLine = "goToLine:";
+
         #endregion
     }
 
