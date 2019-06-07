@@ -19,6 +19,8 @@ namespace Microsoft.VisualStudio.Text.Utilities
 
         public const string VSEditorKey = "VS/Editor";
 
+        const string ExceptionEventName = VSEditorKey + "/Exception";
+
         DispatcherTimer _touchZoomTimer = null;
         DispatcherTimer _touchScrollTimer = null;
         DispatcherTimer _zoomTimer = null;
@@ -118,9 +120,23 @@ namespace Microsoft.VisualStudio.Text.Utilities
             }
         }
 
+        public void LogException(
+            Exception exception,
+            string description = "An unhandled exception occurred in the editor")
+        {
+            try
+            {
+                LoggingService?.PostFault(
+                    ExceptionEventName,
+                    description,
+                    exception);
+            }
+            catch { }
+        }
+
         public void PostCounters()
         {
-            LoggingService.PostCounters();
+            LoggingService?.PostCounters();
         }
     }
 }
