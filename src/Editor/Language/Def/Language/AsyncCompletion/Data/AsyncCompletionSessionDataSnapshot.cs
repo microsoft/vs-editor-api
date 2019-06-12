@@ -25,6 +25,11 @@ namespace Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion.Data
         public CompletionTrigger Trigger { get; }
 
         /// <summary>
+        /// The <see cref="CompletionTrigger"/> that started this completion session.
+        /// </summary>
+        public CompletionTrigger InitialTrigger { get; }
+
+        /// <summary>
         /// Filters, their availability and selection state.
         /// </summary>
         public ImmutableArray<CompletionFilterWithState> SelectedFilters { get; }
@@ -55,11 +60,40 @@ namespace Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion.Data
             ImmutableArray<CompletionFilterWithState> selectedFilters,
             bool isSoftSelected,
             bool displaySuggestionItem
+        ) : this(
+            initialSortedList,
+            snapshot,
+            trigger,
+            default,
+            selectedFilters,
+            isSoftSelected,
+            displaySuggestionItem)
+        {
+        }
+
+        /// <summary>
+        /// Constructs <see cref="AsyncCompletionSessionDataSnapshot"/>
+        /// </summary>
+        /// <param name="initialSortedList">Set of <see cref="CompletionItem"/>s to filter and sort, originally returned from <see cref="IAsyncCompletionItemManager.SortCompletionListAsync"/></param>
+        /// <param name="snapshot">The <see cref="ITextSnapshot"/> applicable for this computation. The snapshot comes from the view's data buffer</param>
+        /// <param name="trigger">The <see cref="CompletionTrigger"/> that caused this update</param>
+        /// <param name="selectedFilters">Filters, their availability and selection state</param>
+        /// <param name="isSoftSelected">Inidicates whether the session is using soft selection</param>
+        /// <param name="displaySuggestionItem">Inidicates whether the session has a suggestion item</param>
+        public AsyncCompletionSessionDataSnapshot(
+            ImmutableArray<CompletionItem> initialSortedList,
+            ITextSnapshot snapshot,
+            CompletionTrigger trigger,
+            CompletionTrigger initialTrigger,
+            ImmutableArray<CompletionFilterWithState> selectedFilters,
+            bool isSoftSelected,
+            bool displaySuggestionItem
         )
         {
             InitialSortedList = initialSortedList;
             Snapshot = snapshot;
             Trigger = trigger;
+            InitialTrigger = initialTrigger;
             SelectedFilters = selectedFilters;
             IsSoftSelected = isSoftSelected;
             DisplaySuggestionItem = displaySuggestionItem;
