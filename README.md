@@ -86,9 +86,9 @@ Refer to the [Extending Visual Studio for Mac](https://docs.microsoft.com/en-us/
 ### Visual Studio (Windows)
 
 On Windows, the Visual Studio Editor API is available via NuGet and is also
-installed with the Visual Studio Extension Development workload. Note that
+installed with the Visual Studio Extension Development workload.
 
-| Nuget package | Current version |
+| NuGet Package | Current Version |
 | ------------- | ------------- |
 | [Microsoft.VisualStudio.CoreUtility](https://www.nuget.org/packages/Microsoft.VisualStudio.CoreUtility) | [![NuGet package](https://img.shields.io/nuget/v/Microsoft.VisualStudio.CoreUtility.svg)](https://www.nuget.org/packages/Microsoft.VisualStudio.CoreUtility) |
 | [Microsoft.VisualStudio.Text.Data](https://www.nuget.org/packages/Microsoft.VisualStudio.Text.Data) | [![NuGet package](https://img.shields.io/nuget/v/Microsoft.VisualStudio.Text.Data.svg)](https://www.nuget.org/packages/Microsoft.VisualStudio.Text.Data) |
