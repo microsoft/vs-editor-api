@@ -1,7 +1,7 @@
 {
   "msbuild-sdks": {
     "Microsoft.Build.Traversal": "1.0.45",
-    "Xamarin.MSBuild.Sdk": "0.20.0",
-    "Xamarin.Mac.Sdk": "0.20.0"
+    "Xamarin.MSBuild.Sdk": "0.22.0",
+    "Xamarin.Mac.Sdk": "0.22.0"
   }
 }
