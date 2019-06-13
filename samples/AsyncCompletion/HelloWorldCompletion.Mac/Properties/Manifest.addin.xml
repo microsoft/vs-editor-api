@@ -1,0 +1,13 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<ExtensionModel>
+    <!-- Register with Visual Studio for Mac -->
+    <Runtime>
+        <Import assembly="HelloWorldCompletion.dll" />
+        <Import assembly="HelloWorldCompletion.Mac.dll" />
+    </Runtime>
+    <!-- Register with Managed Extensibility Framework (MEF) -->
+    <Extension path="/MonoDevelop/Ide/Composition">
+        <Assembly file="HelloWorldCompletion.dll" />
+        <Assembly file="HelloWorldCompletion.Mac.dll" />
+    </Extension>
+</ExtensionModel>

@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net46</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.VisualStudio.Language" Version="15.6.391-preview-g3c4ef6e5fc" />
+    <PackageReference Include="Microsoft.VisualStudio.Language.StandardClassification" Version="15.6.391-preview-g3c4ef6e5fc" />
+    <PackageReference Include="Microsoft.VisualStudio.Text.UI" Version="15.6.391-preview-g3c4ef6e5fc" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="System.ComponentModel.Composition" />
+  </ItemGroup>
+
+</Project>
