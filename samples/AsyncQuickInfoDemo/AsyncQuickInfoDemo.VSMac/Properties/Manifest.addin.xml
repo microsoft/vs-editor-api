@@ -1,0 +1,12 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<ExtensionModel>
+
+    <!-- Register common xplat portion with VS Mac MEF Service -->
+    <Extension path="/MonoDevelop/Ide/TypeService/MefHostServices">
+        <Assembly file ="AsyncQuickInfoDemo.dll" />
+    </Extension>
+    <Extension path="/MonoDevelop/Ide/TypeService/PlatformMefHostServices">
+        <Assembly file ="AsyncQuickInfoDemo.dll" />
+    </Extension>
+    
+</ExtensionModel>

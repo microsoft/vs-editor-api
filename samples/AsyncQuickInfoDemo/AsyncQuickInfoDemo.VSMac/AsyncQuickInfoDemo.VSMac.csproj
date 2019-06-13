@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net461</TargetFramework>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="MonoDevelop.Addins" Version="0.4.4" />
+  </ItemGroup>
+  <ItemGroup>
+    <AddinReference Include="MonoDevelop.SourceEditor2" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\AsyncQuickInfoDemo\AsyncQuickInfoDemo.csproj" />
+  </ItemGroup>
+</Project>
