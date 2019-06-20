@@ -499,6 +499,12 @@ namespace Microsoft.VisualStudio.Text.Editor
         /// </summary>
         public static readonly EditorOptionKey<bool> ShouldMoveCaretOnSelectAllId = new EditorOptionKey<bool>(ShouldMoveCaretOnSelectAllName);
         public const string ShouldMoveCaretOnSelectAllName = "TextView/ShouldMoveCaretOnSelectAll";
+
+        /// <summary>
+        /// Defines where vertical rulers, if any, are to be drawn in the editor.
+        /// </summary>
+        public const string VerticalRulersName = "TextView/VerticalRulers";
+        public static readonly EditorOptionKey<int[]> VerticalRulersId = new EditorOptionKey<int[]>(VerticalRulersName);
         #endregion
     }
 
@@ -1373,5 +1379,16 @@ namespace Microsoft.VisualStudio.Text.Editor
         /// Gets the editor option key.
         /// </summary>
         public override EditorOptionKey<bool> Key => DefaultTextViewOptions.ShouldMoveCaretOnSelectAllId;
+    }
+
+    /// <summary>
+    /// Determines whether to display the vertical ruler or not.
+    /// </summary>
+    [Export(typeof(EditorOptionDefinition))]
+    [Name(DefaultTextViewOptions.VerticalRulersName)]
+    internal sealed class VerticalRulersOption : EditorOptionDefinition<int[]>
+    {
+        public override int[] Default => Array.Empty<int>();
+        public override EditorOptionKey<int[]> Key => DefaultTextViewOptions.VerticalRulersId;
     }
 }
