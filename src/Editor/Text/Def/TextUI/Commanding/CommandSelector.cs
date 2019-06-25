@@ -275,6 +275,14 @@ namespace Microsoft.VisualStudio.Text.Editor.Commanding
         /// <summary>⌘L</summary>
         public const string GoToLine = "goToLine:";
 
+        public const string ToggleOutliningEnabled = "toggleOutliningEnabled:";
+
+        public const string ToggleOutliningExpansion = "toggleOutliningExpansion:";
+
+        public const string ToggleAllOutlining = "toggleAllOutlining:";
+
+        public const string ToggleOutliningDefinitions = "toggleOutliningDefinitions:";
+
         #endregion
     }
 
