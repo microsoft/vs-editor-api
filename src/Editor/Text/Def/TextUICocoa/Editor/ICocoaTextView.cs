@@ -32,6 +32,8 @@ namespace Microsoft.VisualStudio.Text.Editor
         /// </summary>
         event EventHandler<ZoomLevelChangedEventArgs> ZoomLevelChanged;
 
-        NSCursor Cursor { get; set; }
+        void PushCursor(object context, NSCursor cursor);
+
+        void PopCursor(object context);
     }
 }
