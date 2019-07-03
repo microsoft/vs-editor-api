@@ -46,6 +46,7 @@ namespace Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion.Implement
         IChainedCommandHandler<TabKeyCommandArgs>,
         IDynamicCommandHandler<TabKeyCommandArgs>,
         ICommandHandler<ToggleCompletionModeCommandArgs>,
+        ICommandHandler<ToggleCompletionListFilterCommandArgs>,
         IChainedCommandHandler<TypeCharCommandArgs>,
         IDynamicCommandHandler<TypeCharCommandArgs>,
         ICommandHandler<UndoCommandArgs>,
@@ -313,6 +314,32 @@ namespace Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion.Implement
                 sessionInternal.SetSuggestionMode(toggledValue);
                 return true;
             }
+            return false;
+        }
+
+        CommandState ICommandHandler<ToggleCompletionListFilterCommandArgs>.GetCommandState(
+            ToggleCompletionListFilterCommandArgs args)
+        {
+            if (!Broker.IsCompletionActive(args.TextView))
+                return CommandState.Unspecified;
+
+            if (Broker.GetSession(args.TextView) is IAsyncCompletionSessionOperations2 sessionInternal &&
+                sessionInternal.CanToggleFilter(args.AccessKey))
+                return CommandState.Available;
+
+            return CommandState.Unavailable;
+        }
+
+        bool ICommandHandler<ToggleCompletionListFilterCommandArgs>.ExecuteCommand(
+            ToggleCompletionListFilterCommandArgs args,
+            CommandExecutionContext executionContext)
+        {
+            if (Broker.GetSession(args.TextView) is IAsyncCompletionSessionOperations2 sessionInternal)
+            {
+                sessionInternal.ToggleFilter(args.AccessKey);
+                return true;
+            }
+
             return false;
         }
 

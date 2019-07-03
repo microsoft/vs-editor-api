@@ -182,6 +182,12 @@ namespace System.Windows.Threading
             }
         }
 
+        public bool HasShutdownStarted => false;
+        public bool HasShutdownFinished => false;
+
+        public event EventHandler ShutdownStarted { add { } remove { } }
+        public event EventHandler ShutdownFinished { add { } remove { } }
+
         #endregion
     }
 }
