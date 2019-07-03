@@ -7,7 +7,7 @@ namespace Microsoft.VisualStudio.Commanding
     /// Represents a command execution context, which is set up by a command handler service
     /// and provided to each command handler.
     /// </summary>
-    public sealed class CommandExecutionContext
+    public sealed class CommandExecutionContext : IPropertyOwner
     {
         /// <summary>
         /// Creates new instance of the <see cref="CommandExecutionContext"/>.
@@ -15,6 +15,7 @@ namespace Microsoft.VisualStudio.Commanding
         public CommandExecutionContext(IUIThreadOperationContext operationContext)
         {
             this.OperationContext = operationContext ?? throw new ArgumentNullException(nameof(operationContext));
+            this.Properties = new PropertyCollection();
         }
 
         /// <summary>
@@ -22,6 +23,10 @@ namespace Microsoft.VisualStudio.Commanding
         /// enables two way shared cancellability and wait indication.
         /// </summary>
         public IUIThreadOperationContext OperationContext { get; }
+
+        /// <summary>
+        /// A collection of properties.
+        /// </summary>
+        public PropertyCollection Properties { get; }
     }
 }
-

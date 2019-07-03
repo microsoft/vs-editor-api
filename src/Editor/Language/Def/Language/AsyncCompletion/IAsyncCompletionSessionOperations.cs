@@ -57,4 +57,10 @@ namespace Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion
         /// </summary>
         void SelectPageUp();
     }
+
+    public interface IAsyncCompletionSessionOperations2 : IAsyncCompletionSessionOperations
+    {
+        bool CanToggleFilter(string accessKey);
+        void ToggleFilter(string accessKey);
+    }
 }

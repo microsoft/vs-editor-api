@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
@@ -175,6 +176,24 @@ namespace Microsoft.VisualStudio.UI.Text.Commanding.Implementation
             var commandExecutionContext = new CommandExecutionContext(uiThreadOperationContext);
             commandExecutionContext.OperationContext.UserCancellationToken.Register(OnExecutionCancellationRequested, state);
             state.ExecutionContext = commandExecutionContext;
+
+            // Per internal convention hosts can add additional host specific input context properties into
+            // text view's property bag. We then surface it to command handlers (first item in case it's a list) via
+            // CommandExecutionContext properties using type name as a key.
+            if (_textView.Properties.TryGetProperty("Additional Command Execution Context", out object hostSpecificInputContext))
+            {
+                if (hostSpecificInputContext != null)
+                {
+                    if (hostSpecificInputContext is IList hostSpecificInputContextList &&
+                        hostSpecificInputContextList.Count > 0)
+                    {
+                        hostSpecificInputContext = hostSpecificInputContextList[0];
+                    }
+
+                    commandExecutionContext.Properties.AddProperty(hostSpecificInputContext.GetType(), hostSpecificInputContext);
+                }
+            }
+
             return state;
         }
 

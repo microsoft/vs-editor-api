@@ -15,9 +15,20 @@ namespace Microsoft.VisualStudio.Commanding
         public bool IsUnspecified { get; }
 
         /// <summary>
-        /// If true, the command should be visible and enabled in the UI.
+        /// If true, the command should be available for execution.
+        /// <see cref="IsEnabled"/> and <see cref="IsVisible"/> properties control how the command should be represented in the UI.
         /// </summary>
         public bool IsAvailable { get; }
+
+        /// <summary>
+        /// If true, the command should be enabled in the UI.
+        /// </summary>
+        public bool IsEnabled { get; }
+
+        /// <summary>
+        /// If true, the command should be visible in the UI.
+        /// </summary>
+        public bool IsVisible { get; }
 
         /// <summary>
         /// If true, the command should appear as checked (i.e. toggled) in the UI.
@@ -30,22 +41,39 @@ namespace Microsoft.VisualStudio.Commanding
         public string DisplayText { get; }
 
         public CommandState(bool isAvailable = false, bool isChecked = false, string displayText = null, bool isUnspecified = false)
+            : this(isAvailable: isAvailable, isUnspecified: isUnspecified, isChecked: isChecked, isEnabled: isAvailable, isVisible: isAvailable, displayText: displayText)
         {
-            if (isUnspecified && (isAvailable || isChecked || displayText != null))
-            {
-                throw new ArgumentException("Unspecified command state cannot be combined with other states or command text.");
-            }
+        }
+
+        public CommandState(bool isAvailable, bool isChecked, bool isEnabled, bool isVisible, string displayText = null)
+            : this(isAvailable: isAvailable, isUnspecified: false, isChecked: isChecked, isEnabled: isEnabled, isVisible: isVisible, displayText: displayText)
+        {
+        }
+
+        public CommandState(bool isAvailable, bool isUnspecified, bool isChecked, bool isEnabled, bool isVisible, string displayText)
+        {
+            Validate(isAvailable, isChecked, isUnspecified, isEnabled, isVisible, displayText);
 
             this.IsAvailable = isAvailable;
             this.IsChecked = isChecked;
             this.IsUnspecified = isUnspecified;
+            this.IsEnabled = isEnabled;
+            this.IsVisible = isVisible;
             this.DisplayText = displayText;
         }
 
+        private static void Validate(bool isAvailable, bool isChecked, bool isUnspecified, bool isEnabled, bool isVisible, string displayText)
+        {
+            if (isUnspecified && (isAvailable || isChecked || isEnabled || isVisible || displayText != null))
+            {
+                throw new ArgumentException("Unspecified command state cannot be combined with other states or command text.");
+            }
+        }
+
         /// <summary>
-        /// A helper singleton representing an available command state.
+        /// A helper singleton representing an available (supported, enabled and visible) command state.
         /// </summary>
-        public static CommandState Available { get; } = new CommandState(isAvailable: true);
+        public static CommandState Available { get; } = new CommandState(isAvailable: true, isChecked: false, isEnabled: true, isVisible: true);
 
         /// <summary>
         /// A helper singleton representing an unavailable command state.

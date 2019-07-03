@@ -4,6 +4,8 @@ using System.ComponentModel.Composition;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Text.Editor.Commanding;
+using Microsoft.VisualStudio.Text.Projection;
+using Microsoft.VisualStudio.Text.Utilities;
 using Microsoft.VisualStudio.Utilities;
 
 namespace Microsoft.VisualStudio.UI.Text.Commanding.Implementation
@@ -29,8 +31,25 @@ namespace Microsoft.VisualStudio.UI.Text.Commanding.Implementation
 
         public IEnumerable<ITextBuffer> ResolveBuffersForCommand<TArgs>() where TArgs : EditorCommandArgs
         {
-            var mappingPoint = _textView.BufferGraph.CreateMappingPoint(_textView.Caret.Position.BufferPosition, PointTrackingMode.Negative);
-            return _textView.BufferGraph.GetTextBuffers((b) => mappingPoint.GetPoint(b, PositionAffinity.Successor) != null);
+            var sourceSnapshotPoints = new FrugalList<SnapshotPoint>(new[] { _textView.Caret.Position.BufferPosition });
+            var resolvedBuffers = new FrugalList<ITextBuffer>();
+            for (int i = 0; i < sourceSnapshotPoints.Count; i++)
+            {
+                SnapshotPoint curSnapshotPoint = sourceSnapshotPoints[i];
+                if (curSnapshotPoint.Snapshot is IProjectionSnapshot curProjectionSnapshot)
+                {
+                    sourceSnapshotPoints.AddRange(curProjectionSnapshot.MapToSourceSnapshots(curSnapshotPoint));
+                }
+
+                // As the set of buffers isn't likely to exceed 5, just use the list to determine whether we've seen it before
+                ITextBuffer curBuffer = curSnapshotPoint.Snapshot.TextBuffer;
+                if (!resolvedBuffers.Contains(curBuffer))
+                {
+                    resolvedBuffers.Add(curBuffer);
+                }
+            }
+
+            return resolvedBuffers;
         }
     }
 }

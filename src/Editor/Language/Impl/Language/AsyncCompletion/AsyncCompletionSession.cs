@@ -19,7 +19,7 @@ namespace Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion.Implement
     /// Holds a state of the session
     /// and a reference to the UI element
     /// </summary>
-    internal class AsyncCompletionSession : IAsyncCompletionSession, IAsyncCompletionSessionOperations, IModelComputationCallbackHandler<CompletionModel>
+    internal class AsyncCompletionSession : IAsyncCompletionSession, IAsyncCompletionSessionOperations2, IModelComputationCallbackHandler<CompletionModel>
     {
         // Available data and services
         private readonly IList<(IAsyncCompletionSource Source, SnapshotPoint Point)> _completionSources;
@@ -632,6 +632,39 @@ namespace Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion.Implement
         {
             var taskId = Interlocked.Increment(ref _lastFilteringTaskId);
             _computation.Enqueue((model, token) => UpdateFilters(model, args.Filters, taskId, token), updateUi: true);
+        }
+
+        static bool CheckFilterAccessKey(CompletionFilterWithState filter, string accessKey)
+            => string.Equals(
+                filter.Filter.AccessKey,
+                accessKey,
+                StringComparison.OrdinalIgnoreCase);
+
+        public bool CanToggleFilter(string accessKey)
+            => _computation
+                .RecentModel
+                .Filters
+                .Any(filter => CheckFilterAccessKey(filter, accessKey));
+
+        public void ToggleFilter(string accessKey)
+        {
+            var taskId = Interlocked.Increment(ref _lastFilteringTaskId);
+            _computation.Enqueue((model, token) =>
+            {
+                var newFilters = model
+                    .Filters
+                    .Select(filter =>
+                    {
+                        if (CheckFilterAccessKey(filter, accessKey))
+                            return filter.WithSelected(!filter.IsSelected);
+
+                        return filter;
+                    })
+                    .ToImmutableArray();
+
+                return UpdateFilters(model, newFilters, taskId, token);
+            },
+            updateUi: true);
         }
 
         /// <summary>
