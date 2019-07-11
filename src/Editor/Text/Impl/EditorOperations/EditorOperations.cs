@@ -96,7 +96,7 @@ namespace Microsoft.VisualStudio.Text.Operations.Implementation
             if (factory == null)
                 throw new ArgumentNullException(nameof(factory));
 
-            _textView = (Microsoft.VisualStudio.Text.Editor.ITextView3)textView;
+            _textView = (Microsoft.VisualStudio.Text.Editor.ITextView3) textView;
             _factory = factory;
             _multiSelectionBroker = _textView.GetMultiSelectionBroker();
             _editorPrimitives = factory.EditorPrimitivesProvider.GetViewPrimitives(textView);
@@ -113,7 +113,8 @@ namespace Microsoft.VisualStudio.Text.Operations.Implementation
 
             _factory.TextDocumentFactoryService.TryGetTextDocument(_textView.TextDataModel.DocumentBuffer, out _textDocument);
 
-            _textView.Closed += delegate {
+            _textView.Closed += delegate
+            {
                 _factory.UndoHistoryRegistry.RemoveHistory(_undoHistory);
                 _factory.TextBufferUndoManagerProvider.RemoveTextBufferUndoManager(_textView.TextBuffer);
             };
@@ -1065,7 +1066,7 @@ namespace Microsoft.VisualStudio.Text.Operations.Implementation
 
             // Get the span of the previous element
             SnapshotSpan previousElementSpan = TextView.GetTextElementSpan(selection.InsertionPoint.Position - 1);
-            
+
             // Here we have some interesting decisions to make. If this is a collapsed region, we want to delete the whole thing.
             // If this is a multi-byte character, we typically want to delete just one byte to allow for easier typing in chinese and other languages.
             // However, if that multi-byte character is a surrogate pair or newline, we want to delete the whole thing.
@@ -2778,10 +2779,10 @@ namespace Microsoft.VisualStudio.Text.Operations.Implementation
                     return true;
                 }
 
-                text = (string)dataObj.GetData(DataFormats.UnicodeText);
+                text = (string) dataObj.GetData(DataFormats.UnicodeText);
                 if (text == null)
                 {
-                    text = (string)dataObj.GetData(DataFormats.Text);
+                    text = (string) dataObj.GetData(DataFormats.Text);
                 }
 
                 dataHasLineCutCopyTag = dataObj.GetDataPresent(_clipboardLineBasedCutCopyTag);
@@ -5037,7 +5038,7 @@ namespace Microsoft.VisualStudio.Text.Operations.Implementation
         private static bool IsSpaceCharacter(char c)
         {
             return c == ' ' || c == '\t' ||
-                   (int)c == 0x200B ||
+                   (int) c == 0x200B ||
                    char.GetUnicodeCategory(c) == UnicodeCategory.SpaceSeparator;
         }
 
@@ -5204,6 +5205,150 @@ namespace Microsoft.VisualStudio.Text.Operations.Implementation
                 }
             };
             return ExecuteAction(Strings.DuplicateSelection, func, ensureVisible: true);
+        }
+
+        /// <summary>
+        /// Sorts the selected lines in alphabetical order.
+        /// </summary>
+        public void SortSelectedLines()
+        {
+            // we are technically caching the selections, although we need to
+            // be really careful - all we really care about are the positions
+            // as we'll want to recreate them when we finish modifying the text
+            var selectionCache = new List<Selection>();
+
+            using (var batchOp = _multiSelectionBroker.BeginBatchOperation())
+            {
+                _multiSelectionBroker.PerformActionOnAllSelections(transformer =>
+                {
+                    // we start by getting all the lines that are in the current selection
+                    var span = transformer.Selection.Extent.SnapshotSpan;
+
+                    // we need the text view lines, specifically, so we ask for those
+                    // that are intersecting the span that defines our selection
+                    var lines = this.TextView
+                        .TextViewLines
+                        .GetTextViewLinesIntersectingSpan(span)
+                        .Select(lx => new SnapshotSpan(lx.Start, lx.EndIncludingLineBreak))
+                        .ToArray();
+
+                    if (lines.Length <= 1) return;
+
+                    var text = lines.Select(x => x.GetText()).ToArray();
+
+                    // we only create this copy so that we can reverse it, in case the array
+                    // is already sorted
+                    var copy = (string[])text.Clone();
+                    Array.Sort(text, StringComparer.Ordinal);
+
+                    if (Enumerable.SequenceEqual(text, copy))
+                    {
+                        Array.Reverse(text);
+                    }
+
+                    selectionCache.Add(transformer.Selection);
+
+                    ExecuteAction("SortLines", () =>
+                    {
+                        // we can simply replace the *entire* text, from the start of
+                        // the first line, to the last, without caring about the
+                        // lines themsleves (unlike in JoinSelectedLines),
+                        // so this is much nicer!
+                        var l = string.Concat(text);
+                        var span = Span.FromBounds(lines.First().Start, lines.Last().End);
+
+                        return ReplaceHelper(span, l);
+                    }, SelectionUpdate.Ignore, true);
+                });
+            }
+
+            foreach (var item in selectionCache)
+            {
+                // we need to create a new snapshot point, otherwise the
+                // broker (rightfully) throws an exception about the selection
+                // existing in a different snapshot
+                var anchorPoint = new VirtualSnapshotPoint(_textView.TextSnapshot, item.AnchorPoint.Position);
+                var activePoint = new VirtualSnapshotPoint(_textView.TextSnapshot, item.ActivePoint.Position);
+
+                _multiSelectionBroker.AddSelection(new Selection(anchorPoint, activePoint));
+            }
+        }
+
+        /// <summary>
+        /// Joins the selected lines into a single one.
+        /// </summary>
+        public void JoinSelectedLines()
+        {
+            using (var batchOp = _multiSelectionBroker.BeginBatchOperation())
+            {
+                // since the user could have multiple selections, we should
+                // perform this merge/join on each of them separately, but
+                // we need to be careful to make sure the selections are
+                // maintained as we change the buffer underneath them, so we'll
+                // use the stuff built in
+                _multiSelectionBroker.PerformActionOnAllSelections(transformer =>
+                {
+                    // we start by getting all the lines that are in the current selection
+                    var span = transformer.Selection.Extent.SnapshotSpan;
+
+                    // we need the text view lines, specifically, so we ask for those
+                    // that are intersecting the span that defines our selection
+                    var lines = this.TextView.TextViewLines.GetTextViewLinesIntersectingSpan(span);
+
+                    // we are going to replace the line break, so we can include
+                    // that/those particular character(s) in our array
+                    var arLines = lines.Select(line =>
+                               new SnapshotSpan(line.Start, line.EndIncludingLineBreak));
+
+                    // we trim to get rid of spaces, tabs, etc., and replace them
+                    var newLine = string.Join(" ", arLines.Select(x => x.GetText().Trim()));
+
+                    // we are genuinely only interested in the first and last lines,
+                    // as their start and end might differ from the extent of the
+                    // selection that is defined. But to avoid iterating, we can
+                    // store them in a variable here.
+                    var firstLine = lines.First();
+                    var lastLine = lines.Last();
+
+                    // next, we need to leave the indent of the first line alone, as
+                    // otherwise we need to be calling some weird functions and creating
+                    // new edits, etc. Easiest way to do this is to simply go from
+                    // the start position and move the position to the right until
+                    // we find a non whitespace character (or reach the end of the line)
+                    int startPosition = firstLine.Start.Position;
+
+                    while (firstLine.End > startPosition &&
+                        IsSpaceCharacter(firstLine.Snapshot[startPosition]))
+                    {
+                        startPosition++;
+                    }
+
+                    // to get the correct new line character(s), we need a snapshot
+                    // line, which is obviously different, so let's get that one
+                    VirtualSnapshotPoint caret = transformer.Selection.InsertionPoint;
+                    ITextSnapshotLine snapshotLine = caret.Position.GetContainingLine();
+
+                    // while this is not the prettiest thing in the world, it's going
+                    // to likely be just as efficient as calling string.Join for
+                    // just two strings
+                    newLine += TextBufferOperationHelpers.GetNewLineCharacterToInsert(snapshotLine, _editorOptions);
+
+                    // in order to preserve the selection, we need to call this method
+                    // with SelectionUpdate.Ignore. This will ensure the following
+                    // selections are left alone. Additionally, each call will create
+                    // a new undo transaction - the user can then undo one by one.
+                    ExecuteAction(Strings.ReplaceText, () =>
+                    {
+                        // while the extent of the selection is also a span, we likely
+                        // moved the starting point, to match the first non-whitespace
+                        // character, so we can just create a new span which will
+                        // be used for replacing
+                        var span = Span.FromBounds(startPosition,
+                        lastLine.EndIncludingLineBreak.Position);
+                        return ReplaceHelper(span, newLine);
+                    }, SelectionUpdate.Ignore, true);
+                });
+            }
         }
     }
 

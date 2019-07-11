@@ -275,6 +275,8 @@ namespace Microsoft.VisualStudio.Text.Editor.Commanding
         /// <summary>⌘L</summary>
         public const string GoToLine = "goToLine:";
 
+        public const string PerformFormatAction = "performFormatAction:";
+
         public const string ToggleOutliningEnabled = "toggleOutliningEnabled:";
 
         public const string ToggleOutliningExpansion = "toggleOutliningExpansion:";
@@ -282,6 +284,7 @@ namespace Microsoft.VisualStudio.Text.Editor.Commanding
         public const string ToggleAllOutlining = "toggleAllOutlining:";
 
         public const string ToggleOutliningDefinitions = "toggleOutliningDefinitions:";
+
 
         #endregion
     }
@@ -301,5 +304,11 @@ namespace Microsoft.VisualStudio.Text.Editor.Commanding
         HideFindInterface,
         ShowReplaceInterface,
         HideReplaceInterface
+    }
+
+    public enum FormatAction
+    {
+        SortSelectedLines = 1,
+        JoinSelectedLines
     }
 }

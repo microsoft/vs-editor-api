@@ -33,5 +33,15 @@ namespace Microsoft.VisualStudio.Text.Operations
         /// Resets the text view zoom level to 100%.
         /// </summary>
         void ZoomReset();
+
+        /// <summary>
+        /// Sorts the selected lines in alphabetical order.
+        /// </summary>
+        void SortSelectedLines();
+
+        /// <summary>
+        /// Joins the selected lines into a single one.
+        /// </summary>
+        void JoinSelectedLines();
     }
 }
