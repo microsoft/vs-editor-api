@@ -30,6 +30,7 @@ using System.Security.Permissions;
 [assembly: InternalsVisibleTo("Microsoft.VisualStudio.Text.Editor.PrintingService.Implementation, PublicKey=" + ThisAssembly.PublicKey)]
 [assembly: InternalsVisibleTo("EditorTestApp, PublicKey=" + ThisAssembly.PublicKey)]
 [assembly: InternalsVisibleTo("Microsoft.VisualStudio.UI.Text.Cocoa.View.Implementation, PublicKey=" + ThisAssembly.PublicKey)]
+[assembly: InternalsVisibleTo("Microsoft.VisualStudio.Platform.VSEditor, PublicKey=" + ThisAssembly.PublicKey)]
 
 //
 // General Information about an assembly is controlled through the following

@@ -1,0 +1,17 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AssemblyName>Microsoft.VisualStudio.Editor.Imaging</AssemblyName>
+    <RootNamespace>Microsoft.VisualStudio.Imaging</RootNamespace>
+    <PushToPublicFeed>true</PushToPublicFeed>
+    <NoWarn>649;436;$(NoWarn)</NoWarn>
+    <AssemblyAttributeClsCompliant>true</AssemblyAttributeClsCompliant>
+    <LocalizationEnabled>false</LocalizationEnabled>
+    <InsertNuget>true</InsertNuget>
+    <IncludeInOptProf>true</IncludeInOptProf>
+    <TargetFramework>$(TargetFramework)</TargetFramework>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\Core\Def\CoreUtility.csproj" />
+  </ItemGroup>
+</Project>

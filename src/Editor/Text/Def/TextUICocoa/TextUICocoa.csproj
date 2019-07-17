@@ -4,8 +4,12 @@
     <TargetFramework>$(TargetFramework)</TargetFramework>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="PresentationFramework" />
+  </ItemGroup>
+  <ItemGroup>
     <ProjectReference Include="..\TextData\TextData.csproj" />
     <ProjectReference Include="..\TextUI\TextUI.csproj" />
+    <ProjectReference Include="..\TextUIWpf\TextUIWpf.csproj" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.VisualStudio.Composition" />

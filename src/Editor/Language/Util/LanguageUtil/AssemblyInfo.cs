@@ -11,6 +11,7 @@ using System.Runtime.ConstrainedExecution;
 [assembly: InternalsVisibleTo("Microsoft.VisualStudio.Language.Intellisense.UnitTestHelper, PublicKey=" + ThisAssembly.PublicKey)]
 [assembly: InternalsVisibleTo("Microsoft.VisualStudio.Language.Intellisense.UnitTests, PublicKey=" + ThisAssembly.PublicKey)]
 [assembly: InternalsVisibleTo("Microsoft.VisualStudio.UI.Text.Cocoa.View.Implementation, PublicKey=" + ThisAssembly.PublicKey)]
+[assembly: InternalsVisibleTo("Microsoft.VisualStudio.Platform.VSEditor, PublicKey=" + ThisAssembly.PublicKey)]
 
 // General Information about an assembly is controlled through the following
 // set of attributes. Change these attribute values to modify the information
