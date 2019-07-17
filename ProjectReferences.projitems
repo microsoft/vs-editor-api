@@ -33,6 +33,10 @@
       <SolutionFolder>Shared</SolutionFolder>
       <Private>$(ReferencesVSEditorCopyToOutput)</Private>
     </ProjectReference>
+    <ProjectReference Include="$(MSBuildThisFileDirectory)src\Editor\Imaging\Def\Imaging.csproj">
+      <SolutionFolder>Shared</SolutionFolder>
+      <Private>$(ReferencesVSEditorCopyToOutput)</Private>
+    </ProjectReference>
     <ProjectReference Include="$(MSBuildThisFileDirectory)src\Editor\Text\Def\TextData\TextData.csproj">
       <SolutionFolder>Shared</SolutionFolder>
       <Private>$(ReferencesVSEditorCopyToOutput)</Private>
