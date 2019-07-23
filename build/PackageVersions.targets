@@ -32,10 +32,10 @@
     <PackageReference Update="Serilog.Sinks.Console" Version="3.1.1"/>
 
     <!-- These specifically are needed by Roslyn but are not pulled in implicitly via NuGet -->
-    <PackageReference Update="ICSharpCode.Decompiler" Version="4.0.0.4285-beta1"/>
-    <PackageReference Update="Microsoft.ServiceHub.Client" Version="1.2.64"/>
+    <PackageReference Update="ICSharpCode.Decompiler" Version="4.0.0.4521"/>
+    <PackageReference Update="Microsoft.ServiceHub.Client" Version="1.3.23"/>
     <PackageReference Update="Mono.Cecil" Version="0.10.0"/>
     <PackageReference Update="stdole" Version="7.0.3301"/>
-    <PackageReference Update="SQLitePCLRaw.bundle_green" Version="1.1.11"/>
+    <PackageReference Update="SQLitePCLRaw.bundle_green" Version="1.1.2"/>
   </ItemGroup>
 </Project>

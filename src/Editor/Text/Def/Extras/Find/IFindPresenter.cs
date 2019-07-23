@@ -12,7 +12,7 @@ namespace Microsoft.VisualStudio.Text.Find
     /// </summary>
     public interface IFindPresenter
     {
-        void ShowFind(bool usePreviousTerm = false);
+        void ShowFind(bool usePreviousTerm = false, bool takeFocus = true);
         void ShowReplace();
         void Hide();
         bool IsVisible { get; }

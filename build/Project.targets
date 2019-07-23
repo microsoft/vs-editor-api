@@ -1,6 +1,11 @@
 <Project>
   <Import Project="PackageVersions.targets"/>
 
+  <PropertyGroup>
+    <IsPackable Condition="'$(PushToPublicFeed)' != 'true'">false</IsPackable>
+    <IncludeSymbols>true</IncludeSymbols>
+  </PropertyGroup>
+
   <Target Name="DumpPaths">
     <Message Text="RepoRootPath: $(RepoRootPath)"/>
     <Message Text="RepoObjPath: $(RepoObjPath)"/>
