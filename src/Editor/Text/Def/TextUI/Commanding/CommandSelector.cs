@@ -285,6 +285,11 @@ namespace Microsoft.VisualStudio.Text.Editor.Commanding
 
         public const string ToggleOutliningDefinitions = "toggleOutliningDefinitions:";
 
+        /// <summary>⇧⌥⇡</summary>
+        public const string ExpandSelection = "expandSelection:";
+
+        /// <summary>⇧⌥⇣</summary>
+        public const string ContractSelection = "contractSelection:";
 
         #endregion
     }
