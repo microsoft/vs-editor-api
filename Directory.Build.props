@@ -13,7 +13,6 @@
     <RepoBinPath>$(RepoRootPath)bin\</RepoBinPath>
     <RepoObjPath>$(RepoRootPath)obj\</RepoObjPath>
     <RepoSrcPath>$(RepoRootPath)src\</RepoSrcPath>
-    <RepoSrcEditorPath>$(RepoSrcPath)Editor\</RepoSrcEditorPath>
     <RepoLocalNuGetFeedPath>$(RepoRootPath)build\nuget-feed\</RepoLocalNuGetFeedPath>
 
     <RepoSrcRelativeProjectDirectory Condition="$(MSBuildProjectDirectory.Length) >= $(RepoSrcPath.Length)">$(MSBuildProjectDirectory.Substring($(RepoSrcPath.Length)))\</RepoSrcRelativeProjectDirectory>

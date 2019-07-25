@@ -10,13 +10,7 @@
     <HaveMono Condition="'$(HaveMono)' == '' And '$(MonoInstallRootDirectory)' != '' And Exists('$(MonoInstallRootDirectory)VERSION')">true</HaveMono>
     <HaveMono Condition="'$(HaveMono)' == ''">false</HaveMono>
 
-    <!-- Mono msbuild workaround: MSBuildExtensionsPath seems to be '$(MonoInstallRootDirectory)lib/mono/xbuild' by default, which is incorrect... -->
-    <MSBuildExtensionsPath Condition="$(HaveMono)">$([MSBuild]::NormalizeDirectory('$(MonoInstallRootDirectory)..\..\External\xbuild'))</MSBuildExtensionsPath>
-
-    <XamarinMacCommonProps>$(MSBuildExtensionsPath)Xamarin\Mac\Xamarin.Mac.Common.props</XamarinMacCommonProps>
-    <XamarinMacCommonTargets>$(MSBuildExtensionsPath)Xamarin\Mac\Xamarin.Mac.Common.targets</XamarinMacCommonTargets>
-
-    <HaveXamarinMac Condition="'$(HaveXamarinMac)' == '' And $(IsMac) And Exists('$(XamarinMacCommonProps)') And Exists('$(XamarinMacCommonTargets)')">true</HaveXamarinMac>
+    <HaveXamarinMac Condition="'$(HaveXamarinMac)' == '' And $(IsMac) And Exists('/Library/Frameworks/Xamarin.Mac.framework/Versions/Current/Version')">true</HaveXamarinMac>
     <HaveXamarinMac Condition="'$(HaveXamarinMac)' == ''">false</HaveXamarinMac>
   </PropertyGroup>
 
