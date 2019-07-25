@@ -641,10 +641,18 @@ namespace Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion.Implement
                 StringComparison.OrdinalIgnoreCase);
 
         public bool CanToggleFilter(string accessKey)
-            => _computation
-                .RecentModel
+        {
+            var recentModel = _computation?.RecentModel;
+
+            if (recentModel == null ||
+                recentModel.Uninitialized ||
+                recentModel.Filters.IsDefaultOrEmpty)
+                return false;
+
+            return recentModel
                 .Filters
                 .Any(filter => CheckFilterAccessKey(filter, accessKey));
+        }
 
         public void ToggleFilter(string accessKey)
         {
