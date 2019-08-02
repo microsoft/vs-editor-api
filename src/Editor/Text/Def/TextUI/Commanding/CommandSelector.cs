@@ -195,7 +195,7 @@ namespace Microsoft.VisualStudio.Text.Editor.Commanding
         /// <summary>⇧fn⇡, ⇧⇞</summary>
         public const string PageUpAndModifySelection = "pageUpAndModifySelection:";
 
-        /// <summary>⌘F, ⌥⌘F, ⌘G, ⌥⌘G</summary>
+        /// <summary>⌘F, ⌥⌘F, ⌘G, ⌥⌘G, ⌘E</summary>
         public const string PerformTextFinderAction = "performTextFinderAction:";
 
         /// <summary>fn⇡, ⇞</summary>
