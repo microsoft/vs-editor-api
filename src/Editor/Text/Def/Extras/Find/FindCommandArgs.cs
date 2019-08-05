@@ -19,9 +19,23 @@ namespace Microsoft.VisualStudio.Text.Editor.Commanding.Commands
         }
     }
 
+    public sealed class FindNextLikeSelectionCommandArgs : EditorCommandArgs
+    {
+        public FindNextLikeSelectionCommandArgs(ITextView textView, ITextBuffer subjectBuffer) : base(textView, subjectBuffer)
+        {
+        }
+    }
+
     public sealed class FindPreviousCommandArgs : EditorCommandArgs
     {
         public FindPreviousCommandArgs(ITextView textView, ITextBuffer subjectBuffer) : base(textView, subjectBuffer)
+        {
+        }
+    }
+
+    public sealed class FindPreviousLikeSelectionCommandArgs : EditorCommandArgs
+    {
+        public FindPreviousLikeSelectionCommandArgs(ITextView textView, ITextBuffer subjectBuffer) : base(textView, subjectBuffer)
         {
         }
     }
@@ -78,6 +92,13 @@ namespace Microsoft.VisualStudio.Text.Editor.Commanding.Commands
     public sealed class HideReplaceCommandArgs : EditorCommandArgs
     {
         public HideReplaceCommandArgs(ITextView textView, ITextBuffer subjectBuffer) : base(textView, subjectBuffer)
+        {
+        }
+    }
+
+    public sealed class SetSearchStringFromSelectionCommandArgs : EditorCommandArgs
+    {
+        public SetSearchStringFromSelectionCommandArgs(ITextView textView, ITextBuffer subjectBuffer) : base(textView, subjectBuffer)
         {
         }
     }

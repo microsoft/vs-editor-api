@@ -25,8 +25,14 @@
 
   <PropertyGroup>
     <InMonoDevelopTree Condition="Exists('$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildProjectDirectory), MonoDevelop.props))')">true</InMonoDevelopTree>
+    <InMdAddinsTree Condition="Exists('$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildProjectDirectory), md-addins.sln))')">true</InMdAddinsTree>
+    <MonoDevelopDirectory Condition="$(InMonoDevelopTree) == 'true'">$(MSBuildThisFileDirectory)..\..\..\</MonoDevelopDirectory>
+    <MonoDevelopDirectory Condition="$(InMdAddinsTree) == 'true'">$(MSBuildThisFileDirectory)..\..\..\monodevelop\</MonoDevelopDirectory>
     <UsePlatformEditorBinaries Condition="$(OS) == 'Windows_NT' AND $(InMonoDevelopTree) == 'true'">true</UsePlatformEditorBinaries>
   </PropertyGroup>
+
+  <!-- Override Roslyn versions if in IDE build -->
+  <Import Condition="'$(MonoDevelopDirectory)' != ''" Project="$(MonoDevelopDirectory)main\msbuild\RoslynVersion.props"/>
 
   <Import Project="$(RepoRootPath)build\Environment.props"/>
   <Import Project="$(RepoRootPath)build\CI.props"/>
