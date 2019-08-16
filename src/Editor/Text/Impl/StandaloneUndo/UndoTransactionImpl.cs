@@ -135,6 +135,7 @@ namespace Microsoft.VisualStudio.Text.Operations.Standalone
             
             // now we need to pump these primitives into the parent, if the parent exists.
             FlattenPrimitivesToParent();
+            Dispose();
         }
 
         /// <summary>
@@ -184,6 +185,7 @@ namespace Microsoft.VisualStudio.Text.Operations.Standalone
 
             this.primitives.Clear();
             this.state = UndoTransactionState.Canceled;
+            Dispose();
         }
 
         /// <summary>

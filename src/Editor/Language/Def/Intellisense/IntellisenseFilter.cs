@@ -2,6 +2,7 @@
 // All rights reserved
 
 using System;
+using Microsoft.VisualStudio.Core.Imaging;
 using Microsoft.VisualStudio.Imaging.Interop;
 
 namespace Microsoft.VisualStudio.Language.Intellisense
@@ -12,7 +13,7 @@ namespace Microsoft.VisualStudio.Language.Intellisense
         /// <summary>
         /// Create an instance of an IntellisenseFilter with the specified attributes.
         /// </summary>
-        public IntellisenseFilter(ImageMoniker moniker, string toolTip, string accessKey, string automationText,
+        public IntellisenseFilter(ImageId moniker, string toolTip, string accessKey, string automationText,
                                   bool initialIsChecked = false, bool initialIsEnabled = true)
         {
             if (string.IsNullOrEmpty(accessKey))
@@ -31,7 +32,7 @@ namespace Microsoft.VisualStudio.Language.Intellisense
         /// <summary>
         /// The icon shown on the filter's button.
         /// </summary>
-        public ImageMoniker Moniker { get; }
+        public ImageId Moniker { get; }
 
         /// <summary>
         /// The tooltip shown when the mouse hovers over the button.

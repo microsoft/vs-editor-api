@@ -1,6 +1,7 @@
 ﻿// Copyright (c) Microsoft Corporation
 // All rights reserved
 
+using Microsoft.VisualStudio.Core.Imaging;
 using Microsoft.VisualStudio.Imaging.Interop;
 using System;
 using System.Collections.Generic;
@@ -10,7 +11,7 @@ using System.Windows.Media;
 namespace Microsoft.VisualStudio.Language.Intellisense
 {
     /// <summary>
-    /// Completion3 uses <see cref="ImageMoniker"/>s instead of <see cref="ImageSource"/>s to reference icons.
+    /// Completion3 uses <see cref="ImageId"/>s instead of <see cref="ImageSource"/>s to reference icons.
     /// </summary>
     [CLSCompliant(false)]
     public class Completion3 : Completion2
@@ -35,7 +36,7 @@ namespace Microsoft.VisualStudio.Language.Intellisense
         public Completion3(string displayText,
                           string insertionText,
                           string description,
-                          ImageMoniker iconMoniker,
+                          ImageId iconMoniker,
                           string iconAutomationText)
             : this(displayText, insertionText, description,
                    iconMoniker, iconAutomationText: iconAutomationText, attributeIcons: null)
@@ -54,7 +55,7 @@ namespace Microsoft.VisualStudio.Language.Intellisense
         public Completion3(string displayText,
                           string insertionText,
                           string description,
-                          ImageMoniker iconMoniker,
+                          ImageId iconMoniker,
                           string iconAutomationText,
                           IEnumerable<CompletionIcon2> attributeIcons)
             : base(displayText, insertionText, description,
@@ -67,7 +68,7 @@ namespace Microsoft.VisualStudio.Language.Intellisense
         /// <summary>
         /// Gets or sets the moniker used to define a multi-resolution image.
         /// </summary>
-        public virtual ImageMoniker IconMoniker
+        public virtual ImageId IconMoniker
         {
             get;
             private set;

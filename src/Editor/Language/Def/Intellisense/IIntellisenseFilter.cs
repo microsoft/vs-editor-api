@@ -2,6 +2,7 @@
 // All rights reserved
 
 using System;
+using Microsoft.VisualStudio.Core.Imaging;
 using Microsoft.VisualStudio.Imaging.Interop;
 
 namespace Microsoft.VisualStudio.Language.Intellisense
@@ -15,7 +16,7 @@ namespace Microsoft.VisualStudio.Language.Intellisense
         /// <summary>
         /// The icon shown on the filter's button.
         /// </summary>
-        ImageMoniker Moniker { get; }
+        ImageId Moniker { get; }
 
         /// <summary>
         /// The tooltip shown when the mouse hovers over the button.

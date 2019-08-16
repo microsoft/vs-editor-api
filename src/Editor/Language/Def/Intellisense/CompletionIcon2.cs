@@ -1,6 +1,7 @@
 ﻿// Copyright (c) Microsoft Corporation
 // All rights reserved.
 
+using Microsoft.VisualStudio.Core.Imaging;
 using Microsoft.VisualStudio.Imaging.Interop;
 using System;
 using System.Diagnostics;
@@ -9,7 +10,7 @@ using System.Windows.Media;
 namespace Microsoft.VisualStudio.Language.Intellisense
 {
     /// <summary>
-    /// CompletionIcon2 uses <see cref="ImageMoniker"/>s instead of <see cref="ImageSource"/>s to reference icons.
+    /// CompletionIcon2 uses <see cref="ImageId"/>s instead of <see cref="ImageSource"/>s to reference icons.
     /// </summary>
     [CLSCompliant(false)]
 #pragma warning disable CA1036 // Override methods on comparable types
@@ -31,7 +32,7 @@ namespace Microsoft.VisualStudio.Language.Intellisense
         /// <param name="automationName">The automation name for the icon.</param>
         /// <param name="automationId">The automation id for the icon.</param>
         /// <param name="position">The display position of the icon. If no value is provided this will be zero.</param>
-        public CompletionIcon2(ImageMoniker imageMoniker, string automationName, string automationId, int position=0) : base()
+        public CompletionIcon2(ImageId imageMoniker, string automationName, string automationId, int position=0) : base()
         {
             this.IconMoniker = imageMoniker;
             this.AutomationName = automationName;
@@ -42,7 +43,7 @@ namespace Microsoft.VisualStudio.Language.Intellisense
         /// <summary>
         /// Gets or sets the moniker used to define a multi-resolution image.
         /// </summary>
-        public virtual ImageMoniker IconMoniker
+        public virtual ImageId IconMoniker
         {
             get;
             private set;

@@ -4,6 +4,7 @@
 namespace Microsoft.VisualStudio.Language.Intellisense
 {
     using System;
+    using Microsoft.VisualStudio.Core.Imaging;
     using Microsoft.VisualStudio.Imaging.Interop;
 
     /// <summary>
@@ -11,7 +12,7 @@ namespace Microsoft.VisualStudio.Language.Intellisense
     /// </summary>
     /// <remarks> 
     /// <see cref="SuggestedActionCategoryToIconDefinition"/>s are associations between
-    /// <see cref="SuggestedActionCategoryDefinition"/>s and <see cref="ImageMoniker"/>s
+    /// <see cref="SuggestedActionCategoryDefinition"/>s and <see cref="ImageId"/>s
     /// that define an icon for a particular <see cref="ISuggestedActionCategory"/>. Icons
     /// are inheritable and icons defined for base categories will be displayed for their
     /// children as well, unless the child defines its own icon. Icon definitions are joined
@@ -31,7 +32,7 @@ namespace Microsoft.VisualStudio.Language.Intellisense
     public sealed class SuggestedActionCategoryToIconDefinition
     {
         /// <summary>
-        /// Creates a new instance with the specified <see cref="ImageMoniker"/>.
+        /// Creates a new instance with the specified <see cref="ImageId"/>.
         /// </summary>
         /// <remarks>
         /// When a LightBulb session is created, the highest precedence category
@@ -39,8 +40,8 @@ namespace Microsoft.VisualStudio.Language.Intellisense
         /// with applicable <see cref="ISuggestedAction2"/>s will have its icon displayed in
         /// the LightBulb control.
         /// </remarks>
-        /// <param name="imageMoniker">The <see cref="ImageMoniker"/> of the icon to display.</param>
-        public SuggestedActionCategoryToIconDefinition(ImageMoniker imageMoniker)
+        /// <param name="imageMoniker">The <see cref="ImageId"/> of the icon to display.</param>
+        public SuggestedActionCategoryToIconDefinition(ImageId imageMoniker)
         {
             this.ImageMoniker = imageMoniker;
         }
@@ -48,6 +49,6 @@ namespace Microsoft.VisualStudio.Language.Intellisense
         /// <summary>
         /// Gets the <see cref="ImageMoniker"/> to associate with the named <see cref="ISuggestedActionCategory"/>.
         /// </summary>
-        public ImageMoniker ImageMoniker { get; set; }
+        public ImageId ImageMoniker { get; set; }
     }
 }

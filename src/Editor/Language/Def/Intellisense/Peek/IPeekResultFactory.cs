@@ -4,6 +4,7 @@
 using System;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Imaging.Interop;
+using Microsoft.VisualStudio.Core.Imaging;
 
 namespace Microsoft.VisualStudio.Language.Intellisense
 {
@@ -65,7 +66,7 @@ namespace Microsoft.VisualStudio.Language.Intellisense
         /// <param name="idEndLine">Line number of the result's identifying span's end position.</param>
         /// <param name="idEndIndex">Character index of the result's identifying span's end position.</param>
         /// <returns>A valid instance of the <see cref="IDocumentPeekResult"/>.</returns>
-        IDocumentPeekResult Create(IPeekResultDisplayInfo2 displayInfo, ImageMoniker image, string filePath,
+        IDocumentPeekResult Create(IPeekResultDisplayInfo2 displayInfo, ImageId image, string filePath,
                                    int startLine, int startIndex, int endLine, int endIndex,
                                    int idStartLine, int idStartIndex, int idEndLine, int idEndIndex);
 
@@ -85,7 +86,7 @@ namespace Microsoft.VisualStudio.Language.Intellisense
         /// <param name="idEndIndex">Character index of the result's identifying span's end position.</param>
         /// <param name="isReadOnly">Defines whether this result is read-only.</param>
         /// <returns>A valid instance of the <see cref="IDocumentPeekResult"/>.</returns>
-        IDocumentPeekResult Create(IPeekResultDisplayInfo2 displayInfo, ImageMoniker image, string filePath,
+        IDocumentPeekResult Create(IPeekResultDisplayInfo2 displayInfo, ImageId image, string filePath,
                                    int startLine, int startIndex, int endLine, int endIndex,
                                    int idStartLine, int idStartIndex, int idEndLine, int idEndIndex,
                                    bool isReadOnly);
@@ -107,7 +108,7 @@ namespace Microsoft.VisualStudio.Language.Intellisense
         /// <param name="isReadOnly">Defines whether this result is read-only.</param>
         /// <param name="editorDestination">A Guid representing the editor the <see cref="IDocumentPeekResult"/> should navigate to.</param>
         /// <returns>A valid instance of the <see cref="IDocumentPeekResult"/>.</returns>
-        IDocumentPeekResult Create(IPeekResultDisplayInfo2 displayInfo, ImageMoniker image, string filePath,
+        IDocumentPeekResult Create(IPeekResultDisplayInfo2 displayInfo, ImageId image, string filePath,
                                    int startLine, int startIndex, int endLine, int endIndex,
                                    int idStartLine, int idStartIndex, int idEndLine, int idEndIndex,
                                    bool isReadOnly, Guid editorDestination);
@@ -130,7 +131,7 @@ namespace Microsoft.VisualStudio.Language.Intellisense
         /// <param name="editorDestination">A Guid representing the editor the <see cref="IDocumentPeekResult"/> should navigate to.</param>
         /// <param name="postNavigationCallback">Pass in a callback function to the <see cref="IPeekResult"/>.<seealso cref="IPeekResult.PostNavigationCallback"/></param>
         /// <returns>A valid instance of the <see cref="IDocumentPeekResult"/>.</returns>
-        IDocumentPeekResult Create(IPeekResultDisplayInfo2 displayInfo, ImageMoniker image, string filePath,
+        IDocumentPeekResult Create(IPeekResultDisplayInfo2 displayInfo, ImageId image, string filePath,
                                    int startLine, int startIndex, int endLine, int endIndex,
                                    int idStartLine, int idStartIndex, int idEndLine, int idEndIndex,
                                    bool isReadOnly, Guid editorDestination, Action<IPeekResult, object, object> postNavigationCallback);

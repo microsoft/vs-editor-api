@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
+using Microsoft.VisualStudio.Core.Imaging;
 using Microsoft.VisualStudio.Imaging.Interop;
 using Microsoft.VisualStudio.Utilities;
 
@@ -49,7 +50,7 @@ namespace Microsoft.VisualStudio.Language.Intellisense
         /// Gets an optional icon representing the suggested action or null if this suggested
         /// action doesn't have an icon.
         /// </summary>
-        ImageMoniker IconMoniker { get; }
+        ImageId IconMoniker { get; }
 
         /// <summary>
         /// Gets the text to be used as the automation name for the icon when it's displayed.

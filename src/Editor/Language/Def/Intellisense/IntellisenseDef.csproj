@@ -16,7 +16,6 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.VisualStudio.ImageCatalog" />
-    <PackageReference Include="Microsoft.VisualStudio.Imaging.Interop.14.0.DesignTime" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\Core\Def\CoreUtility.csproj" />

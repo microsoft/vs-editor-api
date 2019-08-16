@@ -1,6 +1,7 @@
 ﻿// Copyright (c) Microsoft Corporation
 // All rights reserved
 
+using Microsoft.VisualStudio.Core.Imaging;
 using Microsoft.VisualStudio.Imaging.Interop;
 using System;
 using System.Collections.Generic;
@@ -34,7 +35,7 @@ namespace Microsoft.VisualStudio.Language.Intellisense
         public Completion4(string displayText,
                            string insertionText,
                            string description,
-                           ImageMoniker iconMoniker,
+                           ImageId iconMoniker,
                            string iconAutomationText = null,
                            IEnumerable<CompletionIcon2> attributeIcons = null,
                            string suffix = null)

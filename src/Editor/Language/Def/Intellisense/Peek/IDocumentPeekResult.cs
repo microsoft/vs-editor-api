@@ -1,6 +1,7 @@
 ﻿// Copyright (c) Microsoft Corporation
 // All rights reserved
 
+using Microsoft.VisualStudio.Core.Imaging;
 using Microsoft.VisualStudio.Imaging.Interop;
 using Microsoft.VisualStudio.Text;
 using System;
@@ -50,7 +51,7 @@ namespace Microsoft.VisualStudio.Language.Intellisense
         /// Gets an <see cref="ImageMoniker"/> representing an image equivalent for the 
         /// <see cref="IDocumentPeekResult"/>.
         /// </summary>
-        ImageMoniker Image { get; }
+        ImageId Image { get; }
 
         /// <summary>
         /// Gets the Guid for the desired editor to open when navigating.
