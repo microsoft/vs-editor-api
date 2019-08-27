@@ -69,22 +69,38 @@ namespace Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion.Implement
                 // Perform pattern matching
                 .Select(completionItem => (completionItem, patternMatcher.TryMatch(completionItem.FilterText)))
                 // Pick only items that were matched, unless length of filter text is 1
-                .Where(n => (filterText.Length == 1 || n.Item2.HasValue));
+                .Where(n => (filterText.Length == 1 || patternMatcher.HasInvalidPattern || n.Item2.HasValue));
 
             // See which filters might be enabled based on the typed code
             var textFilteredFilters = matches.SelectMany(n => n.completionItem.Filters).Distinct();
 
-            // When no items are available for a given filter, it becomes unavailable
-            var updatedFilters = ImmutableArray.CreateRange(data.SelectedFilters.Select(n => n.WithAvailability(textFilteredFilters.Contains(n.Filter))));
+            // When no items are available for a given filter, it becomes unavailable. Expanders always appear available.
+            var updatedFilters = ImmutableArray.CreateRange(data.SelectedFilters.Select(n => n.WithAvailability(
+                n.Filter is CompletionExpander ? true : textFilteredFilters.Contains(n.Filter))));
 
             // Filter by user-selected filters. The value on availableFiltersWithSelectionState conveys whether the filter is selected.
             var filterFilteredList = matches;
-            if (data.SelectedFilters.Any(n => n.IsSelected))
+            if (data.SelectedFilters.Any(n => (n.Filter is CompletionExpander)))
             {
-                filterFilteredList = matches.Where(n => ShouldBeInCompletionList(n.completionItem, data.SelectedFilters));
+                filterFilteredList = matches.Where(n => ShouldBeInExpandedCompletionList(n.completionItem, data.SelectedFilters));
+            }
+            if (data.SelectedFilters.Any(n => !(n.Filter is CompletionExpander) && n.IsSelected))
+            {
+                filterFilteredList = filterFilteredList.Where(n => ShouldBeInCompletionList(n.completionItem, data.SelectedFilters));
             }
 
-            var bestMatch = filterFilteredList.OrderByDescending(n => n.Item2.HasValue).ThenBy(n => n.Item2).FirstOrDefault();
+            (CompletionItem completionItem, PatternMatch? patternMatch) bestMatch;
+            if (patternMatcher.HasInvalidPattern)
+            {
+                // In a rare edge case where the pattern is invalid (e.g. it is just punctuation), see if any items match directly what user typed.
+                bestMatch = filterFilteredList.FirstOrDefault(n => string.Equals(n.completionItem.FilterText, filterText, StringComparison.OrdinalIgnoreCase));
+            }
+            else
+            {
+                // 99.% cases fall here
+                bestMatch = filterFilteredList.OrderByDescending(n => n.Item2.HasValue).ThenBy(n => n.Item2).FirstOrDefault();
+            }
+
             var listWithHighlights = filterFilteredList.Select(n =>
             {
                 ImmutableArray<Span> safeMatchedSpans = ImmutableArray<Span>.Empty;
@@ -116,6 +132,7 @@ namespace Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion.Implement
             }).ToImmutableArray();
 
             int selectedItemIndex = 0;
+            var selectionHint = UpdateSelectionHint.NoChange;
             if (data.DisplaySuggestionItem)
             {
                 selectedItemIndex = -1;
@@ -127,12 +144,13 @@ namespace Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion.Implement
                     if (listWithHighlights[i].CompletionItem == bestMatch.completionItem)
                     {
                         selectedItemIndex = i;
+                        selectionHint = UpdateSelectionHint.Selected;
                         break;
                     }
                 }
             }
 
-            return Task.FromResult(new FilteredCompletionModel(listWithHighlights, selectedItemIndex, updatedFilters));
+            return Task.FromResult(new FilteredCompletionModel(listWithHighlights, selectedItemIndex, updatedFilters, selectionHint, centerSelection: true, uniqueItem: null));
         }
 
         Task<ImmutableArray<CompletionItem>> IAsyncCompletionItemManager.SortCompletionListAsync
@@ -147,7 +165,8 @@ namespace Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion.Implement
             CompletionItem item,
             ImmutableArray<CompletionFilterWithState> filtersWithState)
         {
-            foreach (var filterWithState in filtersWithState.Where(n => n.IsSelected))
+            // Filter out items which don't have a filter which matches selected Filter Button
+            foreach (var filterWithState in filtersWithState.Where(n => !(n.Filter is CompletionExpander) && n.IsSelected))
             {
                 if (item.Filters.Any(n => n == filterWithState.Filter))
                 {
@@ -155,6 +174,21 @@ namespace Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion.Implement
                 }
             }
             return false;
+        }
+
+        private static bool ShouldBeInExpandedCompletionList(
+            CompletionItem item,
+            ImmutableArray<CompletionFilterWithState> filtersWithState)
+        {
+            // Remove items which have a filter which matches deselected Expander Button
+            foreach (var filterWithState in filtersWithState.Where(n => n.Filter is CompletionExpander && !(n.IsSelected)))
+            {
+                if (item.Filters.Any(n => n is CompletionExpander && n == filterWithState.Filter))
+                {
+                    return false;
+                }
+            }
+            return true;
         }
 
         #endregion

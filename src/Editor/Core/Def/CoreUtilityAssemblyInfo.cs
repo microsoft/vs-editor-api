@@ -4,8 +4,13 @@
 //
 using System.Reflection;
 using System.Runtime.ConstrainedExecution;
+using System.Runtime.CompilerServices;
 using System.Runtime.Versioning;
 using System.Security.Permissions;
+
+[assembly: InternalsVisibleTo("Microsoft.VisualStudio.Language.Implementation, PublicKey=" + ThisAssembly.PublicKey)]
+[assembly: InternalsVisibleTo("Microsoft.VisualStudio.Platform.VSEditor, PublicKey=" + ThisAssembly.PublicKey)]
+[assembly: InternalsVisibleTo("Microsoft.VisualStudio.Text.Data.Utilities, PublicKey=" + ThisAssembly.PublicKey)]
 
 //
 // General Information about an assembly is controlled through the following

@@ -60,9 +60,9 @@ namespace Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion
         /// Must be called on UI thread.
         /// </summary>
         /// <param name="token">Token used to cancel this operation</param>
-        /// <returns>Whether the unique item was committed.</returns>
+        /// <returns><c>true</c> if the unique item was committed</returns>
         bool CommitIfUnique(CancellationToken token);
-        
+
         /// <summary>
         /// Returns the <see cref="ITextView"/> this session is active on.
         /// </summary>

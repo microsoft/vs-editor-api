@@ -3,7 +3,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using Microsoft.VisualStudio.Text.Utilities;
+using Microsoft.VisualStudio.Utilities;
 using TextSpan = Microsoft.VisualStudio.Text.Span;
 
 namespace Microsoft.VisualStudio.Text.PatternMatching.Implementation

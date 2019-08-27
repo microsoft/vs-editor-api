@@ -1,13 +1,15 @@
 ﻿using System;
 using System.ComponentModel.Composition;
+using System.Globalization;
 using Microsoft.VisualStudio.Commanding;
 using Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion.Data;
 using Microsoft.VisualStudio.Text;
+using Microsoft.VisualStudio.Text.BraceCompletion;
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Text.Editor.Commanding;
 using Microsoft.VisualStudio.Text.Editor.Commanding.Commands;
 using Microsoft.VisualStudio.Text.Operations;
-using Microsoft.VisualStudio.Text.Utilities;
+using Microsoft.VisualStudio.Text.UI.Utilities;
 using Microsoft.VisualStudio.Utilities;
 using CommonImplementation = Microsoft.VisualStudio.Language.Intellisense.Implementation;
 
@@ -33,6 +35,7 @@ namespace Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion.Implement
         IDynamicCommandHandler<EscapeKeyCommandArgs>,
         ICommandHandler<InsertSnippetCommandArgs>,
         ICommandHandler<InvokeCompletionListCommandArgs>,
+        IDynamicCommandHandler<InvokeCompletionListCommandArgs>,
         ICommandHandler<PageDownKeyCommandArgs>,
         ICommandHandler<PageUpKeyCommandArgs>,
         ICommandHandler<PasteCommandArgs>,
@@ -205,6 +208,12 @@ namespace Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion.Implement
                 // Execute other commands in the chain to see the change in the buffer.
                 nextCommandHandler();
 
+                if (args.TextView.TextSnapshot == snapshotBeforeEdit)
+                {
+                    // Buffer has not changed. Don't invoke completion.
+                    return;
+                }
+
                 var session = Broker.GetSession(args.TextView);
                 var location = args.TextView.Caret.Position.BufferPosition;
                 var trigger = new CompletionTrigger(CompletionTriggerReason.Backspace, snapshotBeforeEdit);
@@ -240,6 +249,9 @@ namespace Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion.Implement
 
         CommandState ICommandHandler<InvokeCompletionListCommandArgs>.GetCommandState(InvokeCompletionListCommandArgs args)
             => GetCommandStateIfCompletionIsAvailable(args.SubjectBuffer.ContentType, args.TextView);
+
+        bool IDynamicCommandHandler<InvokeCompletionListCommandArgs>.CanExecuteCommand(InvokeCompletionListCommandArgs args)
+            => CompletionAvailability.IsAvailable(args.SubjectBuffer.ContentType, args.TextView.Roles);
 
         bool ICommandHandler<InvokeCompletionListCommandArgs>.ExecuteCommand(InvokeCompletionListCommandArgs args, CommandExecutionContext executionContext)
         {
@@ -357,6 +369,12 @@ namespace Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion.Implement
                 // Execute other commands in the chain to see the change in the buffer.
                 nextCommandHandler();
 
+                if (args.TextView.TextSnapshot == snapshotBeforeEdit)
+                {
+                    // Buffer has not changed. Don't invoke completion.
+                    return;
+                }
+
                 var session = Broker.GetSession(args.TextView);
                 var location = args.TextView.Caret.Position.BufferPosition;
                 var trigger = new CompletionTrigger(CompletionTriggerReason.Deletion, snapshotBeforeEdit);
@@ -470,6 +488,8 @@ namespace Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion.Implement
                 var session = Broker.GetSession(args.TextView);
                 if (session != null)
                 {
+                    if (DiagnosticLogger.IsLoggingEnabled(args.TextView))
+                        DiagnosticLogger.Add("Return: begin commit");
                     var commitBehavior = session.Commit(typedChar, executionContext.OperationContext.UserCancellationToken);
                     session.Dismiss();
 
@@ -479,23 +499,42 @@ namespace Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion.Implement
                     if ((commitBehavior & CommitBehavior.RaiseFurtherReturnKeyAndTabKeyCommandHandlers) == 0
                         || CompletionUtilities.IsDebuggerTextView(args.TextView)
                         || CompletionUtilities.IsImmediateTextView(args.TextView))
+                    {
+                        if (DiagnosticLogger.IsLoggingEnabled(args.TextView))
+                            DiagnosticLogger.Add("Return: do nothing after commit", commitBehavior);
                         return;
+                    }
                 }
 
                 var snapshotBeforeEdit = args.TextView.TextSnapshot;
+                if (DiagnosticLogger.IsLoggingEnabled(args.TextView))
+                    DiagnosticLogger.Add("Return: next handler");
                 nextCommandHandler();
+
+                if (args.TextView.TextSnapshot == snapshotBeforeEdit)
+                {
+                    // Buffer has not changed. Don't invoke completion.
+                    return;
+                }
 
                 // Buffer has changed. Update it for when we try to trigger new session.
                 var location = args.TextView.Caret.Position.BufferPosition;
 
+                if (DiagnosticLogger.IsLoggingEnabled(args.TextView))
+                    DiagnosticLogger.Add("Return: try make new session");
                 var trigger = new CompletionTrigger(CompletionTriggerReason.Insertion, snapshotBeforeEdit, typedChar);
                 var newSession = Broker.TriggerCompletion(args.TextView, trigger, location, executionContext.OperationContext.UserCancellationToken);
                 if (newSession is IAsyncCompletionSessionOperations sessionInternal)
                 {
+                    if (DiagnosticLogger.IsLoggingEnabled(args.TextView))
+                        DiagnosticLogger.Add("Return: created new session");
                     RealizeVirtualSpaceUpdateApplicableToSpan(sessionInternal, args.TextView);
                 }
                 location = args.TextView.Caret.Position.BufferPosition; // Buffer may have changed. Update the location.
                 newSession?.OpenOrUpdate(trigger, location, executionContext.OperationContext.UserCancellationToken);
+
+                if (DiagnosticLogger.IsLoggingEnabled(args.TextView))
+                    DiagnosticLogger.Add("Return: finish");
             });
         }
 
@@ -514,6 +553,9 @@ namespace Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion.Implement
                 var session = Broker.GetSession(args.TextView);
                 if (session != null)
                 {
+                    if (DiagnosticLogger.IsLoggingEnabled(args.TextView))
+                        DiagnosticLogger.Add("Tab: begin commit");
+
                     var commitBehavior = session.Commit(typedChar, executionContext.OperationContext.UserCancellationToken);
                     session.Dismiss();
 
@@ -523,17 +565,39 @@ namespace Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion.Implement
                     if ((commitBehavior & CommitBehavior.RaiseFurtherReturnKeyAndTabKeyCommandHandlers) == 0
                         || CompletionUtilities.IsDebuggerTextView(args.TextView)
                         || CompletionUtilities.IsImmediateTextView(args.TextView))
+                    {
+                        if (DiagnosticLogger.IsLoggingEnabled(args.TextView))
+                            DiagnosticLogger.Add("Tab: do nothing after commit", commitBehavior);
                         return;
+                    }
                 }
                 var snapshotBeforeEdit = args.TextView.TextSnapshot;
+                if (DiagnosticLogger.IsLoggingEnabled(args.TextView))
+                    DiagnosticLogger.Add("Tab: next handler");
                 nextCommandHandler();
+
+                if (args.TextView.TextSnapshot == snapshotBeforeEdit)
+                {
+                    // Buffer has not changed. Don't invoke completion.
+                    return;
+                }
 
                 // Buffer has changed. Update it for when we try to trigger new session.
                 var location = args.TextView.Caret.Position.BufferPosition;
 
+                if (DiagnosticLogger.IsLoggingEnabled(args.TextView))
+                    DiagnosticLogger.Add("Tab: try make new session");
                 var trigger = new CompletionTrigger(CompletionTriggerReason.Insertion, snapshotBeforeEdit, typedChar);
                 var newSession = Broker.TriggerCompletion(args.TextView, trigger, location, executionContext.OperationContext.UserCancellationToken);
+                if (newSession is IAsyncCompletionSessionOperations sessionInternal)
+                {
+                    if (DiagnosticLogger.IsLoggingEnabled(args.TextView))
+                        DiagnosticLogger.Add("Tab: created new session");
+                }
                 newSession?.OpenOrUpdate(trigger, location, executionContext.OperationContext.UserCancellationToken);
+
+                if (DiagnosticLogger.IsLoggingEnabled(args.TextView))
+                    DiagnosticLogger.Add("Commit with tab: finish");
             });
         }
 
@@ -547,6 +611,9 @@ namespace Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion.Implement
         {
             RunOnceIfAvailable(args, nextCommandHandler, () =>
             {
+                if (DiagnosticLogger.IsLoggingEnabled(args.TextView))
+                    DiagnosticLogger.Add("TypeChar: ", args.TypedChar);
+
                 var view = args.TextView;
                 var location = view.Caret.Position.BufferPosition;
                 var initialTextSnapshot = args.SubjectBuffer.CurrentSnapshot;
@@ -566,33 +633,68 @@ namespace Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion.Implement
                     ((AsyncCompletionSession)sessionToCommit).IgnoreCaretMovement(ignore: true);
                 }
 
+                // BraceCompletionManager is accessible through well known property name.
+                IBraceCompletionManager braceCompletionManager;
+                args.TextView.Properties.TryGetProperty("BraceCompletionManager", out braceCompletionManager);
+                var braceCompletionSessionsBeforeEdit = braceCompletionManager?.ActiveSessionCount;
                 var snapshotBeforeEdit = args.TextView.TextSnapshot;
+
                 // Execute other commands in the chain to see the change in the buffer. This includes brace completion.
-                // Note regarding undo: This will be 2nd in the undo stack
+
+                if (DiagnosticLogger.IsLoggingEnabled(args.TextView))
+                    DiagnosticLogger.Add("TypeChar invokes nextCommandHandler...");
+
                 nextCommandHandler();
 
-                // if on different version than initialTextSnapshot, we will NOT rollback and we will NOT replay the nextCommandHandler
-                // DP to figure out why ShouldCommit returns false or Commit doesn't do anything
-                var braceCompletionSpecialHandling = args.SubjectBuffer.CurrentSnapshot.Version == initialTextSnapshot.Version;
+                if (DiagnosticLogger.IsLoggingEnabled(args.TextView))
+                    DiagnosticLogger.Add("...TypeChar invoked nextCommandHandler");
+
+                var braceCompletionSessionAfterEdit = braceCompletionManager?.ActiveSessionCount;
+
+                if (args.TextView.TextSnapshot == snapshotBeforeEdit
+                    && braceCompletionSessionAfterEdit == braceCompletionSessionsBeforeEdit)
+                {
+                    // Buffer has not changed, and neither did state of brace completion.
+                    // Don't invoke completion.
+                    return;
+                }
+
+                // If brace completion just closed, we will not undo the last type char
+                var dontUndoBraceCompletion = braceCompletionSessionAfterEdit < braceCompletionSessionsBeforeEdit;
 
                 // Pass location from before calling nextCommandHandler
                 // so that extenders get the same view of the buffer in both ShouldCommit and Commit
                 if (sessionToCommit?.ShouldCommit(args.TypedChar, location, executionContext.OperationContext.UserCancellationToken) == true)
                 {
+                    if (DiagnosticLogger.IsLoggingEnabled(args.TextView))
+                        DiagnosticLogger.Add("TypeChar: ShouldCommit");
+
                     // Buffer has changed, update the snapshot
                     location = view.Caret.Position.BufferPosition;
 
                     // Note regarding undo: this transaction will be 1st in the undo stack
                     using (var undoTransaction = new CaretPreservingEditTransaction("Completion", view, UndoHistoryRegistry, EditorOperationsFactoryService))
                     {
-                        if (!braceCompletionSpecialHandling)
+                        // Undo the typechar, because that's what language service expects
+                        // Note that Roslyn expects brace to be there, because it can't handle undoing brace completion
+                        if (!dontUndoBraceCompletion)
+                        {
+                            if (DiagnosticLogger.IsLoggingEnabled(args.TextView))
+                                DiagnosticLogger.Add("TypeChar: commit. roll back");
                             UndoUtilities.RollbackToBeforeTypeChar(initialTextSnapshot, args.SubjectBuffer);
-                        // Now the buffer doesn't have the commit character nor the matching brace, if any
+                        }
+                        // Now the buffer doesn't have the commit character, but may have a matching brace
 
                         var commitBehavior = sessionToCommit.Commit(args.TypedChar, executionContext.OperationContext.UserCancellationToken);
+                        if (DiagnosticLogger.IsLoggingEnabled(args.TextView))
+                            DiagnosticLogger.Add("TypeChar: commit. behavior: ", commitBehavior);
 
-                        if (!braceCompletionSpecialHandling && (commitBehavior & CommitBehavior.SuppressFurtherTypeCharCommandHandlers) == 0)
+                        if (!dontUndoBraceCompletion && (commitBehavior & CommitBehavior.SuppressFurtherTypeCharCommandHandlers) == 0)
+                        {
+                            if (DiagnosticLogger.IsLoggingEnabled(args.TextView))
+                                DiagnosticLogger.Add("TypeChar: commit. nextCommandHandler");
                             nextCommandHandler(); // Replay the key, so that we get brace completion.
+                        }
 
                         // Complete the transaction before stopping it.
                         undoTransaction.Complete();
@@ -612,10 +714,16 @@ namespace Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion.Implement
                 var session = Broker.GetSession(args.TextView);
                 if (session != null)
                 {
+                    if (DiagnosticLogger.IsLoggingEnabled(args.TextView))
+                        DiagnosticLogger.Add("TypeChar: Update session");
+
                     session.OpenOrUpdate(trigger, location, executionContext.OperationContext.UserCancellationToken);
                 }
                 else
                 {
+                    if (DiagnosticLogger.IsLoggingEnabled(args.TextView))
+                        DiagnosticLogger.Add("TypeChar: Create new session");
+
                     var newSession = Broker.TriggerCompletion(args.TextView, trigger, location, executionContext.OperationContext.UserCancellationToken);
                     newSession?.OpenOrUpdate(trigger, location, executionContext.OperationContext.UserCancellationToken);
                 }

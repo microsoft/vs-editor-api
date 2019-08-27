@@ -18,7 +18,7 @@ using System.Threading;
 using System.Runtime.CompilerServices;
 
 #endif
-namespace Microsoft.VisualStudio.Text.Utilities
+namespace Microsoft.VisualStudio.Utilities
 {
     /// <summary>
     /// Generic implementation of object pooling pattern with predefined pool size limit. The main
@@ -37,7 +37,7 @@ namespace Microsoft.VisualStudio.Text.Utilities
     /// Rationale: 
     ///    If there is no intent for reusing the object, do not use pool - just use "new". 
     /// </summary>
-    internal class ObjectPool<T> where T : class
+    public class ObjectPool<T> where T : class
     {
         [DebuggerDisplay("{Value,nq}")]
         private struct Element
@@ -133,7 +133,7 @@ namespace Microsoft.VisualStudio.Text.Utilities
             // Note that the initial read is optimistically not synchronized. That is intentional. 
             // We will interlock only when we have a candidate. in a worst case we may miss some
             // recently returned objects. Not a big deal.
-            T inst = _firstItem;
+            var inst = _firstItem;
             if (inst == null || inst != Interlocked.CompareExchange(ref _firstItem, null, inst))
             {
                 inst = AllocateSlow();
@@ -155,12 +155,12 @@ namespace Microsoft.VisualStudio.Text.Utilities
         {
             var items = _items;
 
-            for (int i = 0; i < items.Length; i++)
+            for (var i = 0; i < items.Length; i++)
             {
                 // Note that the initial read is optimistically not synchronized. That is intentional. 
                 // We will interlock only when we have a candidate. in a worst case we may miss some
                 // recently returned objects. Not a big deal.
-                T inst = items[i].Value;
+                var inst = items[i].Value;
                 if (inst != null)
                 {
                     if (inst == Interlocked.CompareExchange(ref items[i].Value, null, inst))
@@ -202,7 +202,7 @@ namespace Microsoft.VisualStudio.Text.Utilities
         private void FreeSlow(T obj)
         {
             var items = _items;
-            for (int i = 0; i < items.Length; i++)
+            for (var i = 0; i < items.Length; i++)
             {
                 if (items[i].Value == null)
                 {
@@ -224,9 +224,8 @@ namespace Microsoft.VisualStudio.Text.Utilities
         /// return a larger array to the pool than was originally allocated.
         /// </summary>
         [Conditional("DEBUG")]
-#pragma warning disable CA1822 // Mark members as static
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1822")]
         internal void ForgetTrackedObject(T old, T replacement = null)
-#pragma warning restore CA1822 // Mark members as static
         {
 #if DETECT_LEAKS
             LeakTracker tracker;
@@ -266,7 +265,7 @@ namespace Microsoft.VisualStudio.Text.Utilities
             Debug.Assert(_firstItem != obj, "freeing twice?");
 
             var items = _items;
-            for (int i = 0; i < items.Length; i++)
+            for (var i = 0; i < items.Length; i++)
             {
                 var value = items[i].Value;
                 if (value == null)

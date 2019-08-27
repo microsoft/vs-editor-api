@@ -6,7 +6,6 @@ using System.Collections.Immutable;
 using System.Diagnostics.Contracts;
 using System.Globalization;
 using Microsoft.VisualStudio.Text;
-using Microsoft.VisualStudio.Text.Utilities;
 using Microsoft.VisualStudio.Utilities;
 using TextSpan = Microsoft.VisualStudio.Text.Span;
 
@@ -26,19 +25,20 @@ namespace Microsoft.VisualStudio.Text.PatternMatching.Implementation
         public const int CamelCaseMatchesFromStartBonus = 2;
         public const int CamelCaseMaxWeight = CamelCaseContiguousBonus + CamelCaseMatchesFromStartBonus;
 
-        private readonly object _gate = new object();
+        private readonly object _gate;
 
         private readonly bool _includeMatchedSpans;
         private readonly bool _allowFuzzyMatching;
         private readonly bool _allowSimpleSubstringMatching;
 
-        private readonly Dictionary<string, StringBreaks> _stringToWordSpans = new Dictionary<string, StringBreaks>();
+        private readonly Dictionary<string, StringBreaks> _stringToWordSpans;
         private static readonly Func<string, StringBreaks> _breakIntoWordSpans = StringBreaker.BreakIntoWordParts;
 
         // PERF: Cache the culture's compareInfo to avoid the overhead of asking for them repeatedly in inner loops
         private readonly CompareInfo _compareInfo;
 
-        private bool _invalidPattern;
+        public bool HasInvalidPattern { get; private set; }
+
         /// <summary>
         /// Construct a new PatternMatcher using the specified culture.
         /// </summary>
@@ -49,25 +49,32 @@ namespace Microsoft.VisualStudio.Text.PatternMatching.Implementation
             bool includeMatchedSpans,
             CultureInfo culture,
             bool allowFuzzyMatching = false,
-            bool allowSimpleSubstringMatching = false)
+            bool allowSimpleSubstringMatching = false,
+            PatternMatcher linkedMatcher = null)
         {
             culture = culture ?? CultureInfo.CurrentCulture;
             _compareInfo = culture.CompareInfo;
             _includeMatchedSpans = includeMatchedSpans;
             _allowFuzzyMatching = allowFuzzyMatching;
             _allowSimpleSubstringMatching = allowSimpleSubstringMatching;
+            _stringToWordSpans = linkedMatcher?._stringToWordSpans ?? new Dictionary<string, StringBreaks>();
+            _gate = linkedMatcher?._gate ?? new object();
         }
 
 #pragma warning disable CA1063
         public virtual void Dispose()
 #pragma warning restore CA1063
         {
-            foreach (var kvp in _stringToWordSpans)
+            // Disposing this pattern matcher will dispose any linked matchers as well.
+            lock (_gate)
             {
-                kvp.Value.Dispose();
-            }
+                foreach (var kvp in _stringToWordSpans)
+                {
+                    kvp.Value.Dispose();
+                }
 
-            _stringToWordSpans.Clear();
+                _stringToWordSpans.Clear();
+            }
         }
 
         public static PatternMatcher CreateSimplePatternMatcher(
@@ -75,21 +82,35 @@ namespace Microsoft.VisualStudio.Text.PatternMatching.Implementation
             CultureInfo culture = null,
             bool includeMatchedSpans = false,
             bool allowFuzzyMatching = false,
-            bool allowSimpleSubstringMatching = false)
+            bool allowSimpleSubstringMatching = false,
+            PatternMatcher linkedMatcher = null)
         {
-            return new SimplePatternMatcher(pattern, culture, includeMatchedSpans, allowFuzzyMatching, allowSimpleSubstringMatching);
+            return new SimplePatternMatcher(
+                pattern,
+                culture,
+                includeMatchedSpans,
+                allowFuzzyMatching,
+                allowSimpleSubstringMatching,
+                linkedMatcher);
         }
 
-        public static PatternMatcher CreateContainerPatternMatcher(
+        internal static PatternMatcher CreateContainerPatternMatcher(
             string[] patternParts,
             IReadOnlyCollection<char> containerSplitCharacters,
             CultureInfo culture = null,
             bool allowFuzzyMatching = false,
             bool allowSimpleSubstringMatching = false,
-            bool includeMatchedSpans = false)
+            bool includeMatchedSpans = false,
+            PatternMatcher linkedMatcher = null)
         {
             return new ContainerPatternMatcher(
-                patternParts, containerSplitCharacters, culture, allowFuzzyMatching, allowSimpleSubstringMatching, includeMatchedSpans);
+                patternParts,
+                containerSplitCharacters,
+                culture,
+                allowFuzzyMatching,
+                allowSimpleSubstringMatching,
+                includeMatchedSpans,
+                linkedMatcher);
         }
 
         internal static (string name, string containerOpt) GetNameAndContainer(string pattern)
@@ -104,7 +125,7 @@ namespace Microsoft.VisualStudio.Text.PatternMatching.Implementation
         public abstract PatternMatch? TryMatch(string candidate);
 
         private bool SkipMatch(string candidate)
-            => _invalidPattern || string.IsNullOrWhiteSpace(candidate);
+            => HasInvalidPattern || string.IsNullOrWhiteSpace(candidate);
 
         private StringBreaks GetWordSpans(string word)
         {

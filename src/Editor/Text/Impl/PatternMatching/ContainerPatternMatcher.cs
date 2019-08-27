@@ -4,8 +4,6 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
-using Microsoft.VisualStudio.Text.Utilities;
-using Microsoft.VisualStudio.Utilities;
 
 namespace Microsoft.VisualStudio.Text.PatternMatching.Implementation
 {
@@ -31,8 +29,9 @@ namespace Microsoft.VisualStudio.Text.PatternMatching.Implementation
                 CultureInfo culture,
                 bool allowFuzzyMatching = false,
                 bool allowSimpleSubstringMatching = false,
-                bool includeMatchedSpans = false)
-                : base(includeMatchedSpans, culture, allowFuzzyMatching, allowSimpleSubstringMatching)
+                bool includeMatchedSpans = false,
+                PatternMatcher linkedMatcher = null)
+                : base(includeMatchedSpans, culture, allowFuzzyMatching, allowSimpleSubstringMatching, linkedMatcher)
             {
                 _containerSplitCharacters = containerSplitCharacters.ToArray();
 
@@ -40,7 +39,7 @@ namespace Microsoft.VisualStudio.Text.PatternMatching.Implementation
                     .Select(text => new PatternSegment(text.Trim(), allowFuzzyMatching: allowFuzzyMatching))
                     .ToArray();
 
-                _invalidPattern = _patternSegments.Length == 0 || _patternSegments.Any(s => s.IsInvalid);
+                HasInvalidPattern = _patternSegments.Length == 0 || _patternSegments.Any(s => s.IsInvalid);
             }
 
 #pragma warning disable CA1063

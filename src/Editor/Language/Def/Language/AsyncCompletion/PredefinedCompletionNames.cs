@@ -1,4 +1,5 @@
-﻿using Microsoft.VisualStudio.Commanding;
+﻿using System;
+using Microsoft.VisualStudio.Commanding;
 
 namespace Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion
 {
@@ -22,6 +23,7 @@ namespace Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion
         /// </summary>
         public const string CompletionCommandHandler = "CompletionCommandHandler";
 
+        [Obsolete("Use Microsoft.VisualStudio.Text.Editor.DefaultOptions.NonBlockingCompletionOptionName instead")]
         /// <summary>
         /// Name of the editor option that stores user's preference for dismissing completion rather than blocking for potentially long running tasks.
         /// </summary>
@@ -36,5 +38,11 @@ namespace Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion
         /// Name of the editor option that stores user's preference for the completion mode during debugging.
         /// </summary>
         public const string SuggestionModeInDebuggerCompletionOptionName = "SuggestionModeInDebuggerViewCompletion";
+
+        /// <summary>
+        /// Order your MEF part of type <see cref="Data.CompletionFilter"/> relatively to this name,
+        /// so that it tends to be the default expander (order before this name) or not be the default expander (order after this name).
+        /// </summary>
+        public const string DefaultCompletionExpander = "DefaultCompletionExpander";
     }
 }

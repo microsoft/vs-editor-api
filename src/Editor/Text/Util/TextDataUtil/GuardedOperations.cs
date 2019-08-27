@@ -18,8 +18,10 @@ namespace Microsoft.VisualStudio.Text.Utilities
     /// </summary>
     [Export]
     [Export(typeof(IGuardedOperations))]
+    [Export(typeof(IGuardedOperations2))]
+    [Export(typeof(IGuardedOperationsInternal))]
     [PartCreationPolicy(CreationPolicy.Shared)]
-    internal sealed class GuardedOperations : IGuardedOperations
+    internal sealed class GuardedOperations : IGuardedOperations, IGuardedOperations2, IGuardedOperationsInternal
     {
         [ImportMany]
         private List<Lazy<IExtensionErrorHandler>> _errorHandlerExports = null;
@@ -66,7 +68,7 @@ namespace Microsoft.VisualStudio.Text.Utilities
         {
             get
             {
-                if (_errorHandlers == null) 
+                if (_errorHandlers == null)
                 {
                     _errorHandlers = new FrugalList<IExtensionErrorHandler>();
                     if (_errorHandlerExports != null)       // can be null during unit testing
@@ -131,16 +133,20 @@ namespace Microsoft.VisualStudio.Text.Utilities
             where TMetadataView : IContentTypeMetadata
             where TExtensionFactory : class
         {
-            var factory = InvokeBestMatchingFactory(providerHandles, dataContentType, contentTypeRegistryService, errorSource);
-
-            if (factory == null)
+            var factories = GetOrderedMatchingExtensions(providerHandles, dataContentType, contentTypeRegistryService);
+            foreach (var factoryExport in factories)
             {
-                return default(TExtensionInstance);
+                TExtensionFactory factory = InstantiateExtension(errorSource, factoryExport);
+                if (factory != null)
+                {
+                    TExtensionInstance extensionInstance = default(TExtensionInstance);
+                    this.CallExtensionPoint(errorSource, () => extensionInstance = getter(factory));
+                    if (extensionInstance != null)
+                        return extensionInstance;
+                }
             }
 
-            TExtensionInstance extensionInstance = default(TExtensionInstance);
-            this.CallExtensionPoint(errorSource, () => extensionInstance = getter(factory));
-            return extensionInstance;
+            return default(TExtensionInstance);
         }
 
         public TExtension InvokeBestMatchingFactory<TExtension, TMetadataView>
@@ -150,22 +156,36 @@ namespace Microsoft.VisualStudio.Text.Utilities
                  object errorSource)
             where TMetadataView : IContentTypeMetadata
         {
+            var extensions = GetOrderedMatchingExtensions(providerHandles, dataContentType, contentTypeRegistryService);
+            foreach (var extension in extensions)
+            {
+                TExtension factory = InstantiateExtension(errorSource, extension);
+                if (factory != null)
+                {
+                    return factory;
+                }
+            }
+
+            // no suitable provider found
+            return default(TExtension);
+        }
+
+        /// <summary>
+        /// Return a list of uninstantiated extensions sorted by the specificity of the content type (assets with more specific content types come first).
+        /// </summary>
+        private static IEnumerable<Lazy<TExtension, TMetadataView>> GetOrderedMatchingExtensions<TExtension, TMetadataView>
+                (IList<Lazy<TExtension, TMetadataView>> providerHandles,
+                 IContentType dataContentType,
+                 IContentTypeRegistryService contentTypeRegistryService)
+                    where TMetadataView : IContentTypeMetadata
+        {
             var candidates = new List<Lazy<TExtension, TMetadataView>>();
             for (int i = 0; (i < providerHandles.Count); ++i)
             {
                 var providerHandle = providerHandles[i];
                 foreach (string contentTypeName in providerHandle.Metadata.ContentTypes)
                 {
-                    if (string.Compare(dataContentType.TypeName, contentTypeName, StringComparison.OrdinalIgnoreCase) == 0)
-                    {
-                        // we have an exact match--no need to look further if this one is happy
-                        TExtension factory = InstantiateExtension(errorSource, providerHandle);
-                        if (factory != null)
-                        {
-                            return factory;
-                        }
-                    }
-                    else if (dataContentType.IsOfType(contentTypeName))
+                    if (dataContentType.IsOfType(contentTypeName))
                     {
                         candidates.Add(providerHandle);
                         break;
@@ -175,17 +195,7 @@ namespace Microsoft.VisualStudio.Text.Utilities
 
             SortCandidates(candidates, dataContentType, contentTypeRegistryService);
 
-            for (int c = 0; c < candidates.Count; ++c)
-            {
-                TExtension factory = InstantiateExtension(errorSource, candidates[c]);
-                if (factory != null)
-                {
-                    return factory;
-                }
-            }
-
-            // no suitable provider found
-            return default(TExtension);
+            return candidates;
         }
 
         public List<TExtensionInstance> InvokeMatchingFactories<TExtensionInstance, TExtensionFactory, TMetadataView>
@@ -423,6 +433,28 @@ namespace Microsoft.VisualStudio.Text.Utilities
             }
         }
 
+        public T CallExtensionPoint<T>(object errorSource, Func<T> call, T valueOnThrow, Predicate<Exception> exceptionToIgnore, Predicate<Exception> exceptionToHandle)
+        {
+            try
+            {
+                BeforeCallingExtensionPoint(errorSource ?? call);
+                return call();
+            }
+            catch (Exception e) when (exceptionToIgnore(e))
+            {
+                return valueOnThrow;
+            }
+            catch (Exception e) when (exceptionToHandle(e))
+            {
+                HandleException(errorSource, e);
+                return valueOnThrow;
+            }
+            finally
+            {
+                AfterCallingExtensionPoint(errorSource ?? call);
+            }
+        }
+
         public void CallExtensionPoint(Action call)
         {
             this.CallExtensionPoint(errorSource: null, call: call);
@@ -608,6 +640,36 @@ namespace Microsoft.VisualStudio.Text.Utilities
             }
         }
 
+        public void LogException(object errorSource, Exception e)
+        {
+            var logged = false;
+            for (int i = 0; (i < ErrorHandlers.Count); ++i)
+            {
+                var errorHandler = ErrorHandlers[i] as IExtensionErrorHandler2;
+                if (errorHandler != null)
+                {
+                    try
+                    {
+                        GuardedOperations.LastHandledException = e;
+                        GuardedOperations.LastHandleExceptionStackTrace = e.StackTrace;
+
+                        errorHandler.LogError(errorSource, e);
+                        logged = true;
+                    }
+                    catch (Exception doubleFaultException)
+                    {
+                        // TODO: What is the right behavior here?
+                        GuardedOperations.Fail(doubleFaultException.ToString());
+                    }
+                }
+            }
+
+            if (!logged)
+            {
+                Debug.WriteLine(e.Message);
+            }
+        }
+
         public void HandleException(object errorSource, Exception e)
         {
             bool handled = false;
@@ -662,7 +724,7 @@ namespace Microsoft.VisualStudio.Text.Utilities
                 contentTypes.Sort(CompareContentTypes);
                 candidates.Sort((left, right) =>
                 {
-                    int leftIndex = BestContentTypeScore(left.Metadata.ContentTypes, contentTypes); 
+                    int leftIndex = BestContentTypeScore(left.Metadata.ContentTypes, contentTypes);
                     int rightIndex = BestContentTypeScore(right.Metadata.ContentTypes, contentTypes);
 
                     return leftIndex - rightIndex;  // Sort these in ascending order.

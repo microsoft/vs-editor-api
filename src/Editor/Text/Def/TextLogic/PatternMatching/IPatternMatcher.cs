@@ -39,5 +39,11 @@ namespace Microsoft.VisualStudio.Text.PatternMatching
         /// To determine sort order, call <see cref="PatternMatch.CompareTo(PatternMatch)"/>.
         /// </remarks>
         PatternMatch? TryMatch(string candidate);
+
+        /// <summary>
+        /// Determines whether given pattern is invalid,
+        /// in which case <see cref="TryMatch(string)"/> would return no <see cref="PatternMatch"/>es.
+        /// </summary>
+        bool HasInvalidPattern { get; }
     }
 }

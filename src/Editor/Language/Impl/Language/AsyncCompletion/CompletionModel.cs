@@ -31,6 +31,11 @@ namespace Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion.Implement
         public readonly ImmutableArray<CompletionFilterWithState> Filters;
 
         /// <summary>
+        /// Invoked expansions involved in this completion model.
+        /// </summary>
+        public readonly ImmutableArray<CompletionExpander> PrimedExpanders;
+
+        /// <summary>
         /// Items to be displayed in the UI.
         /// </summary>
         public readonly ImmutableArray<CompletionItemWithHighlight> PresentedItems;
@@ -85,20 +90,21 @@ namespace Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion.Implement
         /// </summary>
         public static CompletionModel GetUninitializedModel(ITextSnapshot snapshot)
         {
-            return new CompletionModel(default, default, snapshot, default, default, default, default, default, default, default, default, default, uninitialized: true);
+            return new CompletionModel(default, default, snapshot, default, default, default, default, default, default, default, default, default, default, uninitialized: true);
         }
 
         /// <summary>
         /// Constructor for the initial model
         /// </summary>
         public CompletionModel(ImmutableArray<CompletionItem> initialItems, ImmutableArray<CompletionItem> sortedItems,
-            ITextSnapshot snapshot, ImmutableArray<CompletionFilterWithState> filters, bool useSoftSelection,
+            ITextSnapshot snapshot, ImmutableArray<CompletionFilterWithState> filters, ImmutableArray<CompletionExpander> primedExpanders, bool useSoftSelection,
             bool displaySuggestionItem, bool selectSuggestionItem, CompletionItem suggestionItem)
         {
             InitialItems = initialItems;
             SortedItems = sortedItems;
             Snapshot = snapshot;
             Filters = filters;
+            PrimedExpanders = primedExpanders;
             SelectedIndex = 0;
             UseSoftSelection = useSoftSelection;
             DisplaySuggestionItem = displaySuggestionItem;
@@ -113,7 +119,7 @@ namespace Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion.Implement
         /// Private constructor for the With* methods
         /// </summary>
         private CompletionModel(ImmutableArray<CompletionItem> initialItems, ImmutableArray<CompletionItem> sortedItems,
-            ITextSnapshot snapshot, ImmutableArray<CompletionFilterWithState> filters, ImmutableArray<CompletionItemWithHighlight> presentedItems,
+            ITextSnapshot snapshot, ImmutableArray<CompletionFilterWithState> filters, ImmutableArray<CompletionExpander> primedExpanders, ImmutableArray<CompletionItemWithHighlight> presentedItems,
             bool useSoftSelection, bool displaySuggestionItem, int selectedIndex, bool selectSuggestionItem, CompletionItem suggestionItem,
             CompletionItem uniqueItem, bool applicableToSpanWasEmpty, bool uninitialized)
         {
@@ -121,6 +127,7 @@ namespace Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion.Implement
             SortedItems = sortedItems;
             Snapshot = snapshot;
             Filters = filters;
+            PrimedExpanders = primedExpanders;
             PresentedItems = presentedItems;
             SelectedIndex = selectedIndex;
             UseSoftSelection = useSoftSelection;
@@ -139,6 +146,7 @@ namespace Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion.Implement
                 sortedItems: SortedItems,
                 snapshot: Snapshot,
                 filters: Filters,
+                primedExpanders: PrimedExpanders,
                 presentedItems: newPresentedItems, // Updated
                 useSoftSelection: UseSoftSelection,
                 displaySuggestionItem: DisplaySuggestionItem,
@@ -158,6 +166,7 @@ namespace Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion.Implement
                 sortedItems: SortedItems,
                 snapshot: newSnapshot, // Updated
                 filters: Filters,
+                primedExpanders: PrimedExpanders,
                 presentedItems: PresentedItems,
                 useSoftSelection: UseSoftSelection,
                 displaySuggestionItem: DisplaySuggestionItem,
@@ -177,6 +186,7 @@ namespace Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion.Implement
                 sortedItems: SortedItems,
                 snapshot: Snapshot,
                 filters: newFilters, // Updated
+                primedExpanders: PrimedExpanders,
                 presentedItems: PresentedItems,
                 useSoftSelection: UseSoftSelection,
                 displaySuggestionItem: DisplaySuggestionItem,
@@ -196,6 +206,7 @@ namespace Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion.Implement
                 sortedItems: SortedItems,
                 snapshot: Snapshot,
                 filters: Filters,
+                primedExpanders: PrimedExpanders,
                 presentedItems: PresentedItems,
                 useSoftSelection: preserveSoftSelection ? UseSoftSelection : false, // Updated conditionally
                 displaySuggestionItem: DisplaySuggestionItem,
@@ -215,6 +226,7 @@ namespace Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion.Implement
                 sortedItems: SortedItems,
                 snapshot: Snapshot,
                 filters: Filters,
+                primedExpanders: PrimedExpanders,
                 presentedItems: PresentedItems,
                 useSoftSelection: false, // Explicit selection and soft selection are mutually exclusive
                 displaySuggestionItem: DisplaySuggestionItem,
@@ -234,6 +246,7 @@ namespace Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion.Implement
                 sortedItems: SortedItems,
                 snapshot: Snapshot,
                 filters: Filters,
+                primedExpanders: PrimedExpanders,
                 presentedItems: PresentedItems,
                 useSoftSelection: UseSoftSelection | newDisplaySuggestionItem, // Enabling suggestion mode also enables soft selection
                 displaySuggestionItem: newDisplaySuggestionItem, // Updated
@@ -257,6 +270,7 @@ namespace Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion.Implement
                 sortedItems: SortedItems,
                 snapshot: Snapshot,
                 filters: Filters,
+                primedExpanders: PrimedExpanders,
                 presentedItems: PresentedItems,
                 useSoftSelection: UseSoftSelection,
                 displaySuggestionItem: DisplaySuggestionItem,
@@ -276,6 +290,7 @@ namespace Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion.Implement
                 sortedItems: SortedItems,
                 snapshot: Snapshot,
                 filters: Filters,
+                primedExpanders: PrimedExpanders,
                 presentedItems: PresentedItems,
                 useSoftSelection: newSoftSelection, // Updated
                 displaySuggestionItem: DisplaySuggestionItem,
@@ -296,6 +311,7 @@ namespace Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion.Implement
                 sortedItems: SortedItems,
                 snapshot: snapshot, // Updated
                 filters: filters, // Updated
+                primedExpanders: PrimedExpanders,
                 presentedItems: presentedItems, // Updated
                 useSoftSelection: UseSoftSelection,
                 displaySuggestionItem: DisplaySuggestionItem,
@@ -315,6 +331,7 @@ namespace Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion.Implement
                 sortedItems: SortedItems,
                 snapshot: Snapshot,
                 filters: Filters,
+                primedExpanders: PrimedExpanders,
                 presentedItems: PresentedItems,
                 useSoftSelection: UseSoftSelection,
                 displaySuggestionItem: DisplaySuggestionItem,
@@ -323,6 +340,30 @@ namespace Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion.Implement
                 suggestionItem: SuggestionItem,
                 uniqueItem: UniqueItem,
                 applicableToSpanWasEmpty: applicableToSpanIsEmpty, // Updated
+                uninitialized: Uninitialized
+            );
+        }
+
+        internal CompletionModel WithExpansion(
+            ImmutableArray<CompletionItem> expandedItems,
+            ImmutableArray<CompletionItem> sortedItems,
+            ImmutableArray<CompletionFilterWithState> filters,
+            ImmutableArray<CompletionExpander> primedExpanders)
+        {
+            return new CompletionModel(
+                initialItems: expandedItems, // updated
+                sortedItems: sortedItems, // updated
+                snapshot: Snapshot,
+                filters: filters, // updated
+                primedExpanders: primedExpanders, // Updated
+                presentedItems: PresentedItems,
+                useSoftSelection: UseSoftSelection,
+                displaySuggestionItem: DisplaySuggestionItem,
+                selectedIndex: SelectedIndex,
+                selectSuggestionItem: SelectSuggestionItem,
+                suggestionItem: SuggestionItem,
+                uniqueItem: UniqueItem,
+                applicableToSpanWasEmpty: ApplicableToSpanWasEmpty,
                 uninitialized: Uninitialized
             );
         }

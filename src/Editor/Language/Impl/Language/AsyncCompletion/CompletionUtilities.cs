@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.ComponentModel.Composition;
 using System.Linq;
+using System.Threading;
 using Microsoft.VisualStudio.Language.Intellisense;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
@@ -43,10 +44,8 @@ namespace Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion.Implement
         /// <returns>True if the view has "COMMANDVIEW" text view role.</returns>
         internal static bool IsImmediateTextView(ITextView textView) => textView.Roles.Contains("COMMANDVIEW");
 
-        static readonly EditorOptionKey<bool> NonBlockingCompletionOptionKey = new EditorOptionKey<bool>(PredefinedCompletionNames.NonBlockingCompletionOptionName);
         static readonly EditorOptionKey<bool> SuggestionModeOptionKey = new EditorOptionKey<bool>(PredefinedCompletionNames.SuggestionModeInCompletionOptionName);
         static readonly EditorOptionKey<bool> SuggestionModeInDebuggerCompletionOptionKey = new EditorOptionKey<bool>(PredefinedCompletionNames.SuggestionModeInDebuggerCompletionOptionName);
-        private const bool NonBlockingCompletionDefaultValue = false;
         private const bool UseSuggestionModeDefaultValue = false;
         private const bool UseSuggestionModeInDebuggerCompletionDefaultValue = true;
 
@@ -70,17 +69,6 @@ namespace Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion.Implement
             public override Type ValueType => typeof(bool);
 
             public override string Name => PredefinedCompletionNames.SuggestionModeInDebuggerCompletionOptionName;
-        }
-
-        [Export(typeof(EditorOptionDefinition))]
-        [Name(PredefinedCompletionNames.NonBlockingCompletionOptionName)]
-        class NonBlockingCompletionOptionDefinition : EditorOptionDefinition
-        {
-            public override object DefaultValue => NonBlockingCompletionDefaultValue;
-
-            public override Type ValueType => typeof(bool);
-
-            public override string Name => PredefinedCompletionNames.NonBlockingCompletionOptionName;
         }
 
         internal static bool GetSuggestionModeOption(ITextView textView)
@@ -107,18 +95,31 @@ namespace Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion.Implement
 
         internal static bool GetNonBlockingCompletionOption(ITextView textView)
         {
-            var options = textView.Options.GlobalOptions;
-            if (!(options.IsOptionDefined(NonBlockingCompletionOptionKey, localScopeOnly: false)))
-            {
-                options.SetOptionValue(NonBlockingCompletionOptionKey, NonBlockingCompletionDefaultValue);
-            }
-            return options.GetOptionValue(NonBlockingCompletionOptionKey);
+            return textView.Options.GetOptionValue(DefaultOptions.NonBlockingCompletionOptionId);
         }
 
-        internal static void SetNonBlockingModeOption(ITextView textView, bool value)
+        internal static bool GetResponsiveCompletionOption(ITextView textView)
         {
-            var options = textView.Options.GlobalOptions;
-            options.SetOptionValue(NonBlockingCompletionOptionKey, value);
+            return textView.Options.GetOptionValue(DefaultOptions.ResponsiveCompletionOptionId)
+                && textView.Options.GetOptionValue(DefaultOptions.RemoteControlledResponsiveCompletionOptionId);
+        }
+
+        internal static int GetResponsiveCompletionThresholdOption(ITextView textView)
+        {
+            return textView.Options.GetOptionValue(DefaultOptions.ResponsiveCompletionThresholdOptionId);
+        }
+
+        internal static CancellationToken GetResponsiveToken(ITextView textView, CancellationToken commandingToken)
+        {
+            var inResponisveMode = CompletionUtilities.GetResponsiveCompletionOption(textView);
+            if (!inResponisveMode)
+                return commandingToken;
+
+            var responsiveCompletionThreshold = CompletionUtilities.GetResponsiveCompletionThresholdOption(textView);
+            var responsiveCancellationSource = new CancellationTokenSource(responsiveCompletionThreshold);
+            var responsiveToken = responsiveCancellationSource.Token;
+            var combinedCancellationSource = CancellationTokenSource.CreateLinkedTokenSource(commandingToken, responsiveToken);
+            return combinedCancellationSource.Token;
         }
     }
 }

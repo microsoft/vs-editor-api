@@ -6,9 +6,15 @@ using static Microsoft.VisualStudio.Text.PatternMatching.PatternMatcherCreationF
 namespace Microsoft.VisualStudio.Text.PatternMatching.Implementation
 {
     [Export(typeof(IPatternMatcherFactory))]
-    internal class PatternMatcherFactory : IPatternMatcherFactory
+    public class PatternMatcherFactory : IPatternMatcherFactory2
     {
         public IPatternMatcher CreatePatternMatcher(string pattern, PatternMatcherCreationOptions creationOptions)
+        {
+            return this.CreatePatternMatcher(pattern, creationOptions, linkedMatcher: null);
+        }
+
+#pragma warning disable CA1822
+        public IPatternMatcher CreatePatternMatcher(string pattern, PatternMatcherCreationOptions creationOptions, IPatternMatcher linkedMatcher)
         {
             if (string.IsNullOrWhiteSpace(pattern))
             {
@@ -20,6 +26,8 @@ namespace Microsoft.VisualStudio.Text.PatternMatching.Implementation
                 throw new ArgumentNullException(nameof(creationOptions));
             }
 
+            var matcher = linkedMatcher as PatternMatcher;
+
             if (creationOptions.ContainerSplitCharacters == null)
             {
                 return PatternMatcher.CreateSimplePatternMatcher(
@@ -27,7 +35,8 @@ namespace Microsoft.VisualStudio.Text.PatternMatching.Implementation
                     creationOptions.CultureInfo,
                     creationOptions.Flags.HasFlag(IncludeMatchedSpans),
                     creationOptions.Flags.HasFlag(AllowFuzzyMatching),
-                    creationOptions.Flags.HasFlag(AllowSimpleSubstringMatching));
+                    creationOptions.Flags.HasFlag(AllowSimpleSubstringMatching),
+                    matcher);
             }
             else
             {
@@ -37,8 +46,10 @@ namespace Microsoft.VisualStudio.Text.PatternMatching.Implementation
                     creationOptions.CultureInfo,
                     creationOptions.Flags.HasFlag(AllowFuzzyMatching),
                     creationOptions.Flags.HasFlag(AllowSimpleSubstringMatching),
-                    creationOptions.Flags.HasFlag(IncludeMatchedSpans));
+                    creationOptions.Flags.HasFlag(IncludeMatchedSpans),
+                    matcher);
             }
         }
+#pragma warning restore CA1822
     }
 }

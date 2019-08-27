@@ -8,7 +8,6 @@
 namespace Microsoft.VisualStudio.Text.BraceCompletion.Implementation
 {
     using Microsoft.VisualStudio.Text.Editor;
-    using Microsoft.VisualStudio.Text.Utilities;
     using Microsoft.VisualStudio.Utilities;
     using System;
     using System.Diagnostics;
@@ -74,6 +73,11 @@ namespace Microsoft.VisualStudio.Text.BraceCompletion.Implementation
             get { return _stack.TopSession != null; }
         }
 
+        public int ActiveSessionCount
+        {
+            get { return _stack.Sessions.Count; }
+        }
+
         public string OpeningBraces
         {
             get
@@ -97,7 +101,7 @@ namespace Microsoft.VisualStudio.Text.BraceCompletion.Implementation
                 IBraceCompletionSession session = _stack.TopSession;
 
                 // check for an existing session first
-                _guardedOperations.CallExtensionPoint(() =>
+                _guardedOperations.CallExtensionPoint(errorSource: session, () =>
                 {
                     if (session.ClosingBrace.Equals(character) && IsCaretOnBuffer(session.SubjectBuffer))
                     {
@@ -149,7 +153,7 @@ namespace Microsoft.VisualStudio.Text.BraceCompletion.Implementation
             }
             else if (_postSession != null)
             {
-                _guardedOperations.CallExtensionPoint(() =>
+                _guardedOperations.CallExtensionPoint(errorSource: _postSession, () =>
                 {
                     if (_postSession.ClosingBrace.Equals(character))
                     {
@@ -172,7 +176,7 @@ namespace Microsoft.VisualStudio.Text.BraceCompletion.Implementation
             {
                 IBraceCompletionSession session = _stack.TopSession;
 
-                _guardedOperations.CallExtensionPoint(() =>
+                _guardedOperations.CallExtensionPoint(errorSource: session, () =>
                 {
                     if (IsSingleLine(session.OpeningPoint, session.ClosingPoint))
                     {
@@ -193,7 +197,7 @@ namespace Microsoft.VisualStudio.Text.BraceCompletion.Implementation
         {
             if (_postSession != null)
             {
-                _guardedOperations.CallExtensionPoint(() =>
+                _guardedOperations.CallExtensionPoint(errorSource: _postSession, () =>
                 {
                     _postSession.PostTab();
                 });
@@ -212,7 +216,7 @@ namespace Microsoft.VisualStudio.Text.BraceCompletion.Implementation
             {
                 IBraceCompletionSession session = _stack.TopSession;
 
-                _guardedOperations.CallExtensionPoint(() => 
+                _guardedOperations.CallExtensionPoint(errorSource: session, () =>
                 {
                     if (session.OpeningPoint != null && session.ClosingPoint != null)
                     {
@@ -233,7 +237,7 @@ namespace Microsoft.VisualStudio.Text.BraceCompletion.Implementation
         {
             if (_postSession != null)
             {
-                _guardedOperations.CallExtensionPoint(() =>
+                _guardedOperations.CallExtensionPoint(errorSource: _postSession, () =>
                 {
                     _postSession.PostBackspace();
                 });
@@ -252,7 +256,7 @@ namespace Microsoft.VisualStudio.Text.BraceCompletion.Implementation
             {
                 IBraceCompletionSession session = _stack.TopSession;
 
-                _guardedOperations.CallExtensionPoint(() =>
+                _guardedOperations.CallExtensionPoint(errorSource: session, () =>
                 {
                     if (session.OpeningPoint != null && session.ClosingPoint != null)
                     {
@@ -273,7 +277,7 @@ namespace Microsoft.VisualStudio.Text.BraceCompletion.Implementation
         {
             if (_postSession != null)
             {
-                _guardedOperations.CallExtensionPoint(() =>
+                _guardedOperations.CallExtensionPoint(errorSource: _postSession, () =>
                 {
                     _postSession.PostDelete();
                 });
@@ -292,7 +296,7 @@ namespace Microsoft.VisualStudio.Text.BraceCompletion.Implementation
             {
                 IBraceCompletionSession session = _stack.TopSession;
 
-                _guardedOperations.CallExtensionPoint(() =>
+                _guardedOperations.CallExtensionPoint(errorSource: session, () =>
                 {
                     if (IsSingleLine(session.OpeningPoint, session.ClosingPoint))
                     {
@@ -313,7 +317,7 @@ namespace Microsoft.VisualStudio.Text.BraceCompletion.Implementation
         {
             if (_postSession != null)
             {
-                _guardedOperations.CallExtensionPoint(() =>
+                _guardedOperations.CallExtensionPoint(errorSource: _postSession, () =>
                 {
                     _postSession.PostReturn();
                 });
@@ -330,17 +334,29 @@ namespace Microsoft.VisualStudio.Text.BraceCompletion.Implementation
         {
             _textView.Closed += textView_Closed;
             _textView.Options.OptionChanged += Options_OptionChanged;
+            _textView.TextDataModel.ContentTypeChanged += OnContentTypeChanged;
+        }
+
+        private void OnContentTypeChanged(object sender, TextDataModelContentTypeChangedEventArgs e)
+        {
+            // Unhook everything if the view's content type goes inert.
+            if (!e.AfterContentType.IsOfType(StandardContentTypeNames.Any))
+            {
+                this.textView_Closed(null, null);
+            }
         }
 
         private void textView_Closed(object sender, EventArgs e)
         {
             UnregisterEvents();
+            _textView.Properties.RemoveProperty("BraceCompletionManager");
         }
 
         private void UnregisterEvents()
         {
             _textView.Closed -= textView_Closed;
             _textView.Options.OptionChanged -= Options_OptionChanged;
+            _textView.TextDataModel.ContentTypeChanged -= OnContentTypeChanged;
         }
 
         private void Options_OptionChanged(object sender, EditorOptionChangedEventArgs e)
@@ -396,7 +412,7 @@ namespace Microsoft.VisualStudio.Text.BraceCompletion.Implementation
                         ITrackingPoint closingPoint = null;
                         IBraceCompletionSession session = _stack.TopSession;
 
-                        _guardedOperations.CallExtensionPoint(() =>
+                        _guardedOperations.CallExtensionPoint(errorSource: session, () =>
                         {
                             // only set these if they are on the same buffer
                             if (session.OpeningPoint != null && session.ClosingPoint != null
