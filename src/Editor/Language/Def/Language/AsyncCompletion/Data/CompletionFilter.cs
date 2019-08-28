@@ -18,7 +18,7 @@ namespace Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion.Data
     /// </code>
     /// </example>
     [DebuggerDisplay("{DisplayText}")]
-    public sealed class CompletionFilter : INotifyPropertyChanged
+    public class CompletionFilter : INotifyPropertyChanged
     {
         /// <summary>
         /// Localized name of this filter.
@@ -36,11 +36,11 @@ namespace Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion.Data
         public ImageElement Image { get; }
 
         /// <summary>
-        /// Constructs an instance of CompletionFilter.
+        /// Constructs an instance of <see cref="CompletionFilter"/>.
         /// </summary>
         /// <param name="displayText">Name of this filter</param>
         /// <param name="accessKey">Key used in a keyboard shortcut that toggles this filter.</param>
-        /// <param name="image">Image that represents this filter</param>
+        /// <param name="image">Image which represents this filter</param>
         public CompletionFilter(string displayText, string accessKey, ImageElement image)
         {
             if (string.IsNullOrWhiteSpace(displayText))

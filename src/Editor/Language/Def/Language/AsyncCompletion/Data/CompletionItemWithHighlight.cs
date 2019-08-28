@@ -55,6 +55,11 @@ namespace Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion.Data
 
         public static bool operator !=(CompletionItemWithHighlight left, CompletionItemWithHighlight right) => !(left == right);
 
-        public override int GetHashCode() => CompletionItem.GetHashCode() ^ HighlightedSpans.GetHashCode();
+        /// <summary>
+        /// Assumption: We won't see two instances of <see cref="CompletionItemWithHighlight"/> with same <see cref="CompletionItem"/> but different highlighting.
+        /// Therefore, we don't calculate hash code for the highlights.
+        /// </summary>
+        /// <returns><see cref="CompletionItem.GetHashCode"/></returns>
+        public override int GetHashCode() => CompletionItem.GetHashCode();
     }
 }

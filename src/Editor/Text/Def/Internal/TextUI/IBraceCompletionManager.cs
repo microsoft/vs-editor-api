@@ -23,6 +23,11 @@ namespace Microsoft.VisualStudio.Text.BraceCompletion
         bool HasActiveSessions { get; }
 
         /// <summary>
+        /// Returns number of currently active sessions.
+        /// </summary>
+        int ActiveSessionCount { get; }
+
+        /// <summary>
         /// Opening brace characters the brace completion manager is currently registered to handle.
         /// </summary>
         string OpeningBraces { get; }

@@ -132,7 +132,9 @@ namespace Microsoft.VisualStudio.Utilities
         /// <param name="errorSource">Reference to the extension object or event handler that threw the exception</param>
         /// <param name="e">Exception to handle</param>
         /// <remarks>This class supports the Visual Studio 
-        /// infrastructure and in general is not intended to be used directly from your code.</remarks>
+        /// infrastructure and in general is not intended to be used directly from your code.
+        /// In Visual Studio, this method logs the exception to ActivityLogs and the telemetry, and displays an error message to the user if possible.
+        /// This method can be invoked from any thread.</remarks>
         void HandleException(object errorSource, Exception e);
 
         /// <summary>

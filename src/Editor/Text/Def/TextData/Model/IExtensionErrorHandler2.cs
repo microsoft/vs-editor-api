@@ -11,15 +11,15 @@ namespace Microsoft.VisualStudio.Text
     /// </summary>
     /// <remarks>This is a MEF component part, and should be imported as follows:
     /// [Import]
-    /// IExtensionErrorHandler errorHandler = null;
+    /// IExtensionErrorHandler2 errorHandler = null;
     /// </remarks>
-    public interface IExtensionErrorHandler
+    public interface IExtensionErrorHandler2 : IExtensionErrorHandler
     {
         /// <summary>
-        /// Logs an exception to ActivityLogs and the telemetry, and notifies that an exception has occured.
+        /// Logs an exception to ActivityLogs and the telemetry.
         /// </summary>
         /// <param name="sender">The extension object or event handler that threw the exception.</param>
-        /// <param name="exception">The exception that was thrown.</param>
-        void HandleError(object sender, Exception exception);
+        /// <param name="exception">The exception to log.</param>
+        void LogError(object sender, Exception exception);
     }
 }

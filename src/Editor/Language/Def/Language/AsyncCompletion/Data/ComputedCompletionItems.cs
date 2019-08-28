@@ -26,7 +26,7 @@ namespace Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion.Data
             bool suggestionItemSelected,
             bool usesSoftSelection)
         {
-            _items = items;
+            _itemsWithoutHighlight = items;
             SuggestionItem = suggestionItem;
             SelectedItem = selectedItem;
             SuggestionItemSelected = suggestionItemSelected;
@@ -61,13 +61,47 @@ namespace Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion.Data
         /// </summary>
         public static ComputedCompletionItems Empty { get; } = new ComputedCompletionItems(ImmutableArray<CompletionItem>.Empty, null, null, false, false);
 
-        private IEnumerable<CompletionItem> _items = null;
-        private IEnumerable<CompletionItemWithHighlight> _itemsWithHighlight = null;
+        private ImmutableArray<CompletionItem> _itemsWithoutHighlight;
+        private ImmutableArray<CompletionItemWithHighlight> _itemsWithHighlight;
+
+        private IEnumerable<CompletionItem> _computedItems = null;
 
         /// <summary>
         /// <see cref="CompletionItem"/>s displayed in the completion UI
         /// </summary>
-        public IEnumerable<CompletionItem> Items => _items ?? _itemsWithHighlight.Select(n => n.CompletionItem);
+        public IEnumerable<CompletionItem> Items
+        {
+            get
+            {
+                if (_computedItems == null)
+                {
+                    // We were constructed with either items or itemsWithHighlight
+                    if (_itemsWithoutHighlight != null)
+                    {
+                        _computedItems = _itemsWithoutHighlight.IsDefault
+                            ? Enumerable.Empty<CompletionItem>()
+                            : _itemsWithoutHighlight;
+                    }
+                    else
+                    {
+                        if (_itemsWithHighlight.IsDefault)
+                        {
+                            _computedItems = Enumerable.Empty<CompletionItem>();
+                        }
+                        else
+                        {
+                            var items = new List<CompletionItem>(_itemsWithHighlight.Length);
+                            for (int i = 0; i < _itemsWithHighlight.Length; i++)
+                            {
+                                items.Add(_itemsWithHighlight[i].CompletionItem);
+                            }
+                            _computedItems = items;
+                        }
+                    }
+                }
+                return _computedItems;
+            }
+        }
 
         /// <summary>
         /// Suggestion <see cref="CompletionItem"/> displayed in the UI, or null if no suggestion is displayed

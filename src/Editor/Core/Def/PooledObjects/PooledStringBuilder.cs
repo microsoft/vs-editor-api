@@ -3,7 +3,7 @@
 using System.Diagnostics;
 using System.Text;
 
-namespace Microsoft.VisualStudio.Text.Utilities
+namespace Microsoft.VisualStudio.Utilities
 {
     /// <summary>
     /// The usage is:
@@ -13,8 +13,9 @@ namespace Microsoft.VisualStudio.Text.Utilities
     ///        ... sb.ToString() ...
     ///        inst.Free();
     /// </summary>
-    internal class PooledStringBuilder
+    public class PooledStringBuilder
     {
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2104")]
         public readonly StringBuilder Builder = new StringBuilder();
         private readonly ObjectPool<PooledStringBuilder> _pool;
 
@@ -53,7 +54,7 @@ namespace Microsoft.VisualStudio.Text.Utilities
 
         public string ToStringAndFree()
         {
-            string result = this.Builder.ToString();
+            var result = this.Builder.ToString();
             this.Free();
 
             return result;
@@ -61,7 +62,7 @@ namespace Microsoft.VisualStudio.Text.Utilities
 
         public string ToStringAndFree(int startIndex, int length)
         {
-            string result = this.Builder.ToString(startIndex, length);
+            var result = this.Builder.ToString(startIndex, length);
             this.Free();
 
             return result;
@@ -71,10 +72,15 @@ namespace Microsoft.VisualStudio.Text.Utilities
         private static readonly ObjectPool<PooledStringBuilder> s_poolInstance = CreatePool();
 
         // if someone needs to create a private pool;
-        public static ObjectPool<PooledStringBuilder> CreatePool()
+        /// <summary>
+        /// If someone need to create a private pool
+        /// </summary>
+        /// <param name="size">The size of the pool.</param>
+        /// <returns></returns>
+        public static ObjectPool<PooledStringBuilder> CreatePool(int size = 32)
         {
             ObjectPool<PooledStringBuilder> pool = null;
-            pool = new ObjectPool<PooledStringBuilder>(() => new PooledStringBuilder(pool), 32);
+            pool = new ObjectPool<PooledStringBuilder>(() => new PooledStringBuilder(pool), size);
             return pool;
         }
 

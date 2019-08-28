@@ -1,7 +1,7 @@
 ﻿// Copyright (c) Microsoft.  All Rights Reserved.  Licensed under the Apache License, Version 2.0.  See License.txt in the project root for license information.
 
+using System.Collections.Generic;
 using System.Globalization;
-using Microsoft.VisualStudio.Text.Utilities;
 using Microsoft.VisualStudio.Utilities;
 using TextSpan = Microsoft.VisualStudio.Text.Span;
 
@@ -18,13 +18,14 @@ namespace Microsoft.VisualStudio.Text.PatternMatching.Implementation
                 CultureInfo culture,
                 bool includeMatchedSpans,
                 bool allowFuzzyMatching,
-                bool allowSimpleSubstringMatching = false)
-                : base(includeMatchedSpans, culture, allowFuzzyMatching, allowSimpleSubstringMatching)
+                bool allowSimpleSubstringMatching = false,
+                PatternMatcher linkedMatcher = null)
+                : base(includeMatchedSpans, culture, allowFuzzyMatching, allowSimpleSubstringMatching, linkedMatcher)
             {
                 pattern = pattern.Trim();
 
                 _fullPatternSegment = new PatternSegment(pattern, allowFuzzyMatching);
-                _invalidPattern = _fullPatternSegment.IsInvalid;
+                HasInvalidPattern = _fullPatternSegment.IsInvalid;
             }
 
             public override void Dispose()

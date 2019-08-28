@@ -5,11 +5,11 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Diagnostics;
 
-namespace Microsoft.VisualStudio.Text.Utilities
+namespace Microsoft.VisualStudio.Utilities
 {
     [DebuggerDisplay("Count = {Count,nq}")]
     [DebuggerTypeProxy(typeof(ArrayBuilder<>.DebuggerProxy))]
-    internal sealed partial class ArrayBuilder<T> : IReadOnlyCollection<T>, IReadOnlyList<T>
+    public sealed partial class ArrayBuilder<T> : IReadOnlyCollection<T>, IReadOnlyList<T>
     {
         #region DebuggerProxy
 
@@ -28,7 +28,7 @@ namespace Microsoft.VisualStudio.Text.Utilities
                 get
                 {
                     var result = new T[_builder.Count];
-                    for (int i = 0; i < result.Length; i++)
+                    for (var i = 0; i < result.Length; i++)
                     {
                         result[i] = _builder[i];
                     }
@@ -49,12 +49,12 @@ namespace Microsoft.VisualStudio.Text.Utilities
             _builder = ImmutableArray.CreateBuilder<T>(size);
         }
 
-        public ArrayBuilder() :
-            this(8)
+        public ArrayBuilder()
+            : this(8)
         { }
 
-        private ArrayBuilder(ObjectPool<ArrayBuilder<T>> pool) :
-            this()
+        private ArrayBuilder(ObjectPool<ArrayBuilder<T>> pool)
+            : this()
         {
             _pool = pool;
         }
@@ -100,7 +100,7 @@ namespace Microsoft.VisualStudio.Text.Utilities
         {
             while (index > _builder.Count)
             {
-                _builder.Add(default(T));
+                _builder.Add(default);
             }
 
             if (index == _builder.Count)
@@ -164,8 +164,8 @@ namespace Microsoft.VisualStudio.Text.Utilities
 
         public int FindIndex(int startIndex, int count, Predicate<T> match)
         {
-            int endIndex = startIndex + count;
-            for (int i = startIndex; i < endIndex; i++)
+            var endIndex = startIndex + count;
+            for (var i = startIndex; i < endIndex; i++)
             {
                 if (match(_builder[i]))
                 {
@@ -174,6 +174,11 @@ namespace Microsoft.VisualStudio.Text.Utilities
             }
 
             return -1;
+        }
+
+        public bool Remove(T element)
+        {
+            return _builder.Remove(element);
         }
 
         public void RemoveAt(int index)
@@ -241,7 +246,7 @@ namespace Microsoft.VisualStudio.Text.Utilities
         {
             if (Count == 0)
             {
-                return default(ImmutableArray<T>);
+                return default;
             }
 
             return this.ToImmutable();
@@ -272,7 +277,20 @@ namespace Microsoft.VisualStudio.Text.Utilities
         /// </summary>
         public ImmutableArray<T> ToImmutableAndFree()
         {
-            var result = this.ToImmutable();
+            ImmutableArray<T> result;
+            if (Count == 0)
+            {
+                result = ImmutableArray<T>.Empty;
+            }
+            else if (_builder.Capacity == Count)
+            {
+                result = _builder.MoveToImmutable();
+            }
+            else
+            {
+                result = ToImmutable();
+            }
+
             this.Free();
             return result;
         }
@@ -302,7 +320,7 @@ namespace Microsoft.VisualStudio.Text.Utilities
                 // while the chance that we will need their size is diminishingly small.
                 // It makes sense to constrain the size to some "not too small" number. 
                 // Overall perf does not seem to be very sensitive to this number, so I picked 128 as a limit.
-                if (this.Count < 128)
+                if (_builder.Capacity < 128)
                 {
                     if (this.Count != 0)
                     {
@@ -341,7 +359,7 @@ namespace Microsoft.VisualStudio.Text.Utilities
             var builder = GetInstance();
             builder.EnsureCapacity(capacity);
 
-            for (int i = 0; i < capacity; i++)
+            for (var i = 0; i < capacity; i++)
             {
                 builder.Add(fillWithValue);
             }
@@ -383,7 +401,7 @@ namespace Microsoft.VisualStudio.Text.Utilities
             if (this.Count == 1)
             {
                 var dictionary1 = new Dictionary<K, ImmutableArray<T>>(1, comparer);
-                T value = this[0];
+                var value = this[0];
                 dictionary1.Add(keySelector(value), ImmutableArray.Create(value));
                 return dictionary1;
             }
@@ -396,7 +414,7 @@ namespace Microsoft.VisualStudio.Text.Utilities
             // bucketize
             // prevent reallocation. it may not have 'count' entries, but it won't have more. 
             var accumulator = new Dictionary<K, ArrayBuilder<T>>(Count, comparer);
-            for (int i = 0; i < Count; i++)
+            for (var i = 0; i < Count; i++)
             {
                 var item = this[i];
                 var key = keySelector(item);
@@ -482,7 +500,7 @@ namespace Microsoft.VisualStudio.Text.Utilities
 
         public void AddMany(T item, int count)
         {
-            for (int i = 0; i < count; i++)
+            for (var i = 0; i < count; i++)
             {
                 Add(item);
             }
@@ -492,8 +510,8 @@ namespace Microsoft.VisualStudio.Text.Utilities
         {
             var set = PooledHashSet<T>.GetInstance();
 
-            int j = 0;
-            for (int i = 0; i < Count; i++)
+            var j = 0;
+            for (var i = 0; i < Count; i++)
             {
                 if (set.Add(this[i]))
                 {
@@ -504,6 +522,28 @@ namespace Microsoft.VisualStudio.Text.Utilities
 
             Clip(j);
             set.Free();
+        }
+
+        public void SortAndRemoveDuplicates(IComparer<T> comparer)
+        {
+            if (Count <= 1)
+            {
+                return;
+            }
+
+            Sort(comparer);
+
+            int j = 0;
+            for (int i = 1; i < Count; i++)
+            {
+                if (comparer.Compare(this[j], this[i]) < 0)
+                {
+                    j++;
+                    this[j] = this[i];
+                }
+            }
+
+            Clip(j + 1);
         }
 
         public ImmutableArray<S> SelectDistinct<S>(Func<T, S> selector)

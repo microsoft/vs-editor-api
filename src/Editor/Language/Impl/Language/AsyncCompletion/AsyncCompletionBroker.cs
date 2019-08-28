@@ -20,7 +20,7 @@ namespace Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion.Implement
     internal sealed class AsyncCompletionBroker : IAsyncCompletionBroker
     {
         [Import]
-        private IGuardedOperations GuardedOperations;
+        private IGuardedOperationsInternal GuardedOperations;
 
         [Import]
         private JoinableTaskContext JoinableTaskContext;
@@ -84,7 +84,7 @@ namespace Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion.Implement
 
         public bool IsCompletionActive(ITextView textView)
         {
-            return textView.Properties.ContainsProperty(typeof(IAsyncCompletionSession));
+            return textView?.Properties?.ContainsProperty(typeof(IAsyncCompletionSession)) == true;
         }
 
         public bool IsCompletionSupported(IContentType contentType) => CompletionAvailability.IsAvailable(contentType, roles: null); // This will call HasCompletionProviders among doing other checks
@@ -133,7 +133,7 @@ namespace Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion.Implement
             // If it succeeds, we will map triggerLocation to available buffers to discover MEF parts.
             // This is expensive but projected languages require it to discover parts in all available buffers.
             // To avoid doing this work, call IsCompletionSupported with appropriate IContentType prior to calling TriggerCompletion
-            if (!CompletionAvailability.IsCurrentlyAvailable(textView, contentTypeToCheckBlacklist: triggerLocation.Snapshot.ContentType))
+            if (!CompletionAvailability.IsCurrentlyAvailable(textView))
                 return null;
 
             if (textView.IsClosed)
@@ -149,6 +149,10 @@ namespace Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion.Implement
 
             if (token.IsCancellationRequested || textView.IsClosed)
                 return null;
+
+            // See if we can use more aggressive cancellation token for typing scenarios
+            if (trigger.Reason == CompletionTriggerReason.Insertion)
+                token = CompletionUtilities.GetResponsiveToken(textView, token);
 
             GetCompletionSources(triggerLocation, GetItemSourceProviders, rootSnapshot, textView, textView.BufferGraph, trigger, telemetry, token,
                 out var sourcesWithLocations, out var applicableToSpan);
@@ -223,13 +227,16 @@ namespace Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion.Implement
 
             var aggregatingSession = AsyncCompletionSession.CreateAggregatingSession(applicableToSpan, JoinableTaskContext, sourcesWithLocations, this, textView, telemetry, GuardedOperations);
             
-            var completionData = await aggregatingSession.ConnectToCompletionSources(trigger, triggerLocation, rootSnapshot, token).ConfigureAwait(true);
+            var completionData = await aggregatingSession.ConnectToCompletionSources(
+                trigger, triggerLocation, rootSnapshot,
+                getExpandedContext: false, initialItems: default, expander: default,
+                token: token).ConfigureAwait(true);
 
             if (completionData.IsCanceled)
                 return AggregatedCompletionContext.Empty;
 
             var aggregateCompletionContext = new CompletionContext(
-                completionData.InitialCompletionItems,
+                completionData.Items,
                 completionData.RequestedSuggestionItemOptions,
                 completionData.InitialSelectionHint);
             return new AggregatedCompletionContext(aggregateCompletionContext, aggregatingSession);
@@ -249,7 +256,7 @@ namespace Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion.Implement
         /// is inappropriate, because it might be an elision buffer. If we map down from the elision buffer,
         /// we may locate incorrect points around elided text.
         ///
-        ///         /// Note that the root snapshot cannot be use to realize the <see cref="IAsyncCompletionSession.ApplicableToSpan"/>,
+        /// Note that the root snapshot cannot be use to realize the <see cref="IAsyncCompletionSession.ApplicableToSpan"/>,
         /// which is always defined on the <see cref="ITextView.TextSnapshot"/>
         /// </summary>
         /// <param name="textView">TextView which will host completion</param>

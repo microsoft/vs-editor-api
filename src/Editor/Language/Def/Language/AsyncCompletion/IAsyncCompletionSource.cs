@@ -8,7 +8,7 @@ using Microsoft.VisualStudio.Text.Editor;
 namespace Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion
 {
     /// <summary>
-    /// Represents a class that provides <see cref="CompletionItem"/>s and other information
+    /// Represents an object that provides <see cref="CompletionItem"/>s and other information
     /// relevant to the completion feature at a specific <see cref="SnapshotPoint"/>.
     /// </summary>
     /// <remarks>
@@ -26,7 +26,12 @@ namespace Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion
         /// <param name="applicableToSpan">Location where completion will take place, on the view's data buffer: <see cref="ITextView.TextBuffer"/></param>
         /// <param name="token">Cancellation token that may interrupt this operation</param>
         /// <returns>A struct that holds completion items and applicable span</returns>
-        Task<CompletionContext> GetCompletionContextAsync(IAsyncCompletionSession session, CompletionTrigger trigger, SnapshotPoint triggerLocation, SnapshotSpan applicableToSpan, CancellationToken token);
+        Task<CompletionContext> GetCompletionContextAsync(
+            IAsyncCompletionSession session,
+            CompletionTrigger trigger,
+            SnapshotPoint triggerLocation,
+            SnapshotSpan applicableToSpan,
+            CancellationToken token);
 
         /// <summary>
         /// Returns tooltip associated with provided <see cref="CompletionItem"/>.

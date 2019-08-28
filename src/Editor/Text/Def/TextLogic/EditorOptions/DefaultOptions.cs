@@ -249,6 +249,52 @@ namespace Microsoft.VisualStudio.Text.Editor
         /// </summary>
         internal static readonly EditorOptionKey<bool> EnableTypingLatencyGuardOptionId = new EditorOptionKey<bool>(EnableTypingLatencyGuardOptionName);
         internal const string EnableTypingLatencyGuardOptionName = "EnableTypingLatencyGuard";
+
+        /// <summary>
+        /// Option that defines the fallback font for the editor.
+        /// </summary>
+        /// <remarks>
+        /// Note that, unlike most other options, this value is only checked once at startup on <see cref="IEditorOptionsFactoryService.GlobalOptions"/>
+        /// and we do not react to changes.
+        /// </remarks>
+        public static readonly EditorOptionKey<string> FallbackFontId = new EditorOptionKey<string>(FallbackFontName);
+        public const string FallbackFontName = "FallbackFont";
+
+        /// <summary>
+        /// Option that defines when Editor should not block waiting for computation of completion items,
+        /// and either use the last good computed set of completion items, or dismiss completion if no completion items were computed so far.
+        /// </summary>
+        public static readonly EditorOptionKey<bool> NonBlockingCompletionOptionId = new EditorOptionKey<bool>(NonBlockingCompletionOptionName);
+        public const string NonBlockingCompletionOptionName = "NonBlockingCompletion";
+
+        /// <summary>
+        /// Option that defines how long Editor should block waiting for computation of completion items, in miliseconds,
+        /// and either use the last good computed set of completion items, or dismiss completion if no completion items were computed so far.
+        /// </summary>
+        public static readonly EditorOptionKey<bool> ResponsiveCompletionOptionId = new EditorOptionKey<bool>(ResponsiveCompletionOptionName);
+        public const string ResponsiveCompletionOptionName = "ResponsiveCompletion";
+
+        /// <summary>
+        /// Option that defines how long Editor should block waiting for computation of completion items, in miliseconds,
+        /// and either use the last good computed set of completion items, or dismiss completion if no completion items were computed so far.
+        /// </summary>
+        public static readonly EditorOptionKey<int> ResponsiveCompletionThresholdOptionId = new EditorOptionKey<int>(ResponsiveCompletionThresholdOptionName);
+        public const string ResponsiveCompletionThresholdOptionName = "ResponsiveCompletionThreshold";
+
+        /// <summary>
+        /// Option that keeps track of whether the responsive mode is enabled using remotely controlled feature flags.
+        /// If set to false, the feature is off, despite user's choice stored in <see cref="ResponsiveCompletionOptionId"/>.
+        /// </summary>
+        internal static readonly EditorOptionKey<bool> RemoteControlledResponsiveCompletionOptionId = new EditorOptionKey<bool>(RemoteControlledResponsiveCompletionOptionName);
+        internal const string RemoteControlledResponsiveCompletionOptionName = "RemoteControlledResponsiveCompletion";
+
+        /// <summary>
+        /// Option that keeps track of whether user toggled the <see cref="DiagnosticModeOptionId"/>.
+        /// If set to true, Editor will produce a detailed log for a particular scenario of interest.
+        /// </summary>
+        internal static readonly EditorOptionKey<bool> DiagnosticModeOptionId = new EditorOptionKey<bool>(DiagnosticModeOptionName);
+        internal const string DiagnosticModeOptionName = "DiagnosticMode";
+
         #endregion
     }
 
@@ -519,6 +565,9 @@ namespace Microsoft.VisualStudio.Text.Editor
         public override EditorOptionKey<bool> Key { get { return DefaultOptions.EnableTypingLatencyGuardOptionId; } }
     }
 
+    // The option definition for DefaultOptions.FallbackFontId is in the implementation DLLs (since the name of the default fallback will depend
+    // on the rendering system).
+
     /// <summary>
     /// The option definition that determines maximum allowed typing latency value in milliseconds. Its value comes either
     /// from remote settings or from <see cref="UserCustomMaximumTypingLatencyOption"/> if user specifies it in
@@ -550,5 +599,72 @@ namespace Microsoft.VisualStudio.Text.Editor
         public override int Default { get { return Timeout.Infinite; } }
         public override EditorOptionKey<int> Key { get { return DefaultOptions.UserCustomMaximumTypingLatencyOptionId; } }
     }
+
+    /// <summary>
+    /// The option definition that determines whether editor uses non blocking completion mode,
+    /// where editor does not wait for completion items to arrive when user presses a commit character.
+    /// This option is not exposed to the users. It is controllable by laguage services.
+    /// </summary>
+    [Export(typeof(EditorOptionDefinition))]
+    [Name(DefaultOptions.NonBlockingCompletionOptionName)]
+    public sealed class NonBlockingCompletionOption : EditorOptionDefinition<bool>
+    {
+        public override bool Default => false;
+        public override EditorOptionKey<bool> Key => DefaultOptions.NonBlockingCompletionOptionId;
+    }
+
+    /// <summary>
+    /// The option definition that determines whether editor uses responsive completion  mode,
+    /// where editor waits short amount of time for completion items when user presses a commit character.
+    /// If completion items still don't exist after the delay, completion is dismissed.
+    /// This option is exposed to the users at Tools/Options/Text Editor/Advanced page.
+    /// </summary>
+    [Export(typeof(EditorOptionDefinition))]
+    [Name(DefaultOptions.ResponsiveCompletionOptionName)]
+    public sealed class ResponsiveCompletionOption : EditorOptionDefinition<bool>
+    {
+        public override bool Default => true;
+        public override EditorOptionKey<bool> Key => DefaultOptions.ResponsiveCompletionOptionId;
+    }
+
+    /// <summary>
+    /// The option definition that determines the maximum allowed delay in responsive completion mode,
+    /// where editor waits specified amount of time for completion items when user presses a commit character.
+    /// If completion items still don't exist after the delay, completion is dismissed.
+    /// This option is not exposed to the users. It is controllable by remote setting.
+    /// </summary>
+    [Export(typeof(EditorOptionDefinition))]
+    [Name(DefaultOptions.ResponsiveCompletionThresholdOptionName)]
+    public sealed class ResponsiveCompletionThresholdOption : EditorOptionDefinition<int>
+    {
+        public override int Default => 250;
+        public override EditorOptionKey<int> Key => DefaultOptions.ResponsiveCompletionThresholdOptionId;
+    }
+
+    /// <summary>
+    /// The option definition that determines whether responsive mode should be disabled.
+    /// This option is set using remotely controllable feature flag, and is set to <c>true</c>
+    /// so that responsive mode remains enabled when feature flag service may not be reached.
+    /// </summary>
+    [Export(typeof(EditorOptionDefinition))]
+    [Name(DefaultOptions.RemoteControlledResponsiveCompletionOptionName)]
+    internal sealed class RemoteControlledResponsiveCompletionOption : EditorOptionDefinition<bool>
+    {
+        public override bool Default => true;
+        public override EditorOptionKey<bool> Key => DefaultOptions.RemoteControlledResponsiveCompletionOptionId;
+    }
+
+    /// <summary>
+    /// The option definition that puts Editor in a special diagnostic mode
+    /// where <c>DiagnosticLogger</c> class stores logs that can be later retrieved from a crash dump.
+    /// </summary>
+    [Export(typeof(EditorOptionDefinition))]
+    [Name(DefaultOptions.DiagnosticModeOptionName)]
+    internal sealed class DiagnosticModeOption : EditorOptionDefinition<bool>
+    {
+        public override bool Default => false;
+        public override EditorOptionKey<bool> Key => DefaultOptions.DiagnosticModeOptionId;
+    }
+
     #endregion
 }
