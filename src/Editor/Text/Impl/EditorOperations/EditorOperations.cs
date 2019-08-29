@@ -5255,9 +5255,9 @@ namespace Microsoft.VisualStudio.Text.Operations.Implementation
                         // lines themsleves (unlike in JoinSelectedLines),
                         // so this is much nicer!
                         var l = string.Concat(text);
-                        var span = Span.FromBounds(lines.First().Start, lines.Last().End);
+                        var span2 = Span.FromBounds(lines.First().Start, lines.Last().End);
 
-                        return ReplaceHelper(span, l);
+                        return ReplaceHelper(span2, l);
                     }, SelectionUpdate.Ignore, true);
                 });
             }
@@ -5343,9 +5343,9 @@ namespace Microsoft.VisualStudio.Text.Operations.Implementation
                         // moved the starting point, to match the first non-whitespace
                         // character, so we can just create a new span which will
                         // be used for replacing
-                        var span = Span.FromBounds(startPosition,
+                        var span2 = Span.FromBounds(startPosition,
                         lastLine.EndIncludingLineBreak.Position);
-                        return ReplaceHelper(span, newLine);
+                        return ReplaceHelper(span2, newLine);
                     }, SelectionUpdate.Ignore, true);
                 });
             }
