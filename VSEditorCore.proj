@@ -20,7 +20,8 @@
     <GenerateSolutionAfterBuild>true</GenerateSolutionAfterBuild>
   </PropertyGroup>
 
-  <Import Project="ProjectReferences.projitems"/>
+  <Import Project="src/OpenSource.Def.projitems"/>
+  <Import Project="src/OpenSource.Impl.projitems"/>
 
   <Target
     Name="DeepClean"
