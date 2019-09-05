@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project>
+  <!-- Core Xplat Editor -->
+  <ItemGroup>
+    <ProjectReference Include="$(RepoSrcEditorPath)Core\Def\CoreUtility.csproj">
+      <Private>$(ReferencesVSEditorCopyToOutput)</Private>
+    </ProjectReference>
+    <ProjectReference Include="$(RepoSrcEditorPath)Imaging\Def\Imaging.csproj">
+      <Private>$(ReferencesVSEditorCopyToOutput)</Private>
+    </ProjectReference>
+    <ProjectReference Include="$(RepoSrcEditorPath)Text\Def\TextData\TextData.csproj">
+      <Private>$(ReferencesVSEditorCopyToOutput)</Private>
+    </ProjectReference>
+    <ProjectReference Include="$(RepoSrcEditorPath)Text\Def\TextLogic\TextLogic.csproj">
+      <Private>$(ReferencesVSEditorCopyToOutput)</Private>
+    </ProjectReference>
+    <ProjectReference Include="$(RepoSrcEditorPath)Text\Def\TextUI\TextUI.csproj">
+      <Private>$(ReferencesVSEditorCopyToOutput)</Private>
+    </ProjectReference>
+    <ProjectReference Include="$(RepoSrcEditorPath)Text\Def\TextUIWpf\TextUIWpf.csproj">
+      <Private>$(ReferencesVSEditorCopyToOutput)</Private>
+    </ProjectReference>
+    <ProjectReference Include="$(RepoSrcEditorPath)Language\Def\Language\LanguageDef.csproj">
+      <Private>$(ReferencesVSEditorCopyToOutput)</Private>
+    </ProjectReference>
+    <ProjectReference Include="$(RepoSrcEditorPath)Language\Def\Intellisense\IntellisenseDef.csproj">
+      <Private>$(ReferencesVSEditorCopyToOutput)</Private>
+    </ProjectReference>
+    <ProjectReference Include="$(RepoSrcEditorPath)Text\Def\Internal\Internal.csproj">
+      <Private>$(ReferencesVSEditorCopyToOutput)</Private>
+    </ProjectReference>
+    <ProjectReference Include="$(RepoSrcEditorPath)Text\Def\Extras\Extras.csproj">
+      <Private>$(ReferencesVSEditorCopyToOutput)</Private>
+    </ProjectReference>
+    <ProjectReference Include="$(RepoSrcEditorPath)Language\Def\StandardClassification\StandardClassification.csproj">
+      <Private>$(ReferencesVSEditorCopyToOutput)</Private>
+    </ProjectReference>
+  </ItemGroup>
+
+  <!-- Cocoa Projects -->
+  <ItemGroup Condition="$(HaveXamarinMac)">
+    <ProjectReference Include="$(RepoSrcEditorPath)Text\Def\TextUICocoa\TextUICocoa.csproj">
+      <Private>$(ReferencesVSEditorCopyToOutput)</Private>
+    </ProjectReference>
+  </ItemGroup>
+</Project>
