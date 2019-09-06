@@ -2,122 +2,122 @@
 <Project>
   <!-- Fake Presentation Foundation for Cocoa -->
   <ItemGroup Condition="$(HaveXamarinMac)">
-    <ProjectReference Include="$(RepoSrcPath)FPF\WindowsBase\WindowsBase.csproj">
+    <ProjectReference Include="$(MSBuildThisFileDirectory)FPF\WindowsBase\WindowsBase.csproj">
       <SolutionFolder>FPF</SolutionFolder>
       <Private>$(ReferencesVSEditorCopyToOutput)</Private>
     </ProjectReference>
-    <ProjectReference Include="$(RepoSrcPath)FPF\PresentationCore\PresentationCore.csproj">
+    <ProjectReference Include="$(MSBuildThisFileDirectory)FPF\PresentationCore\PresentationCore.csproj">
       <SolutionFolder>FPF</SolutionFolder>
       <Private>$(ReferencesVSEditorCopyToOutput)</Private>
     </ProjectReference>
-    <ProjectReference Include="$(RepoSrcPath)FPF\PresentationFramework\PresentationFramework.csproj">
+    <ProjectReference Include="$(MSBuildThisFileDirectory)FPF\PresentationFramework\PresentationFramework.csproj">
       <SolutionFolder>FPF</SolutionFolder>
       <Private>$(ReferencesVSEditorCopyToOutput)</Private>
     </ProjectReference>
-    <ProjectReference Include="$(RepoSrcPath)FPF\UIAutomationTypes\UIAutomationTypes.csproj">
+    <ProjectReference Include="$(MSBuildThisFileDirectory)FPF\UIAutomationTypes\UIAutomationTypes.csproj">
       <SolutionFolder>FPF</SolutionFolder>
       <Private>$(ReferencesVSEditorCopyToOutput)</Private>
     </ProjectReference>
-    <ProjectReference Include="$(RepoSrcPath)FPF\UIAutomationProvider\UIAutomationProvider.csproj">
+    <ProjectReference Include="$(MSBuildThisFileDirectory)FPF\UIAutomationProvider\UIAutomationProvider.csproj">
       <SolutionFolder>FPF</SolutionFolder>
       <Private>$(ReferencesVSEditorCopyToOutput)</Private>
     </ProjectReference>
-    <ProjectReference Include="$(RepoSrcPath)FPF\UIAutomationClient\UIAutomationClient.csproj">
+    <ProjectReference Include="$(MSBuildThisFileDirectory)FPF\UIAutomationClient\UIAutomationClient.csproj">
       <SolutionFolder>FPF</SolutionFolder>
       <Private>$(ReferencesVSEditorCopyToOutput)</Private>
     </ProjectReference>
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="$(RepoSrcEditorPath)Text\Util\TextDataUtil\TextDataUtil.csproj">
+    <ProjectReference Include="$(MSBuildThisFileDirectory)Editor\Text\Util\TextDataUtil\TextDataUtil.csproj">
       <Private>$(ReferencesVSEditorCopyToOutput)</Private>
       <Consolidate>true</Consolidate>
     </ProjectReference>
-    <ProjectReference Include="$(RepoSrcEditorPath)Text\Util\TextUIUtil\TextUIUtil.csproj">
+    <ProjectReference Include="$(MSBuildThisFileDirectory)Editor\Text\Util\TextUIUtil\TextUIUtil.csproj">
       <Private>$(ReferencesVSEditorCopyToOutput)</Private>
       <Consolidate>true</Consolidate>
     </ProjectReference>
-    <ProjectReference Include="$(RepoSrcEditorPath)Core\Impl\CoreUtilityImpl.csproj">
+    <ProjectReference Include="$(MSBuildThisFileDirectory)Editor\Core\Impl\CoreUtilityImpl.csproj">
       <Private>$(ReferencesVSEditorCopyToOutput)</Private>
       <Consolidate>true</Consolidate>
     </ProjectReference>
-    <ProjectReference Include="$(RepoSrcEditorPath)Text\Util\TextLogicUtil\TextLogicUtil.csproj">
+    <ProjectReference Include="$(MSBuildThisFileDirectory)Editor\Text\Util\TextLogicUtil\TextLogicUtil.csproj">
       <Private>$(ReferencesVSEditorCopyToOutput)</Private>
       <Consolidate>true</Consolidate>
     </ProjectReference>
-    <ProjectReference Include="$(RepoSrcEditorPath)Text\Impl\BraceCompletion\BraceCompletionImpl.csproj">
+    <ProjectReference Include="$(MSBuildThisFileDirectory)Editor\Text\Impl\BraceCompletion\BraceCompletionImpl.csproj">
       <Private>$(ReferencesVSEditorCopyToOutput)</Private>
       <Consolidate>true</Consolidate>
     </ProjectReference>
-    <ProjectReference Include="$(RepoSrcEditorPath)Text\Impl\TextBufferUndoManager\TextBufferUndoManagerImpl.csproj">
+    <ProjectReference Include="$(MSBuildThisFileDirectory)Editor\Text\Impl\TextBufferUndoManager\TextBufferUndoManagerImpl.csproj">
       <Private>$(ReferencesVSEditorCopyToOutput)</Private>
       <Consolidate>true</Consolidate>
     </ProjectReference>
-    <ProjectReference Include="$(RepoSrcEditorPath)Text\Impl\TextSearch\TextSearchImpl.csproj">
+    <ProjectReference Include="$(MSBuildThisFileDirectory)Editor\Text\Impl\TextSearch\TextSearchImpl.csproj">
       <Private>$(ReferencesVSEditorCopyToOutput)</Private>
       <Consolidate>true</Consolidate>
     </ProjectReference>
-    <ProjectReference Include="$(RepoSrcEditorPath)Text\Impl\ClassificationAggregator\ClassificationAggregatorImpl.csproj">
+    <ProjectReference Include="$(MSBuildThisFileDirectory)Editor\Text\Impl\ClassificationAggregator\ClassificationAggregatorImpl.csproj">
       <Private>$(ReferencesVSEditorCopyToOutput)</Private>
       <Consolidate>true</Consolidate>
     </ProjectReference>
-    <ProjectReference Include="$(RepoSrcEditorPath)Text\Impl\TagAggregator\TagAggregatorImpl.csproj">
+    <ProjectReference Include="$(MSBuildThisFileDirectory)Editor\Text\Impl\TagAggregator\TagAggregatorImpl.csproj">
       <Private>$(ReferencesVSEditorCopyToOutput)</Private>
       <Consolidate>true</Consolidate>
     </ProjectReference>
-    <ProjectReference Include="$(RepoSrcEditorPath)Text\Impl\DifferenceAlgorithm\DifferenceAlgorithmImpl.csproj">
+    <ProjectReference Include="$(MSBuildThisFileDirectory)Editor\Text\Impl\DifferenceAlgorithm\DifferenceAlgorithmImpl.csproj">
       <Private>$(ReferencesVSEditorCopyToOutput)</Private>
       <Consolidate>true</Consolidate>
     </ProjectReference>
-    <ProjectReference Include="$(RepoSrcEditorPath)Text\Impl\EditorOptions\EditorOptionsImpl.csproj">
+    <ProjectReference Include="$(MSBuildThisFileDirectory)Editor\Text\Impl\EditorOptions\EditorOptionsImpl.csproj">
       <Private>$(ReferencesVSEditorCopyToOutput)</Private>
       <Consolidate>true</Consolidate>
     </ProjectReference>
-    <ProjectReference Include="$(RepoSrcEditorPath)Text\Impl\EditorPrimitives\EditorPrimitivesImpl.csproj">
+    <ProjectReference Include="$(MSBuildThisFileDirectory)Editor\Text\Impl\EditorPrimitives\EditorPrimitivesImpl.csproj">
       <Private>$(ReferencesVSEditorCopyToOutput)</Private>
       <Consolidate>true</Consolidate>
     </ProjectReference>
-    <ProjectReference Include="$(RepoSrcEditorPath)Text\Impl\EditorOperations\EditorOperationsImpl.csproj">
+    <ProjectReference Include="$(MSBuildThisFileDirectory)Editor\Text\Impl\EditorOperations\EditorOperationsImpl.csproj">
       <Private>$(ReferencesVSEditorCopyToOutput)</Private>
       <Consolidate>true</Consolidate>
     </ProjectReference>
-    <ProjectReference Include="$(RepoSrcEditorPath)Text\Impl\ClassificationType\ClassificationTypeImpl.csproj">
+    <ProjectReference Include="$(MSBuildThisFileDirectory)Editor\Text\Impl\ClassificationType\ClassificationTypeImpl.csproj">
       <Private>$(ReferencesVSEditorCopyToOutput)</Private>
       <Consolidate>true</Consolidate>
     </ProjectReference>
-    <ProjectReference Include="$(RepoSrcEditorPath)Text\Impl\Navigation\NavigationImpl.csproj">
+    <ProjectReference Include="$(MSBuildThisFileDirectory)Editor\Text\Impl\Navigation\NavigationImpl.csproj">
       <Private>$(ReferencesVSEditorCopyToOutput)</Private>
       <Consolidate>true</Consolidate>
     </ProjectReference>
-    <ProjectReference Include="$(RepoSrcEditorPath)Text\Impl\StandaloneUndo\StandaloneUndoImpl.csproj">
+    <ProjectReference Include="$(MSBuildThisFileDirectory)Editor\Text\Impl\StandaloneUndo\StandaloneUndoImpl.csproj">
       <Private>$(ReferencesVSEditorCopyToOutput)</Private>
       <Consolidate>true</Consolidate>
     </ProjectReference>
-    <ProjectReference Include="$(RepoSrcEditorPath)Text\Impl\TextModel\TextModelImpl.csproj">
+    <ProjectReference Include="$(MSBuildThisFileDirectory)Editor\Text\Impl\TextModel\TextModelImpl.csproj">
       <Private>$(ReferencesVSEditorCopyToOutput)</Private>
       <Consolidate>true</Consolidate>
     </ProjectReference>
-    <ProjectReference Include="$(RepoSrcEditorPath)Text\Impl\XPlat\MultiCaretImpl\MultiCaretImpl.csproj">
+    <ProjectReference Include="$(MSBuildThisFileDirectory)Editor\Text\Impl\XPlat\MultiCaretImpl\MultiCaretImpl.csproj">
       <Private>$(ReferencesVSEditorCopyToOutput)</Private>
       <Consolidate>true</Consolidate>
     </ProjectReference>
-    <ProjectReference Include="$(RepoSrcEditorPath)Language\Impl\Language\LanguageImpl.csproj">
+    <ProjectReference Include="$(MSBuildThisFileDirectory)Editor\Language\Impl\Language\LanguageImpl.csproj">
       <Private>$(ReferencesVSEditorCopyToOutput)</Private>
       <Consolidate>true</Consolidate>
     </ProjectReference>
-    <ProjectReference Include="$(RepoSrcEditorPath)Language\Util\LanguageUtil\LanguageUtil.csproj">
+    <ProjectReference Include="$(MSBuildThisFileDirectory)Editor\Language\Util\LanguageUtil\LanguageUtil.csproj">
       <Private>$(ReferencesVSEditorCopyToOutput)</Private>
       <Consolidate>true</Consolidate>
     </ProjectReference>
-    <ProjectReference Include="$(RepoSrcEditorPath)Text\Impl\Commanding\CommandingImpl.csproj">
+    <ProjectReference Include="$(MSBuildThisFileDirectory)Editor\Text\Impl\Commanding\CommandingImpl.csproj">
       <Private>$(ReferencesVSEditorCopyToOutput)</Private>
       <Consolidate>true</Consolidate>
     </ProjectReference>
-    <ProjectReference Include="$(RepoSrcEditorPath)Text\Impl\Outlining\Outlining.csproj">
+    <ProjectReference Include="$(MSBuildThisFileDirectory)Editor\Text\Impl\Outlining\Outlining.csproj">
       <Private>$(ReferencesVSEditorCopyToOutput)</Private>
       <Consolidate>true</Consolidate>
     </ProjectReference>
-    <ProjectReference Include="$(RepoSrcEditorPath)Text\Impl\PatternMatching\PatternMatchingImpl.csproj">
+    <ProjectReference Include="$(MSBuildThisFileDirectory)Editor\Text\Impl\PatternMatching\PatternMatchingImpl.csproj">
       <Private>$(ReferencesVSEditorCopyToOutput)</Private>
       <Consolidate>true</Consolidate>
     </ProjectReference>
