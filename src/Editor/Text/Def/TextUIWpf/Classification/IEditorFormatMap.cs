@@ -82,4 +82,18 @@ namespace Microsoft.VisualStudio.Text.Classification
         /// </summary>
         event EventHandler<FormatItemsEventArgs> FormatMappingChanged;
     }
+
+    public interface IEditorFormatMap2 : IEditorFormatMap
+    {
+        /// <summary>
+        /// Clears all properties for all keys on this <see cref="IEditorFormatMap"/>.
+        /// </summary>
+        void ClearProperties();
+
+        /// <summary>
+        /// Clears all properties for the given <paramref name="key"/> on this <see cref="IEditorFormatMap"/>.
+        /// </summary>
+        /// <param name="key">The key.</param>
+        void ClearProperties(string key);
+    }
 }
