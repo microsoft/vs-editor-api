@@ -15,53 +15,18 @@
     [Name("default " + nameof(NavigateToNextIssueCommandHandler))]
     [ContentType("any")]
     [TextViewRole(PredefinedTextViewRoles.Analyzable)]
-    internal sealed class NavigateToNextIssueCommandHandler : ICommandHandler<NavigateToNextIssueInDocumentCommandArgs>, ICommandHandler<NavigateToPreviousIssueInDocumentCommandArgs>
+    internal sealed class NavigateToNextIssueCommandHandler :
+        ICommandHandler<NavigateToNextIssueInDocumentCommandArgs>,
+        ICommandHandler<NavigateToPreviousIssueInDocumentCommandArgs>,
+        ICommandHandler<NavigateToNextErrorInDocumentCommandArgs>,
+        ICommandHandler<NavigateToPreviousErrorInDocumentCommandArgs>
     {
         [Import]
         private Lazy<IBufferTagAggregatorFactoryService> tagAggregatorFactoryService;
 
         public string DisplayName => Strings.NextIssue;
 
-        #region Previous Issue
-
-        public CommandState GetCommandState(NavigateToPreviousIssueInDocumentCommandArgs args) => CommandState.Available;
-
-        public bool ExecuteCommand(NavigateToPreviousIssueInDocumentCommandArgs args, CommandExecutionContext executionContext)
-        {
-            var snapshot = args.TextView.TextSnapshot;
-            var spans = this.GetTagSpansCollection(snapshot, args.ErrorTagTypeNames);
-
-            if (spans.Count == 0)
-            {
-                return true;
-            }
-
-            (int indexOfErrorSpan, bool containsPoint) = IndexOfTagSpanNearPoint(spans, args.TextView.Caret.Position.BufferPosition.Position);
-
-            int nextIndex = indexOfErrorSpan - 1;
-            if (containsPoint && (spans.Count == 1))
-            {
-                // There is only one error tag and it contains the caret. Ensure it stays put.
-                return true;
-            }
-
-            // Wrap if needed.
-            if (nextIndex < 0)
-            {
-                nextIndex = (spans.Count - 1);
-            }
-
-            args.TextView.Caret.MoveTo(new SnapshotPoint(snapshot, spans[nextIndex].Start));
-            args.TextView.Caret.EnsureVisible();
-            return true;
-        }
-
-        #endregion
-
-        #region Next Issue
-        public CommandState GetCommandState(NavigateToNextIssueInDocumentCommandArgs args) => CommandState.Available;
-
-        public bool ExecuteCommand(NavigateToNextIssueInDocumentCommandArgs args, CommandExecutionContext executionContext)
+        private bool NavigateToNextIssue(ErrorCommandArgsBase args, CommandExecutionContext executionContext)
         {
             var snapshot = args.TextView.TextSnapshot;
             var spans = this.GetTagSpansCollection(snapshot, args.ErrorTagTypeNames);
@@ -98,6 +63,71 @@
             return true;
         }
 
+        private bool NavigateToPreviousIssue(ErrorCommandArgsBase args, CommandExecutionContext executionContext)
+        {
+            var snapshot = args.TextView.TextSnapshot;
+            var spans = this.GetTagSpansCollection(snapshot, args.ErrorTagTypeNames);
+
+            if (spans.Count == 0)
+            {
+                return true;
+            }
+
+            (int indexOfErrorSpan, bool containsPoint) = IndexOfTagSpanNearPoint(spans, args.TextView.Caret.Position.BufferPosition.Position);
+
+            int nextIndex = indexOfErrorSpan - 1;
+            if (containsPoint && (spans.Count == 1))
+            {
+                // There is only one error tag and it contains the caret. Ensure it stays put.
+                return true;
+            }
+
+            // Wrap if needed.
+            if (nextIndex < 0)
+            {
+                nextIndex = (spans.Count - 1);
+            }
+
+            args.TextView.Caret.MoveTo(new SnapshotPoint(snapshot, spans[nextIndex].Start));
+            args.TextView.Caret.EnsureVisible();
+            return true;
+        }
+
+        #region Previous Issue
+        public CommandState GetCommandState(NavigateToPreviousIssueInDocumentCommandArgs args) => CommandState.Available;
+
+        public bool ExecuteCommand(NavigateToPreviousIssueInDocumentCommandArgs args, CommandExecutionContext executionContext)
+        {
+            return NavigateToPreviousIssue(args, executionContext);
+        }
+        #endregion
+
+        #region Next Issue
+        public CommandState GetCommandState(NavigateToNextIssueInDocumentCommandArgs args) => CommandState.Available;
+
+        public bool ExecuteCommand(NavigateToNextIssueInDocumentCommandArgs args, CommandExecutionContext executionContext)
+        {
+            return NavigateToNextIssue(args, executionContext);
+        }
+        #endregion
+
+
+        #region Next Error
+        public CommandState GetCommandState(NavigateToNextErrorInDocumentCommandArgs args) => CommandState.Available;
+
+        public bool ExecuteCommand(NavigateToNextErrorInDocumentCommandArgs args, CommandExecutionContext executionContext)
+        {
+            return NavigateToNextIssue(args, executionContext);
+        }
+        #endregion
+
+        #region Prev Error
+        public CommandState GetCommandState(NavigateToPreviousErrorInDocumentCommandArgs args) => CommandState.Available;
+
+        public bool ExecuteCommand(NavigateToPreviousErrorInDocumentCommandArgs args, CommandExecutionContext executionContext)
+        {
+            return NavigateToPreviousIssue(args, executionContext);
+        }
         #endregion
 
         private static (int index, bool containsPoint) IndexOfTagSpanNearPoint(NormalizedSpanCollection spans, int point)

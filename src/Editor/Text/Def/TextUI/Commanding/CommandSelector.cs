@@ -291,6 +291,18 @@ namespace Microsoft.VisualStudio.Text.Editor.Commanding
         /// <summary>⇧⌥⇣</summary>
         public const string ContractSelection = "contractSelection:";
 
+        /// <summary>⌥⇡</summary>
+        public const string NavigateToPreviousIssueInDocument = "navigateToPreviousIssueInDocument:";
+
+        /// <summary>⌥⇣</summary>
+        public const string NavigateToNextIssueInDocument = "navigateToNextIssueInDocument:";
+
+        /// <summary>⌘⌥⇡</summary>
+        public const string NavigateToPreviousErrorInDocument = "navigateToPreviousErrorInDocument:";
+
+        /// <summary>⌘⌥⇣</summary>
+        public const string NavigateToNextErrorInDocument = "navigateToNextErrorInDocument:";
+
         #endregion
     }
 
