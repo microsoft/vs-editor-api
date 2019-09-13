@@ -54,5 +54,12 @@ namespace Microsoft.VisualStudio.Text.Editor
         /// </summary>
         /// <remarks> Use this property to display the <see cref="ICocoaTextViewHost"/> Cocoa control.</remarks>
         NSView HostControl { get; }
+
+        /// <summary>
+        /// Return <see langword="true"/> if any margin has a view element with
+        /// input focus, which lets the host know not to handle some keyboard
+        /// commands.
+        /// </summary>
+        bool MarginViewElementHasInputFocus { get; }
     }
 }

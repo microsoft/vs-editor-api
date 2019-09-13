@@ -19,5 +19,11 @@ namespace Microsoft.VisualStudio.Text.Editor
         /// </summary>
         /// <exception cref="ObjectDisposedException"> if the margin is disposed.</exception>
         NSView VisualElement { get; }
+
+        /// <summary>
+        /// Return <see langword="true"/> if some component of <see cref="VisualElement"/>
+        /// has input focus. This lets the host know not to handle keyboard commands.
+        /// </summary>
+        bool ViewElementHasInputFocus { get; }
     }
 }
