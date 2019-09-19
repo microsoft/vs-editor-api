@@ -407,7 +407,7 @@ namespace Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion.Implement
                     // If lastModel is not null, we have finished all computation
                     // If lastModel is null, check if we at least received completion items. If that's the case, continue waiting for filtering
 
-                    if (lastModel == null && (_computation == default || _computation.RecentModel == default || _computation.RecentModel.Uninitialized))
+                    if (lastModel == null && (_computation == null || _computation.RecentModel == null || _computation.RecentModel.Uninitialized))
                     {
                         _telemetry.RecordBlockingWaitForComputation(_telemetry.UiStopwatch.ElapsedMilliseconds);
 
@@ -663,7 +663,7 @@ namespace Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion.Implement
                     this
                     );
             }
-            else if (trigger.Reason == CompletionTriggerReason.Invoke && _computation.RecentModel != default && !_computation.RecentModel.Uninitialized)
+            else if (trigger.Reason == CompletionTriggerReason.Invoke && _computation.RecentModel != null && !_computation.RecentModel.Uninitialized)
             {
                 // Completion session already exists and it is in a well defined state.
                 // User invoked completion again - we will treat this as shortcut to toggle the first expander
@@ -723,7 +723,7 @@ namespace Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion.Implement
 
         public void SelectDown()
         {
-            if (DeferredOperation != null || _computation.RecentModel == default || _computation.RecentModel.Uninitialized)
+            if (DeferredOperation != null || _computation.RecentModel == null || _computation.RecentModel.Uninitialized)
             {
                 // https://github.com/dotnet/roslyn/issues/31131 Dismiss completion so that up and down gestures are not blocked
                 Dismiss();
@@ -733,7 +733,7 @@ namespace Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion.Implement
 
         public void SelectPageDown()
         {
-            if (DeferredOperation != null || _computation.RecentModel == default || _computation.RecentModel.Uninitialized)
+            if (DeferredOperation != null || _computation.RecentModel == null || _computation.RecentModel.Uninitialized)
             {
                 // https://github.com/dotnet/roslyn/issues/31131 Dismiss completion so that up and down gestures are not blocked
                 Dismiss();
@@ -743,7 +743,7 @@ namespace Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion.Implement
 
         public void SelectUp()
         {
-            if (DeferredOperation != null || _computation.RecentModel == default || _computation.RecentModel.Uninitialized)
+            if (DeferredOperation != null || _computation.RecentModel == null || _computation.RecentModel.Uninitialized)
             {
                 // https://github.com/dotnet/roslyn/issues/31131 Dismiss completion so that up and down gestures are not blocked
                 Dismiss();
@@ -753,7 +753,7 @@ namespace Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion.Implement
 
         public void SelectPageUp()
         {
-            if (DeferredOperation != null || _computation.RecentModel == default || _computation.RecentModel.Uninitialized)
+            if (DeferredOperation != null || _computation.RecentModel == null || _computation.RecentModel.Uninitialized)
             {
                 // https://github.com/dotnet/roslyn/issues/31131 Dismiss completion so that up and down gestures are not blocked
                 Dismiss();
@@ -1259,7 +1259,7 @@ namespace Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion.Implement
             {
                 // Attempt to get new completion items
                 model = await GetInitialModel(trigger, updateLocation, rootSnapshot, token).ConfigureAwait(true);
-                if (model == default) // This happens when computation has been cancelled
+                if (model == null) // This happens when computation has been cancelled
                 {
                     _finalSessionState = CompletionSessionState.DismissedDueToCancellation;
                     ((IAsyncCompletionSession)this).Dismiss();
@@ -1723,7 +1723,7 @@ namespace Microsoft.VisualStudio.Language.Intellisense.AsyncCompletion.Implement
         /// </summary>
         private static bool EligibleToQuicklyDismiss(ModelComputation<CompletionModel> computation, char typedChar, bool inEligibleMode)
         {
-            return (computation == default || computation.RecentModel == default || computation.RecentModel.Uninitialized)
+            return (computation == null || computation.RecentModel == null || computation.RecentModel.Uninitialized)
                 && inEligibleMode
                 && !IsTabOrEmpty(typedChar);
         }
