@@ -99,8 +99,13 @@ namespace System.Windows.Threading
             if (timeout != Timeout.InfiniteTimeSpan)
                 throw new NotSupportedException("timeouts are not supported");
 
-            DispatchQueue.MainQueue.DispatchSync(
-                () => CoreInvoke(beginInvokeBehavior: false));
+            var mainQueue = DispatchQueue.MainQueue;
+
+            if (DispatchQueue.CurrentQueue != mainQueue)
+                mainQueue.DispatchSync(
+                    () => CoreInvoke(beginInvokeBehavior: false));
+            else
+                CoreInvoke(beginInvokeBehavior: false);
 
             if (exception != null)
                 throw exception;
