@@ -1,5 +1,5 @@
 //
-// GoToBaseMemberCommandArgs.cs
+// GoToBaseCommandArgs.cs
 // Copyright (c) 2019 Microsoft
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -20,11 +20,11 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-namespace Microsoft.VisualStudio.Text.Editor.Commanding.Commands.Navigation
+namespace Microsoft.VisualStudio.Text.Editor.Commanding.Commands
 {
-    public sealed class GoToBaseMemberCommandArgs : EditorCommandArgs
+    public sealed class GoToBaseCommandArgs : EditorCommandArgs
     {
-        public GoToBaseMemberCommandArgs(ITextView textView, ITextBuffer subjectBuffer) : base(textView, subjectBuffer)
+        public GoToBaseCommandArgs(ITextView textView, ITextBuffer subjectBuffer) : base(textView, subjectBuffer)
         {
         }
     }
