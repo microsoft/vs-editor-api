@@ -4583,8 +4583,8 @@ namespace Microsoft.VisualStudio.Text.Operations.Implementation
             DisplayTextRange selectionRange = _editorPrimitives.Selection.Clone();
             DisplayTextPoint startPoint = selectionRange.GetDisplayStartPoint();
             DisplayTextPoint endPoint = selectionRange.GetDisplayEndPoint();
-            startPoint.MoveTo(startPoint.StartOfViewLine);
-            endPoint.MoveToBeginningOfNextViewLine();
+            startPoint.MoveTo(startPoint.StartOfLine);
+            endPoint.MoveToBeginningOfNextLine();
 
             return startPoint.GetDisplayTextRange(endPoint);
         }
