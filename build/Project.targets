@@ -61,4 +61,11 @@
       <Reference Remove="UIAutomationTypes"/>
     </ItemGroup>
   </Target>
+
+  <Target Name="Test" Condition="$(MSBuildProjectFile.EndsWith('UnitTests.csproj'))">
+    <PropertyGroup>
+      <StandaloneMacEditor>$(RepoBinPath)StandaloneMacEditor\$(Configuration)\$(TargetFramework)\MonoDevelop.Ide.app\Contents\MacOS\MonoDevelop.Ide</StandaloneMacEditor>
+    </PropertyGroup>
+    <Exec Command="&quot;$(StandaloneMacEditor)&quot; test &quot;$(TargetPath)&quot; -xml &quot;$(RepoArtifactsPath)TestResults\$(TargetName).xml&quot;" />
+  </Target>
 </Project>
