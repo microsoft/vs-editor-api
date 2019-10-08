@@ -19,7 +19,7 @@ namespace Microsoft.VisualStudio.Text.Differencing
         /// </summary>
         /// <param name="leftBaseBuffer">The left (old, before) buffer.</param>
         /// <param name="rightBaseBuffer">The right (new, after) buffer.</param>
-        /// <remarks>This is equivalent to calling <code>CreateDifferenceBuffer(left, right, new StringDifferenceOptions());</code>.</remarks>
+        /// <remarks>This is equivalent to calling <c>CreateDifferenceBuffer(left, right, new StringDifferenceOptions());</c>.</remarks>
         IDifferenceBuffer CreateDifferenceBuffer(ITextBuffer leftBaseBuffer, ITextBuffer rightBaseBuffer);
 
         /// <summary>

@@ -9,8 +9,27 @@ namespace Microsoft.VisualStudio.Text.Differencing
     public interface IDifferenceViewer2 : IDifferenceViewer
     {
         /// <summary>
-        /// Raised when the difference viewer is fully initialized.
+        /// Does the right view exist?
         /// </summary>
-        event EventHandler Initialized;
+        /// <remarks>
+        /// Differences views are created lazily <see cref="IDifferenceViewer.RightView"/> will create the view if it does not already exist.
+        /// </remarks>
+        bool RightViewExists { get; }
+
+        /// <summary>
+        /// Does the left view exist?
+        /// </summary>
+        /// <remarks>
+        /// Differences views are created lazily <see cref="IDifferenceViewer.LeftView"/> will create the view if it does not already exist.
+        /// </remarks>
+        bool LeftViewExists { get; }
+
+        /// <summary>
+        /// Does the Inline view exist?
+        /// </summary>
+        /// <remarks>
+        /// Differences views are created lazily <see cref="IDifferenceViewer.InlineView"/> will create the view if it does not already exist.
+        /// </remarks>
+        bool InlineViewExists { get; }
     }
 }

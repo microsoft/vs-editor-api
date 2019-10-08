@@ -7,6 +7,7 @@ using System.Threading;
 using System.Threading.Tasks;
 
 using CoreFoundation;
+using Foundation;
 
 namespace System.Windows.Threading
 {
@@ -56,7 +57,7 @@ namespace System.Windows.Threading
 
         internal DispatcherOperation BeginInvoke()
         {
-            DispatchQueue.MainQueue.DispatchAsync(() =>
+            NSRunLoop.Main.BeginInvokeOnMainThread(() =>
             {
                 CoreInvoke(beginInvokeBehavior: true);
                 if (exception != null)
@@ -71,7 +72,7 @@ namespace System.Windows.Threading
             if (taskSource == null)
                 throw new InvalidOperationException();
 
-            DispatchQueue.MainQueue.DispatchAsync(() =>
+            NSRunLoop.Main.BeginInvokeOnMainThread(() =>
             {
                 try
                 {
@@ -102,8 +103,7 @@ namespace System.Windows.Threading
             var mainQueue = DispatchQueue.MainQueue;
 
             if (DispatchQueue.CurrentQueue != mainQueue)
-                mainQueue.DispatchSync(
-                    () => CoreInvoke(beginInvokeBehavior: false));
+                NSRunLoop.Main.InvokeOnMainThread(() => CoreInvoke(beginInvokeBehavior: false));
             else
                 CoreInvoke(beginInvokeBehavior: false);
 
