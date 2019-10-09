@@ -12,6 +12,7 @@ namespace Microsoft.VisualStudio.Text.Outlining
     using Microsoft.VisualStudio.Text.Editor;
     using Microsoft.VisualStudio.Text.Tagging;
     using Microsoft.VisualStudio.Threading;
+    using Microsoft.VisualStudio.Utilities;
     using Microsoft.Win32;
 
     [Export(typeof(IOutliningManagerService))]
@@ -40,6 +41,15 @@ namespace Microsoft.VisualStudio.Text.Outlining
                 textView.Closed += delegate { manager.Dispose(); };
                 return manager;
             });
+        }
+
+        [Export(typeof(EditorOptionDefinition))]
+        [Name(InternalOptions.SuppressOutliningOptionName)]
+        internal sealed class SuppressOutliningOption : EditorOptionDefinition<bool>
+        {
+            public override bool Default => false;
+
+            public override EditorOptionKey<bool> Key => InternalOptions.SuppressOutliningOptionId;
         }
     }
 }

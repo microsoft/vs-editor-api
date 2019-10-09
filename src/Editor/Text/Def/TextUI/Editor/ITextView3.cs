@@ -24,5 +24,7 @@ namespace Microsoft.VisualStudio.Text.Editor
 
         bool IsKeyboardFocused { get; }
         event EventHandler IsKeyboardFocusedChanged;
+
+        IViewSynchronizationManager SynchronizationManager { get; set; }
     }
 }

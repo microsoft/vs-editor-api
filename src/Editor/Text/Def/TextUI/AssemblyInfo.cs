@@ -16,6 +16,8 @@ using System.Security.Permissions;
 [assembly: InternalsVisibleTo("Microsoft.VisualStudio.UI.Text.Commanding.Implementation.UnitTests, PublicKey=" + ThisAssembly.PublicKey)]
 [assembly: InternalsVisibleTo("Microsoft.VisualStudio.Text.UI.Utilities, PublicKey=" + ThisAssembly.PublicKey)]
 [assembly: InternalsVisibleTo("Microsoft.VisualStudio.Platform.VSEditor, PublicKey=" + ThisAssembly.PublicKey)]
+[assembly: InternalsVisibleTo("Microsoft.VisualStudio.Text.DifferenceViewer.Implementation, PublicKey=" + ThisAssembly.PublicKey)]
+[assembly: InternalsVisibleTo("Microsoft.VisualStudio.Text.Outlining.Implementation, PublicKey=" + ThisAssembly.PublicKey)]
 
 // InternalsVisibleTo for VS for Mac implementation assembly:
 [assembly: InternalsVisibleTo("Microsoft.VisualStudio.Text.Implementation, PublicKey=0024000004800000940000000602000000240000525341310004000001000100e57febc1f220077550a65e338d3d15d7cbd189cf4f62f7c3829dcb2f8441a6c40631d172e3deb4dc0bb7237b44ec9daeb9bd7d72c3d64c4f52b968795443cb58bc341583c29440345b8c35f72f6a31aecb2903376136f8fc35779bb422eb643f8668fa6605c697bff927e3bb10745328ff878bd1b7e42bbcb839f04baa8460bd")]

@@ -35,12 +35,17 @@ namespace Microsoft.VisualStudio.Text.Differencing
         public static readonly EditorOptionKey<bool> SynchronizeSideBySideViewsId = new EditorOptionKey<bool>(DifferenceViewerOptions.SynchronizeSideBySideViewsName);
         public const string SynchronizeSideBySideViewsName = "Diff/View/SynchronizeSideBySideViews";
 
-
         /// <summary>
         /// If <c>true</c>, show the difference overview margin.
         /// </summary>
         public static readonly EditorOptionKey<bool> ShowDiffOverviewMarginId = new EditorOptionKey<bool>(DifferenceViewerOptions.ShowDiffOverviewMarginName);
         public const string ShowDiffOverviewMarginName = "Diff/View/ShowDiffOverviewMargin";
+
+        /// <summary>
+        /// If this is <c>false</c>, then the difference viewer will, even if a baseline has been specified, not show any differences.
+        /// </summary>
+        public static readonly EditorOptionKey<bool> ShowDifferencesId = new EditorOptionKey<bool>(DifferenceViewerOptions.ShowDifferencesName);
+        public const string ShowDifferencesName = "ShowDifferences";
     }
 
     /// <summary>
