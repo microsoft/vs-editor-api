@@ -16,7 +16,7 @@ namespace Microsoft.VisualStudio.Text.Editor
         /// <param name="e">
         /// Event arguments that describe the event.
         /// </param>
-        void PreprocessMouseLeftButtonDown(MouseEvent e);
+        void PreprocessMouseLeftButtonDown(MouseEventArgs e);
 
         /// <summary>
         /// Handles a mouse left button down event after the default handler.
@@ -24,7 +24,7 @@ namespace Microsoft.VisualStudio.Text.Editor
         /// <param name="e">
         /// Event arguments that describe the event.
         /// </param>
-        void PostprocessMouseLeftButtonDown(MouseEvent e);
+        void PostprocessMouseLeftButtonDown(MouseEventArgs e);
 
         /// <summary>
         /// Handles a mouse right button down event before the default handler.
@@ -32,7 +32,7 @@ namespace Microsoft.VisualStudio.Text.Editor
         /// <param name="e">
         /// Event arguments that describe the event.
         /// </param>
-        void PreprocessMouseRightButtonDown(MouseEvent e);
+        void PreprocessMouseRightButtonDown(MouseEventArgs e);
 
         /// <summary>
         /// Handles a mouse right button down event after the default handler.
@@ -40,7 +40,7 @@ namespace Microsoft.VisualStudio.Text.Editor
         /// <param name="e">
         /// Event arguments that describe the event.
         /// </param>
-        void PostprocessMouseRightButtonDown(MouseEvent e);
+        void PostprocessMouseRightButtonDown(MouseEventArgs e);
 
         /// <summary>
         /// Handles a mouse left button up event before the default handler.
@@ -48,7 +48,7 @@ namespace Microsoft.VisualStudio.Text.Editor
         /// <param name="e">
         /// Event arguments that describe the event.
         /// </param>
-        void PreprocessMouseLeftButtonUp(MouseEvent e);
+        void PreprocessMouseLeftButtonUp(MouseEventArgs e);
 
         /// <summary>
         /// Handles a mouse left button up event after the default handler.
@@ -56,7 +56,7 @@ namespace Microsoft.VisualStudio.Text.Editor
         /// <param name="e">
         /// Event arguments that describe the event.
         /// </param>
-        void PostprocessMouseLeftButtonUp(MouseEvent e);
+        void PostprocessMouseLeftButtonUp(MouseEventArgs e);
 
         /// <summary>
         /// Handles a mouse right button up event before the default handler.
@@ -64,7 +64,7 @@ namespace Microsoft.VisualStudio.Text.Editor
         /// <param name="e">
         /// Event arguments that describe the event.
         /// </param>
-        void PreprocessMouseRightButtonUp(MouseEvent e);
+        void PreprocessMouseRightButtonUp(MouseEventArgs e);
 
         /// <summary>
         /// Handles a mouse right button up event after the default handler.
@@ -72,7 +72,7 @@ namespace Microsoft.VisualStudio.Text.Editor
         /// <param name="e">
         /// Event arguments that describe the event.
         /// </param>
-        void PostprocessMouseRightButtonUp(MouseEvent e);
+        void PostprocessMouseRightButtonUp(MouseEventArgs e);
 
         /// <summary>
         /// Handles a mouse up event before the default handler.
@@ -80,7 +80,7 @@ namespace Microsoft.VisualStudio.Text.Editor
         /// <param name="e">
         /// Event arguments that describe the event.
         /// </param>
-        void PreprocessMouseUp(MouseEvent e);
+        void PreprocessMouseUp(MouseEventArgs e);
 
         /// <summary>
         /// Handles a mouse up event after the default handler.
@@ -88,7 +88,7 @@ namespace Microsoft.VisualStudio.Text.Editor
         /// <param name="e">
         /// Event arguments that describe the event.
         /// </param>
-        void PostprocessMouseUp(MouseEvent e);
+        void PostprocessMouseUp(MouseEventArgs e);
 
         /// <summary>
         /// Handles a mouse down event before the default handler.
@@ -96,7 +96,7 @@ namespace Microsoft.VisualStudio.Text.Editor
         /// <param name="e">
         /// Event arguments that describe the event.
         /// </param>
-        void PreprocessMouseDown(MouseEvent e);
+        void PreprocessMouseDown(MouseEventArgs e);
 
         /// <summary>
         /// Handles a mouse down event after the default handler.
@@ -104,7 +104,7 @@ namespace Microsoft.VisualStudio.Text.Editor
         /// <param name="e">
         /// Event arguments that describe the event.
         /// </param>
-        void PostprocessMouseDown(MouseEvent e);
+        void PostprocessMouseDown(MouseEventArgs e);
 
         /// <summary>
         /// Handles a mouse move event before the default handler.
@@ -112,7 +112,7 @@ namespace Microsoft.VisualStudio.Text.Editor
         /// <param name="e">
         /// Event arguments that describe the event.
         /// </param>
-        void PreprocessMouseMove(MouseEvent e);
+        void PreprocessMouseMove(MouseEventArgs e);
 
         /// <summary>
         /// Handles a mouse move event after the default handler.
@@ -120,7 +120,7 @@ namespace Microsoft.VisualStudio.Text.Editor
         /// <param name="e">
         /// Event arguments that describe the event.
         /// </param>
-        void PostprocessMouseMove(MouseEvent e);
+        void PostprocessMouseMove(MouseEventArgs e);
 
         /// <summary>
         /// Handles a mouse wheel event before the default handler.
@@ -128,7 +128,7 @@ namespace Microsoft.VisualStudio.Text.Editor
         /// <param name="e">
         /// Event arguments that describe the event.
         /// </param>
-        void PreprocessMouseWheel(MouseEvent e);
+        void PreprocessMouseWheel(MouseEventArgs e);
 
         /// <summary>
         /// Handles a mouse wheel event after the default handler.
@@ -136,7 +136,7 @@ namespace Microsoft.VisualStudio.Text.Editor
         /// <param name="e">
         /// Event arguments that describe the event.
         /// </param>
-        void PostprocessMouseWheel(MouseEvent e);
+        void PostprocessMouseWheel(MouseEventArgs e);
 
         /// <summary>
         /// Handles a mouse enter event before the default handler.
@@ -144,7 +144,7 @@ namespace Microsoft.VisualStudio.Text.Editor
         /// <param name="e">
         /// Event arguments that describe the event.
         /// </param>
-        void PreprocessMouseEnter(MouseEvent e);
+        void PreprocessMouseEnter(MouseEventArgs e);
 
         /// <summary>
         /// Handles a mouse enter event after the default handler.
@@ -152,7 +152,7 @@ namespace Microsoft.VisualStudio.Text.Editor
         /// <param name="e">
         /// Event arguments that describe the event.
         /// </param>
-        void PostprocessMouseEnter(MouseEvent e);
+        void PostprocessMouseEnter(MouseEventArgs e);
 
         /// <summary>
         /// Handles a mouse leave event before the default handler.
@@ -160,7 +160,7 @@ namespace Microsoft.VisualStudio.Text.Editor
         /// <param name="e">
         /// Event arguments that describe the event.
         /// </param>
-        void PreprocessMouseLeave(MouseEvent e);
+        void PreprocessMouseLeave(MouseEventArgs e);
 
         /// <summary>
         /// Handles a mouse leave event after the default handler.
@@ -168,24 +168,24 @@ namespace Microsoft.VisualStudio.Text.Editor
         /// <param name="e">
         /// Event arguments that describe the event.
         /// </param>
-        void PostprocessMouseLeave(MouseEvent e);
+        void PostprocessMouseLeave(MouseEventArgs e);
 
-        void PreprocessDraggingEntered(DragEvent e);
-        void PostprocessDraggingEntered(DragEvent e);
+        void PreprocessDraggingEntered(DragEventArgs e);
+        void PostprocessDraggingEntered(DragEventArgs e);
 
-        void PreprocessDraggingUpdated(DragEvent e);
-        void PostprocessDraggingUpdated(DragEvent e);
+        void PreprocessDraggingUpdated(DragEventArgs e);
+        void PostprocessDraggingUpdated(DragEventArgs e);
 
-        void PreprocessDraggingExited(DragEvent e);
-        void PostprocessDraggingExited(DragEvent e);
+        void PreprocessDraggingExited(DragEventArgs e);
+        void PostprocessDraggingExited(DragEventArgs e);
 
-        void PreprocessPrepareForDragOperation(DragEvent e);
-        void PostprocessPrepareForDragOperation(DragEvent e);
+        void PreprocessPrepareForDragOperation(DragEventArgs e);
+        void PostprocessPrepareForDragOperation(DragEventArgs e);
 
-        void PreprocessPerformDragOperation(DragEvent e);
-        void PostprocessPerformDragOperation(DragEvent e);
+        void PreprocessPerformDragOperation(DragEventArgs e);
+        void PostprocessPerformDragOperation(DragEventArgs e);
 
-        void PreprocessDraggingEnded(DragEvent e);
-        void PostprocessDraggingEnded(DragEvent e);
+        void PreprocessDraggingEnded(DragEventArgs e);
+        void PostprocessDraggingEnded(DragEventArgs e);
     }
 }

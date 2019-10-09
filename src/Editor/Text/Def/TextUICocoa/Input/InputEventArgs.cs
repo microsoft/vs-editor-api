@@ -13,7 +13,7 @@ namespace Microsoft.VisualStudio.Text.Editor
     /// Base class wrapping a native <see cref="NSEvent"/> input event
     /// that allows for indicating that the event has been handled.
     /// </summary>
-    public abstract class InputEvent
+    public abstract class InputEventArgs : EventArgs
     {
         /// <summary>
         /// The event thas is being processed.
@@ -21,11 +21,26 @@ namespace Microsoft.VisualStudio.Text.Editor
         public NSEvent Event { get; }
 
         /// <summary>
+        /// The type of event that is being processed.
+        /// </summary>
+        public NSEventType Type => Event.Type;
+
+        /// <summary>
+        /// Modifier flags for the event.
+        /// </summary>
+        public NSEventModifierMask ModifierFlags => Event.ModifierFlags;
+
+        /// <summary>
+        /// Destination window for the event.
+        /// </summary>
+        public NSWindow Window => Event.Window;
+
+        /// <summary>
         /// Whether or not this event has been handled.
         /// </summary>
         public bool Handled { get; set; }
 
-        private protected InputEvent(NSEvent @event)
+        private protected InputEventArgs(NSEvent @event)
             => Event = @event ?? throw new ArgumentNullException(nameof(@event));
     }
 }

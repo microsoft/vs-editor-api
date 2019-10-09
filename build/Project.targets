@@ -1,10 +1,29 @@
 <Project>
-  <Import Project="PackageVersions.targets"/>
-
   <PropertyGroup>
     <IsPackable Condition="'$(PushToPublicFeed)' != 'true'">false</IsPackable>
     <IncludeSymbols>true</IncludeSymbols>
   </PropertyGroup>
+
+  <PropertyGroup>
+    <HasEditorUnitTests Condition="'$(HasEditorUnitTests)' == '' And $(MSBuildProjectFile.EndsWith('UnitTests.csproj'))">true</HasEditorUnitTests>
+    <HasEditorUnitTests Condition="'$(HasEditorUnitTests)' == ''">false</HasEditorUnitTests>
+    <HasCocoaEditorUnitTests Condition="$(IsMac) And $(HasEditorUnitTests)">true</HasCocoaEditorUnitTests>
+    <HasCocoaEditorUnitTests Condition="'$(HasCocoaEditorUnitTests)' == ''">false</HasCocoaEditorUnitTests>
+  </PropertyGroup>
+
+  <ItemGroup Condition="$(HasEditorUnitTests)">
+    <PackageReference Include="xunit"/>
+  </ItemGroup>
+
+  <ItemGroup Condition="$(HasCocoaEditorUnitTests)">
+    <PackageReference Include="Xunit.StaFact.Mac"/>
+  </ItemGroup>
+
+  <ItemGroup Condition="$(HasCocoaEditorUnitTests) And '$(MSBuildProjectFile)' != 'StandaloneEditorCocoa.csproj'">
+    <ProjectReference Include="$(RepoSrcEditorPath)Text\Test\Util\StandaloneEditorCocoa\StandaloneEditorCocoa.csproj"/>
+  </ItemGroup>
+
+  <Import Project="PackageVersions.targets"/>
 
   <Target Name="DumpPaths">
     <Message Text="RepoRootPath: $(RepoRootPath)"/>
@@ -62,10 +81,10 @@
     </ItemGroup>
   </Target>
 
-  <Target Name="Test" Condition="$(MSBuildProjectFile.EndsWith('UnitTests.csproj'))">
+  <Target Name="Test" Condition="$(HasEditorUnitTests)">
     <PropertyGroup>
       <StandaloneMacEditor>$(RepoBinPath)StandaloneMacEditor\$(Configuration)\$(TargetFramework)\MonoDevelop.Ide.app\Contents\MacOS\MonoDevelop.Ide</StandaloneMacEditor>
     </PropertyGroup>
-    <Exec Command="&quot;$(StandaloneMacEditor)&quot; test &quot;$(TargetPath)&quot; -xml &quot;$(RepoArtifactsPath)TestResults\$(TargetName).xml&quot;" />
+    <Exec Command="&quot;$(StandaloneMacEditor)&quot; xunit &quot;$(TargetPath)&quot; -xml &quot;$(RepoArtifactsPath)TestResults\$(TargetName).xml&quot;" />
   </Target>
 </Project>

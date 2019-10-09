@@ -14,7 +14,6 @@ namespace Microsoft.VisualStudio.Text.Utilities
     using System.Security;
     using System.Text;
     using System.Windows;
-    using System.Windows.Input;
     using System.Windows.Interop;
     using System.Windows.Media;
 

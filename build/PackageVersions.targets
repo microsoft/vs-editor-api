@@ -43,5 +43,6 @@
   <ItemGroup>
     <PackageReference Update="xunit" Version="2.4.1"/>
     <PackageReference Update="xunit.runner.console" Version="2.4.1"/>
+    <PackageReference Update="Xunit.StaFact.Mac" Version="1.0.24-beta-g88c3555268"/>
   </ItemGroup>
 </Project>

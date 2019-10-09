@@ -3,7 +3,7 @@ using AppKit;
 
 namespace Microsoft.VisualStudio.Text.Editor
 {
-    public sealed class DragEvent
+    public sealed class DragEventArgs : EventArgs
     {
         /// <summary>
         /// The dragginginfo thas is being processed.
@@ -20,7 +20,7 @@ namespace Microsoft.VisualStudio.Text.Editor
         /// </summary>
         public bool Handled { get; set; }
 
-        public DragEvent(NSDraggingInfo draggingInfo)
+        public DragEventArgs(NSDraggingInfo draggingInfo)
         {
             DraggingInfo = draggingInfo;
         }

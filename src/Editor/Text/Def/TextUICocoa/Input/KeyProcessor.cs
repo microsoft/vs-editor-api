@@ -25,7 +25,7 @@ namespace Microsoft.VisualStudio.Text.Editor
         /// <param name="e">
         /// Event arguments that describe the event.
         /// </param>
-        public virtual void KeyDown(KeyEvent e)
+        public virtual void KeyDown(KeyEventArgs e)
         {
         }
 
@@ -35,7 +35,7 @@ namespace Microsoft.VisualStudio.Text.Editor
         /// <param name="e">
         /// Event arguments that describe the event.
         /// </param>
-        public virtual void KeyUp(KeyEvent e)
+        public virtual void KeyUp(KeyEventArgs e)
         {
         }
 
@@ -45,7 +45,7 @@ namespace Microsoft.VisualStudio.Text.Editor
         /// <param name="e">
         /// Event arguments that describe the event.
         /// </param>
-        public virtual void FlagsChanged(KeyEvent e)
+        public virtual void FlagsChanged(KeyEventArgs e)
         {
         }
     }

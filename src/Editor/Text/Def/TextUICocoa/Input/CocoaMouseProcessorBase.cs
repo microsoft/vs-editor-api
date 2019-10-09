@@ -17,140 +17,140 @@ namespace Microsoft.VisualStudio.Text.Editor
         /// Handles the mouse left button down event before the default handler.
         /// </summary>
         /// <param name="e">The event arguments.</param>
-        public virtual void PreprocessMouseLeftButtonDown(MouseEvent e) { }
+        public virtual void PreprocessMouseLeftButtonDown(MouseEventArgs e) { }
 
         /// <summary>
         /// Handles the mouse left button down event after the default handler.
         /// </summary>
         /// <param name="e">The event arguments.</param>
-        public virtual void PostprocessMouseLeftButtonDown(MouseEvent e) { }
+        public virtual void PostprocessMouseLeftButtonDown(MouseEventArgs e) { }
 
         /// <summary>
         /// Handles the mouse right button down event before the default handler.
         /// </summary>
         /// <param name="e">The event arguments.</param>
-        public virtual void PreprocessMouseRightButtonDown(MouseEvent e) { }
+        public virtual void PreprocessMouseRightButtonDown(MouseEventArgs e) { }
 
         /// <summary>
         /// Handles the mouse right button down event after the default handler.
         /// </summary>
         /// <param name="e">The event arguments.</param>
-        public virtual void PostprocessMouseRightButtonDown(MouseEvent e) { }
+        public virtual void PostprocessMouseRightButtonDown(MouseEventArgs e) { }
 
         /// <summary>
         /// Handles the mouse left button up event before the default handler.
         /// </summary>
         /// <param name="e">The event arguments.</param>
-        public virtual void PreprocessMouseLeftButtonUp(MouseEvent e) { }
+        public virtual void PreprocessMouseLeftButtonUp(MouseEventArgs e) { }
 
         /// <summary>
         /// Handles the mouse left button up event after the default handler.
         /// </summary>
         /// <param name="e">The event arguments.</param>
-        public virtual void PostprocessMouseLeftButtonUp(MouseEvent e) { }
+        public virtual void PostprocessMouseLeftButtonUp(MouseEventArgs e) { }
 
         /// <summary>
         /// Handles the mouse right button up event before the default handler.
         /// </summary>
         /// <param name="e">The event arguments.</param>
-        public virtual void PreprocessMouseRightButtonUp(MouseEvent e) { }
+        public virtual void PreprocessMouseRightButtonUp(MouseEventArgs e) { }
 
         /// <summary>
         /// Handles the mouse right button up event after the default handler.
         /// </summary>
         /// <param name="e">The event arguments.</param>
-        public virtual void PostprocessMouseRightButtonUp(MouseEvent e) { }
+        public virtual void PostprocessMouseRightButtonUp(MouseEventArgs e) { }
 
         /// <summary>
         /// Handles the mouse up event before the default handler.
         /// </summary>
         /// <param name="e">The event arguments.</param>
-        public virtual void PreprocessMouseUp(MouseEvent e) { }
+        public virtual void PreprocessMouseUp(MouseEventArgs e) { }
 
         /// <summary>
         /// Handles the mouse up event after the default handler.
         /// </summary>
         /// <param name="e">The event arguments.</param>
-        public virtual void PostprocessMouseUp(MouseEvent e) { }
+        public virtual void PostprocessMouseUp(MouseEventArgs e) { }
 
         /// <summary>
         /// Handles the mouse down event before the default handler.
         /// </summary>
         /// <param name="e">The event arguments.</param>
-        public virtual void PreprocessMouseDown(MouseEvent e) { }
+        public virtual void PreprocessMouseDown(MouseEventArgs e) { }
 
         /// <summary>
         /// Handles the mouse down event after the default handler.
         /// </summary>
         /// <param name="e">The event arguments.</param>
-        public virtual void PostprocessMouseDown(MouseEvent e) { }
+        public virtual void PostprocessMouseDown(MouseEventArgs e) { }
 
         /// <summary>
         /// Handles the mouse move event before the default handler.
         /// </summary>
         /// <param name="e">The event arguments.</param>
-        public virtual void PreprocessMouseMove(MouseEvent e) { }
+        public virtual void PreprocessMouseMove(MouseEventArgs e) { }
 
         /// <summary>
         /// Handles the mouse move event after the default handler.
         /// </summary>
         /// <param name="e">The event arguments.</param>
-        public virtual void PostprocessMouseMove(MouseEvent e) { }
+        public virtual void PostprocessMouseMove(MouseEventArgs e) { }
 
         /// <summary>
         /// Handles the mouse wheel event before the default handler.
         /// </summary>
         /// <param name="e">The event arguments.</param>
-        public virtual void PreprocessMouseWheel(MouseEvent e) { }
+        public virtual void PreprocessMouseWheel(MouseEventArgs e) { }
 
         /// <summary>
         /// Handles the mouse wheel event after the default handler.
         /// </summary>
         /// <param name="e">The event arguments.</param>
-        public virtual void PostprocessMouseWheel(MouseEvent e) { }
+        public virtual void PostprocessMouseWheel(MouseEventArgs e) { }
 
         /// <summary>
         /// Handles the mouse enter event before the default handler.
         /// </summary>
         /// <param name="e">The event arguments.</param>
-        public virtual void PreprocessMouseEnter(MouseEvent e) { }
+        public virtual void PreprocessMouseEnter(MouseEventArgs e) { }
 
         /// <summary>
         /// Handles the mouse enter event after the default handler.
         /// </summary>
         /// <param name="e">The event arguments.</param>
-        public virtual void PostprocessMouseEnter(MouseEvent e) { }
+        public virtual void PostprocessMouseEnter(MouseEventArgs e) { }
 
         /// <summary>
         /// Handles the mouse leave event before the default handler.
         /// </summary>
         /// <param name="e">The event arguments.</param>
-        public virtual void PreprocessMouseLeave(MouseEvent e) { }
+        public virtual void PreprocessMouseLeave(MouseEventArgs e) { }
 
         /// <summary>
         /// Handles the mouse leave event after the default handler.
         /// </summary>
         /// <param name="e">The event arguments.</param>
-        public virtual void PostprocessMouseLeave(MouseEvent e) { }
+        public virtual void PostprocessMouseLeave(MouseEventArgs e) { }
 
-        public virtual void PreprocessDraggingEntered(DragEvent e) { }
-        public virtual void PostprocessDraggingEntered(DragEvent e) { }
+        public virtual void PreprocessDraggingEntered(DragEventArgs e) { }
+        public virtual void PostprocessDraggingEntered(DragEventArgs e) { }
 
-        public virtual void PreprocessDraggingUpdated(DragEvent e) { }
-        public virtual void PostprocessDraggingUpdated(DragEvent e) { }
+        public virtual void PreprocessDraggingUpdated(DragEventArgs e) { }
+        public virtual void PostprocessDraggingUpdated(DragEventArgs e) { }
 
-        public virtual void PreprocessDraggingExited(DragEvent e) { }
-        public virtual void PostprocessDraggingExited(DragEvent e) { }
+        public virtual void PreprocessDraggingExited(DragEventArgs e) { }
+        public virtual void PostprocessDraggingExited(DragEventArgs e) { }
 
-        public virtual void PreprocessPrepareForDragOperation(DragEvent e) { }
-        public virtual void PostprocessPrepareForDragOperation(DragEvent e) { }
+        public virtual void PreprocessPrepareForDragOperation(DragEventArgs e) { }
+        public virtual void PostprocessPrepareForDragOperation(DragEventArgs e) { }
 
-        public virtual void PreprocessPerformDragOperation(DragEvent e) { }
-        public virtual void PostprocessPerformDragOperation(DragEvent e) { }
+        public virtual void PreprocessPerformDragOperation(DragEventArgs e) { }
+        public virtual void PostprocessPerformDragOperation(DragEventArgs e) { }
 
 
-        public virtual void PreprocessDraggingEnded(DragEvent e) { }
-        public virtual void PostprocessDraggingEnded(DragEvent e) { }
+        public virtual void PreprocessDraggingEnded(DragEventArgs e) { }
+        public virtual void PostprocessDraggingEnded(DragEventArgs e) { }
 
         #endregion
     }
