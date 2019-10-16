@@ -266,6 +266,8 @@ namespace Microsoft.VisualStudio.Text.Editor.Commanding
 
         public const string InvokeSignatureHelp = "invokeSignatureHelp:";
 
+        public const string InvokeQuickInfo = "invokeQuickInfo:";
+
         public const string InvokeQuickFix = "invokeQuickFix:";
 
         public const string TransposeWord = "transposeWord:";
