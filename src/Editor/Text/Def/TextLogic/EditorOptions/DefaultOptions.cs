@@ -289,12 +289,17 @@ namespace Microsoft.VisualStudio.Text.Editor
         internal const string RemoteControlledResponsiveCompletionOptionName = "RemoteControlledResponsiveCompletion";
 
         /// <summary>
-        /// Option that keeps track of whether user toggled the <see cref="DiagnosticModeOptionId"/>.
-        /// If set to true, Editor will produce a detailed log for a particular scenario of interest.
+        /// This option is no longer used. Back when it was used,
+        /// if set to true, Editor produced a detailed log for a particular scenario of interest.
         /// </summary>
         internal static readonly EditorOptionKey<bool> DiagnosticModeOptionId = new EditorOptionKey<bool>(DiagnosticModeOptionName);
         internal const string DiagnosticModeOptionName = "DiagnosticMode";
 
+        /// <summary>
+        /// Determines whether automatic formatting should adapt to the contents of the file instead of user options.
+        /// </summary>
+        public static readonly EditorOptionKey<bool> AdaptiveFormattingOptionId = new EditorOptionKey<bool>(AdaptiveFormattingOptionName);
+        public const string AdaptiveFormattingOptionName = "AdaptiveFormatting";
         #endregion
     }
 
@@ -655,8 +660,7 @@ namespace Microsoft.VisualStudio.Text.Editor
     }
 
     /// <summary>
-    /// The option definition that puts Editor in a special diagnostic mode
-    /// where <c>DiagnosticLogger</c> class stores logs that can be later retrieved from a crash dump.
+    /// This option is no longer used
     /// </summary>
     [Export(typeof(EditorOptionDefinition))]
     [Name(DefaultOptions.DiagnosticModeOptionName)]
@@ -664,6 +668,17 @@ namespace Microsoft.VisualStudio.Text.Editor
     {
         public override bool Default => false;
         public override EditorOptionKey<bool> Key => DefaultOptions.DiagnosticModeOptionId;
+    }
+
+    /// <summary>
+    /// Determines whether automatic formatting should adapt to the contents of the file instead of user options.
+    /// </summary>
+    [Export(typeof(EditorOptionDefinition))]
+    [Name(DefaultOptions.AdaptiveFormattingOptionName)]
+    internal sealed class AdaptiveFormattingOption : EditorOptionDefinition<bool>
+    {
+        public override bool Default => true;
+        public override EditorOptionKey<bool> Key => DefaultOptions.AdaptiveFormattingOptionId;
     }
 
     #endregion

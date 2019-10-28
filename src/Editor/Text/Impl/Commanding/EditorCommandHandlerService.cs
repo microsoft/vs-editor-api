@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -56,53 +56,42 @@ namespace Microsoft.VisualStudio.UI.Text.Commanding.Implementation
         {
             if (!_factory.JoinableTaskContext.IsOnMainThread)
             {
-                throw new InvalidOperationException($"{nameof(IEditorCommandHandlerService.GetCommandState)} method shoudl only be called on the UI thread.");
+                throw new InvalidOperationException($"{nameof(IEditorCommandHandlerService.GetCommandState)} method should only be called on the UI thread.");
             }
 
-            // In Razor scenario it's possible that EditorCommandHandlerService is called re-entrantly,
-            // first by contained language command filter and then by editor command chain.
-            // To preserve Razor commanding semantics, only execute handlers once.
-            if (IsReentrantCall())
+            // Build up chain of handlers per buffer
+            Func<CommandState> handlerChain = nextCommandHandler ?? UnavalableCommandFunc;
+            foreach (var bufferAndHandler in GetOrderedBuffersAndCommandHandlers<T>().Reverse())
             {
-                return nextCommandHandler?.Invoke() ?? CommandState.Unavailable;
-            }
-
-            using (var reentrancyGuard = new ReentrancyGuard(_textView))
-            {
-                // Build up chain of handlers per buffer
-                Func<CommandState> handlerChain = nextCommandHandler ?? UnavalableCommandFunc;
-                foreach (var bufferAndHandler in GetOrderedBuffersAndCommandHandlers<T>().Reverse())
+                T args = null;
+                // Declare locals to ensure that we don't end up capturing the wrong thing
+                var nextHandler = handlerChain;
+                var handler = bufferAndHandler.handler;
+                args = args ?? (args = argsFactory(_textView, bufferAndHandler.buffer));
+                if (args == null)
                 {
-                    T args = null;
-                    // Declare locals to ensure that we don't end up capturing the wrong thing
-                    var nextHandler = handlerChain;
-                    var handler = bufferAndHandler.handler;
-                    args = args ?? (args = argsFactory(_textView, bufferAndHandler.buffer));
-                    if (args == null)
-                    {
-                        // Args factory failed, skip command handlers and just call next
-                        return handlerChain();
-                    }
-
-                    handlerChain = () => handler.GetCommandState(args, nextHandler);
+                    // Args factory failed, skip command handlers and just call next
+                    return handlerChain();
                 }
 
-                // Kick off the first command handler
-                return handlerChain();
+                handlerChain = () => handler.GetCommandState(args, nextHandler);
             }
+
+            // Kick off the first command handler
+            return handlerChain();
         }
 
         public void Execute<T>(Func<ITextView, ITextBuffer, T> argsFactory, Action nextCommandHandler) where T : EditorCommandArgs
         {
             if (!_factory.JoinableTaskContext.IsOnMainThread)
             {
-                throw new InvalidOperationException($"{nameof(IEditorCommandHandlerService.Execute)} method shoudl only be called on the UI thread.");
+                throw new InvalidOperationException($"{nameof(IEditorCommandHandlerService.Execute)} method should only be called on the UI thread.");
             }
 
-            // In Razor scenario it's possible that EditorCommandHandlerService is called re-entrantly,
-            // first by contained language command filter and then by editor command chain.
-            // To preserve Razor commanding semantics, only execute handlers once.
-            if (IsReentrantCall())
+            // In contained languge (Razor) scenario it's possible that EditorCommandHandlerService is called re-entrantly
+            // for the same command, first by contained language command filter and then by editor command chain.
+            // To preserve Razor commanding semantics, only execute handlers once for the same command.
+            if (IsReentrantCall<T>())
             {
                 nextCommandHandler?.Invoke();
                 return;
@@ -110,7 +99,7 @@ namespace Microsoft.VisualStudio.UI.Text.Commanding.Implementation
 
             EditorCommandHandlerServiceState state = null;
 
-            using (var reentrancyGuard = new ReentrancyGuard(_textView))
+            using (var reentrancyGuard = new ReentrancyGuard<T>(_textView))
             {
                 // Build up chain of handlers per buffer
                 Action handlerChain = nextCommandHandler ?? EmptyAction;
@@ -180,7 +169,7 @@ namespace Microsoft.VisualStudio.UI.Text.Commanding.Implementation
             // Per internal convention hosts can add additional host specific input context properties into
             // text view's property bag. We then surface it to command handlers (first item in case it's a list) via
             // CommandExecutionContext properties using type name as a key.
-            if (_textView.Properties.TryGetProperty("Additional Command Execution Context", out object hostSpecificInputContext))
+            if (_textView.Properties.TryGetProperty(CommandingConstants.AdditionalCommandExecutionContext, out object hostSpecificInputContext))
             {
                 if (hostSpecificInputContext != null)
                 {
@@ -253,25 +242,42 @@ namespace Microsoft.VisualStudio.UI.Text.Commanding.Implementation
             nextCommandHandler?.Invoke();
         }
 
-        private class ReentrancyGuard : IDisposable
+        // Guards against re-entrant execution of the same command (can happen in contained language scenario
+        // where two command handler services are chained together).
+        // The guard works by placing a key composed of the ReentrancyGuard's type and the type of command
+        // being executed into text view's property bag.
+        private class ReentrancyGuard<T> : IDisposable
+            where T : EditorCommandArgs
         {
             private readonly IPropertyOwner _owner;
 
             public ReentrancyGuard(IPropertyOwner owner)
             {
                 _owner = owner ?? throw new ArgumentNullException(nameof(owner));
-                _owner.Properties[typeof(ReentrancyGuard)] = this;
+                _owner.Properties[GetGuardKey()] = this;
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public static (Type, Type) GetGuardKey()
+            {
+                return (typeof(ReentrancyGuard<>), typeof(T));
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            public static bool IsReentrantCall(IPropertyOwner owner)
+            {
+                return owner.Properties.ContainsProperty((typeof(ReentrancyGuard<>), typeof(T)));
             }
 
             public void Dispose()
             {
-                _owner.Properties.RemoveProperty(typeof(ReentrancyGuard));
+                _owner.Properties.RemoveProperty(GetGuardKey());
             }
         }
 
-        private bool IsReentrantCall()
+        private bool IsReentrantCall<T>() where T : EditorCommandArgs
         {
-            return _textView.Properties.ContainsProperty(typeof(ReentrancyGuard));
+            return ReentrancyGuard<T>.IsReentrantCall(_textView);
         }
 
         //internal for unit tests
@@ -356,7 +362,8 @@ namespace Microsoft.VisualStudio.UI.Text.Commanding.Implementation
                         {
                             var handler = handlerBuckets[i].Peek();
                             // Can this handler handle content type more specific than top handler in firstNonEmptyBucket?
-                            if (_factory.ContentTypeComparer.Compare(handler.Metadata.ContentTypes, currentHandler.Metadata.ContentTypes) < 0)
+                            if (_factory.ContentTypeOrderer.IsMoreSpecific(candidate: handler.Metadata.ContentTypes,
+                                                                           current: currentHandler.Metadata.ContentTypes))
                             {
                                 foundBetterHandler = true;
                                 handlerBuckets[i].Pop();
@@ -499,6 +506,7 @@ namespace Microsoft.VisualStudio.UI.Text.Commanding.Implementation
             private readonly EditorCommandHandlerServiceState _state;
             private readonly ITextView _textView;
             private readonly ILoggingServiceInternal _loggingService;
+            private INamed _timedOutCommandHandler;
 
             public TimeoutController(EditorCommandHandlerServiceState state, ITextView textView, ILoggingServiceInternal loggingService)
             {
@@ -508,13 +516,14 @@ namespace Microsoft.VisualStudio.UI.Text.Commanding.Implementation
             }
 
             public int CancelAfter
-                => _state.IsExecutingTypingCommand ?
+                => _state.IsExecutingTypingCommand && _textView.Options.GetOptionValue(DefaultOptions.EnableTypingLatencyGuardOptionId) ?
                 _textView.Options.GetOptionValue(DefaultOptions.MaximumTypingLatencyOptionId) :
                 Timeout.Infinite;
 
             public bool ShouldCancel()
             {
-                // TODO: this needs to allow non typing command scenarios for example hitting return in inline rename, tracked by #657668
+                // Grab currently executing command handler as by the time it's cancelled and OnTimeout() is called it migth be gone.
+                _timedOutCommandHandler = _state.GetCurrentlyExecutingCommandHander();
                 return _state.IsExecutingTypingCommand;
             }
 
@@ -526,7 +535,7 @@ namespace Microsoft.VisualStudio.UI.Text.Commanding.Implementation
 
                 _loggingService?.PostEvent($"{TelemetryEventPrefix}/ExecutionTimeout",
                     $"{TelemetryPropertyPrefix}.Command", executingCommand?.GetType().FullName,
-                    $"{TelemetryPropertyPrefix}.CommandHandler", _state.GetCurrentlyExecutingCommandHander()?.GetType().FullName,
+                    $"{TelemetryPropertyPrefix}.CommandHandler", _timedOutCommandHandler?.GetType().FullName,
                     $"{TelemetryPropertyPrefix}.Timeout", this.CancelAfter,
                     $"{TelemetryPropertyPrefix}.WasExecutionCancelled", wasExecutionCancelled);
             }

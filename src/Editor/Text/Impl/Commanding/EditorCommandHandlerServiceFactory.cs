@@ -28,7 +28,7 @@ namespace Microsoft.VisualStudio.UI.Text.Commanding.Implementation
             IStatusBarService statusBar,
             IContentTypeRegistryService contentTypeRegistryService,
             IGuardedOperations guardedOperations,
-            [Import(AllowDefault = true)] ILoggingServiceInternal loggingService)
+            ILoggingServiceInternal loggingService)
         {
             UIThreadOperationExecutor = uiThreadOperationExecutor;
             JoinableTaskContext = joinableTaskContext;
@@ -37,7 +37,7 @@ namespace Microsoft.VisualStudio.UI.Text.Commanding.Implementation
             LoggingService = loggingService;
 
             _contentTypeRegistryService = contentTypeRegistryService;
-            ContentTypeComparer = new StableContentTypeComparer(_contentTypeRegistryService);
+            ContentTypeOrderer = new StableContentTypeOrderer<ICommandHandler, ICommandHandlerMetadata>(_contentTypeRegistryService);
             _commandHandlers = OrderCommandHandlers(commandHandlers);
             if (!bufferResolvers.Any())
             {
@@ -57,7 +57,7 @@ namespace Microsoft.VisualStudio.UI.Text.Commanding.Implementation
 
         internal IStatusBarService StatusBar { get; }
 
-        internal StableContentTypeComparer ContentTypeComparer { get; }
+        internal StableContentTypeOrderer<ICommandHandler, ICommandHandlerMetadata> ContentTypeOrderer { get; }
 
         public IEditorCommandHandlerService GetService(ITextView textView)
         {
@@ -85,9 +85,10 @@ namespace Microsoft.VisualStudio.UI.Text.Commanding.Implementation
             return new EditorCommandHandlerService(this, textView, _commandHandlers, new SingleBufferResolver(subjectBuffer));
         }
 
-        private IEnumerable<Lazy<ICommandHandler, ICommandHandlerMetadata>> OrderCommandHandlers(IEnumerable<Lazy<ICommandHandler, ICommandHandlerMetadata>> commandHandlers)
+        // internal for unit tests
+        internal IEnumerable<Lazy<ICommandHandler, ICommandHandlerMetadata>> OrderCommandHandlers(IEnumerable<Lazy<ICommandHandler, ICommandHandlerMetadata>> commandHandlers)
         {
-            return commandHandlers.OrderBy((handler) => handler.Metadata.ContentTypes, ContentTypeComparer);
+            return this.ContentTypeOrderer.Order(commandHandlers);
         }
     }
 }
