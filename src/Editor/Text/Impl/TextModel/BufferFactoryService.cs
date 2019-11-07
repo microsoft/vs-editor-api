@@ -16,6 +16,7 @@ namespace Microsoft.VisualStudio.Text.Implementation
     using System.IO.MemoryMappedFiles;
     using System.Text;
     using Microsoft.VisualStudio.Text.Differencing;
+    using Microsoft.VisualStudio.Text.Document;
     using Microsoft.VisualStudio.Text.Projection;
     using Microsoft.VisualStudio.Text.Projection.Implementation;
     using Microsoft.VisualStudio.Text.Utilities;
@@ -70,12 +71,15 @@ namespace Microsoft.VisualStudio.Text.Implementation
 
         [Import]
         internal IDifferenceService _differenceService { get; set; }
-        
+
         [Import]
         internal ITextDifferencingSelectorService _textDifferencingSelectorService { get; set; }
 
         [Import]
         internal GuardedOperations _guardedOperations { get; set; }
+
+        [Import]
+        internal IWhitespaceManagerFactory _whitespaceManagerFactory { get; set; }
 
         #endregion
 
@@ -202,6 +206,11 @@ namespace Microsoft.VisualStudio.Text.Implementation
 
         public ITextBuffer CreateTextBuffer(TextReader reader, IContentType contentType, long length, string traceId)
         {
+            return this.CreateTextBuffer(reader, contentType, length, traceId, throwOnInvalidCharacters: false);
+        }
+
+        public ITextBuffer CreateTextBuffer(TextReader reader, IContentType contentType, long length, string traceId, bool throwOnInvalidCharacters)
+        {
             if (reader == null)
             {
                 throw new ArgumentNullException(nameof(reader));
@@ -215,25 +224,30 @@ namespace Microsoft.VisualStudio.Text.Implementation
                 throw new InvalidOperationException(Strings.FileTooLarge);
             }
 
-            bool hasConsistentLineEndings;
             int longestLineLength;
-            StringRebuilder content = TextImageLoader.Load(reader, length, out hasConsistentLineEndings, out longestLineLength);
+            StringRebuilder content = TextImageLoader.Load(
+                reader,
+                length,
+                out var newlineState,
+                out var leadingWhitespaceState,
+                out longestLineLength,
+                throwOnInvalidCharacters: throwOnInvalidCharacters);
 
             ITextBuffer buffer = Make(contentType, content, false);
-            if (!hasConsistentLineEndings)
-            {
-                // leave a sign that line endings are inconsistent. This is rather nasty but for now
-                // we don't want to pollute the API with this factoid
-                buffer.Properties.AddProperty("InconsistentLineEndings", true);
-            }
-            // leave a similar sign about the longest line in the buffer.
+
+            // Make the call to GetWhitespaceManager to add the manager to the properties. We don't need the return value here.
+            var _ = _whitespaceManagerFactory.GetOrCreateWhitespaceManager(buffer, newlineState, leadingWhitespaceState);
+
+            // Leave a sign about the longest line in the buffer. This is rather nasty, but for now
+            // we don't want to pollute the API with this factoid
+            buffer.Properties["LongestLineLength"] = longestLineLength;
 
             return buffer;
         }
 
         public ITextBuffer CreateTextBuffer(TextReader reader, IContentType contentType)
         {
-            return CreateTextBuffer(reader, contentType, -1, "legacy");
+            return CreateTextBuffer(reader, contentType, -1, "legacy", throwOnInvalidCharacters: false);
         }
 
         internal static StringRebuilder StringRebuilderFromSnapshotAndSpan(ITextSnapshot snapshot, Span span)
@@ -260,16 +274,19 @@ namespace Microsoft.VisualStudio.Text.Implementation
 
         internal static StringRebuilder AppendStringRebuildersFromSnapshotAndSpan(StringRebuilder content, ITextSnapshot snapshot, Span span)
         {
-            var baseSnapshot = snapshot as BaseSnapshot;
-            if (baseSnapshot != null)
+            if (span.Length != 0)
             {
-                content = content.Append(baseSnapshot.Content.GetSubText(span));
-            }
-            else
-            {
-                // The we don't know what to do fallback. This should never be called unless someone provides a new snapshot
-                // implementation.
-                content = content.Append(snapshot.GetText(span));
+                var baseSnapshot = snapshot as BaseSnapshot;
+                if (baseSnapshot != null)
+                {
+                    content = content.Append(baseSnapshot.Content.GetSubText(span));
+                }
+                else
+                {
+                    // The we don't know what to do fallback. This should never be called unless someone provides a new snapshot
+                    // implementation.
+                    content = content.Append(snapshot.GetText(span));
+                }
             }
 
             return content;
@@ -283,10 +300,7 @@ namespace Microsoft.VisualStudio.Text.Implementation
 
         public ITextImage CreateTextImage(TextReader reader, long length)
         {
-            bool hasConsistentLineEndings;
-            int longestLineLength;
-
-            return CachingTextImage.Create(TextImageLoader.Load(reader, length, out hasConsistentLineEndings, out longestLineLength), null);
+            return CachingTextImage.Create(TextImageLoader.Load(reader, length, out var _, out var _, out var _), null);
         }
 
         public ITextImage CreateTextImage(MemoryMappedFile source)
@@ -310,7 +324,7 @@ namespace Microsoft.VisualStudio.Text.Implementation
             return buffer;
         }
 
-        public IProjectionBuffer CreateProjectionBuffer(IProjectionEditResolver projectionEditResolver, 
+        public IProjectionBuffer CreateProjectionBuffer(IProjectionEditResolver projectionEditResolver,
                                                         IList<object> trackingSpans,
                                                         ProjectionBufferOptions options,
                                                         IContentType contentType)
@@ -324,7 +338,7 @@ namespace Microsoft.VisualStudio.Text.Implementation
             {
                 throw new ArgumentNullException(nameof(contentType));
             }
-            IProjectionBuffer buffer = 
+            IProjectionBuffer buffer =
                 new ProjectionBuffer(this, projectionEditResolver, contentType, trackingSpans, _differenceService, _textDifferencingSelectorService.DefaultTextDifferencingService, options, _guardedOperations);
             RaiseProjectionBufferCreatedEvent(buffer);
             return buffer;

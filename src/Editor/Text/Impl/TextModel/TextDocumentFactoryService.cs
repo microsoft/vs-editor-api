@@ -18,6 +18,7 @@ namespace Microsoft.VisualStudio.Text.Implementation
     using System.Diagnostics;
     using Microsoft.VisualStudio.Text.Editor;
     using System.Runtime.InteropServices;
+    using Microsoft.VisualStudio.Text.Document;
 
     [Export(typeof(ITextDocumentFactoryService))]
     internal sealed partial class TextDocumentFactoryService : ITextDocumentFactoryService
@@ -32,6 +33,9 @@ namespace Microsoft.VisualStudio.Text.Implementation
 
         [Import]
         internal GuardedOperations GuardedOperations { get; set; }
+
+        [Import]
+        internal IWhitespaceManagerFactory WhitespaceManagerFactory { get; set; }
 
         #endregion
 

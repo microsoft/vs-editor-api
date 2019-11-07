@@ -13,12 +13,10 @@ namespace Microsoft.VisualStudio.Text.Implementation
     using System.Text;
     using Microsoft.VisualStudio.Text.Utilities;
     using Microsoft.VisualStudio.Utilities;
-    using Microsoft.VisualStudio.Text.Editor;
 
     internal sealed partial class TextDocument : ITextDocument
     {
         #region Private Members
-
         private readonly TextDocumentFactoryService _textDocumentFactoryService;
         private ITextBuffer _textBuffer;
         private Encoding _encoding;
@@ -145,25 +143,15 @@ namespace Microsoft.VisualStudio.Text.Implementation
                 TextBuffer concreteBuffer = _textBuffer as TextBuffer;
                 if (concreteBuffer != null)
                 {
-                    bool hasConsistentLineEndings;
                     int longestLineLength;
-                    StringRebuilder newContent = TextImageLoader.Load(streamReader, fileSize, out hasConsistentLineEndings, out longestLineLength);
+                    StringRebuilder newContent = TextImageLoader.Load(streamReader, fileSize, out var newlineState, out var leadingWhitespaceState, out longestLineLength);
 
-                    if (!hasConsistentLineEndings)
-                    {
-                        // leave a sign that line endings are inconsistent. This is rather nasty but for now
-                        // we don't want to pollute the API with this factoid.
-                        concreteBuffer.Properties["InconsistentLineEndings"] = true;
-                    }
-                    else
-                    {
-                        // this covers a really obscure case where on initial load the file had inconsistent line
-                        // endings, but the UI settings were such that it was ignored, and since then the file has
-                        // acquired consistent line endings and the UI settings have also changed.
-                        concreteBuffer.Properties.RemoveProperty("InconsistentLineEndings");
-                    }
-                    // leave a similar sign about the longest line in the buffer.
-                    concreteBuffer.Properties["LongestLineLength"] = longestLineLength;
+                    // Make the call to GetWhitespaceManager to add the manager to the properties. We don't need the return value here.
+                    _textDocumentFactoryService.WhitespaceManagerFactory.GetOrCreateWhitespaceManager(concreteBuffer, newlineState, leadingWhitespaceState);
+
+                    // Leave a sign about the longest line in the buffer. This is rather nasty, but for now
+                    // we don't want to pollute the API with this factoid
+                    concreteBuffer.Properties ["LongestLineLength"] = longestLineLength;
 
                     concreteBuffer.ReloadContent(newContent, options, editTag: this);
                 }
@@ -210,8 +198,8 @@ namespace Microsoft.VisualStudio.Text.Implementation
                 using (var stream = TextDocumentFactoryService.OpenFileGuts(_filePath, out _lastModifiedTimeUtc, out fileSize))
                 {
                     var detectors = ExtensionSelector.SelectMatchingExtensions(_textDocumentFactoryService.OrderedEncodingDetectors, _textBuffer.ContentType);
-                    
-                    if(_explicitEncoding)
+
+                    if (_explicitEncoding)
                     {
                         // If the user explicitly chose their encoding, we want to respect it.
                         newEncoding = this.Encoding;
@@ -226,7 +214,6 @@ namespace Microsoft.VisualStudio.Text.Implementation
                         try
                         {
                             var detectorEncoding = new ExtendedCharacterDetector();
-
                             ReloadBufferFromStream(stream, fileSize, options, detectorEncoding);
 
                             if (detectorEncoding.DecodedExtendedCharacters)
@@ -262,7 +249,7 @@ namespace Microsoft.VisualStudio.Text.Implementation
                     }
 
                     //If there is no "Next" version of the original snapshot, we have not successfully reloaded the document
-                    if(beforeSnapshot.Version.Next == null)
+                    if (beforeSnapshot.Version.Next == null)
                     {
                         //We use this fall back detector to observe whether or not character substitutions 
                         //occur while we're reading the stream
@@ -273,7 +260,7 @@ namespace Microsoft.VisualStudio.Text.Implementation
                         Debug.Assert(stream.Position == 0);
                         ReloadBufferFromStream(stream, fileSize, options, modifiedEncoding);
 
-                        if(fallbackDetector.FallbackOccurred)
+                        if (fallbackDetector.FallbackOccurred)
                         {
                             characterSubstitutionsOccurred = fallbackDetector.FallbackOccurred;
                         }
@@ -374,11 +361,11 @@ namespace Microsoft.VisualStudio.Text.Implementation
 
         public void SaveAs(string filePath, bool overwrite, bool createFolder, IContentType newContentType)
         {
-             if (newContentType == null)
+            if (newContentType == null)
             {
                 throw new ArgumentNullException(nameof(newContentType));
             }
-             SaveAs(filePath, overwrite, createFolder);
+            SaveAs(filePath, overwrite, createFolder);
             // content type won't be changed if the save fails (in which case SaveAs will throw an exception)
             _textBuffer.ChangeContentType(newContentType, null);
         }
@@ -459,7 +446,7 @@ namespace Microsoft.VisualStudio.Text.Implementation
                 Encoding oldEncoding = _encoding;
 
                 _encoding = value;
-                
+
                 if (!_encoding.Equals(oldEncoding))
                 {
                     _textDocumentFactoryService.GuardedOperations.RaiseEvent(this, EncodingChanged, new EncodingChangedEventArgs(oldEncoding, _encoding));
@@ -567,12 +554,12 @@ namespace Microsoft.VisualStudio.Text.Implementation
                     }
                 }
 
-               _textDocumentFactoryService.GuardedOperations.RaiseEvent(this, FileActionOccurred, new TextDocumentFileActionEventArgs(filePath, actionTime, actionType));
+                _textDocumentFactoryService.GuardedOperations.RaiseEvent(this, FileActionOccurred, new TextDocumentFileActionEventArgs(filePath, actionTime, actionType));
 
             }
             finally
             {
-               _raisingFileActionChangedEvent = false;
+                _raisingFileActionChangedEvent = false;
             }
         }
 

@@ -17,13 +17,19 @@ namespace Microsoft.VisualStudio.Text.Implementation
         public const int BlockSize = 16384;
 
         internal static StringRebuilder Load(TextReader reader, long fileSize,
-                                             out bool hasConsistentLineEndings, out int longestLineLength,
+                                             out NewlineState newlineState,
+                                             out LeadingWhitespaceState leadingWhitespaceState,
+                                             out int longestLineLength,
                                              int blockSize = 0,
-                                             int minCompressedBlockSize = TextImageLoader.BlockSize)                                             // Exposed for unit tests
+                                             int minCompressedBlockSize = TextImageLoader.BlockSize,                                             // Exposed for unit tests
+                                             bool throwOnInvalidCharacters = false)
         {
-            LineEndingState lineEnding = LineEndingState.Unknown;
+            newlineState = new NewlineState();
+            leadingWhitespaceState = new LeadingWhitespaceState();
+
             int currentLineLength = 0;
             longestLineLength = 0;
+            char thresholdForInvalidCharacters = throwOnInvalidCharacters ? '\u0001' : '\0';    // Basically the only invalid character is \0, if we are looking for invalid characters.
 
             bool useCompressedStringRebuilders = (fileSize >= TextModelOptions.CompressedStorageFileSizeThreshold);
             if (blockSize == 0)
@@ -44,6 +50,7 @@ namespace Microsoft.VisualStudio.Text.Implementation
             StringRebuilder content = StringRebuilderForChars.Empty;
             try
             {
+                bool nextCharIsStartOfLine = true;
                 while (true)
                 {
                     int read = TextImageLoader.LoadNextBlock(reader, buffer);
@@ -51,7 +58,15 @@ namespace Microsoft.VisualStudio.Text.Implementation
                     if (read == 0)
                         break;
 
-                    var lineBreaks = TextImageLoader.ParseBlock(buffer, read, ref lineEnding, ref currentLineLength, ref longestLineLength);
+                    var lineBreaks = TextImageLoader.ParseBlock(
+                        buffer,
+                        read,
+                        thresholdForInvalidCharacters,
+                        ref newlineState,
+                        ref leadingWhitespaceState,
+                        ref currentLineLength,
+                        ref longestLineLength,
+                        ref nextCharIsStartOfLine);
 
                     char[] bufferForStringBuilder = buffer;
                     if (read < (buffer.Length / 2))
@@ -83,8 +98,6 @@ namespace Microsoft.VisualStudio.Text.Implementation
                 }
             }
 
-            hasConsistentLineEndings = lineEnding != LineEndingState.Inconsistent;
-
             return content;
         }
 
@@ -109,8 +122,16 @@ namespace Microsoft.VisualStudio.Text.Implementation
             return read;
         }
 
-        private static ILineBreaks ParseBlock(char[] buffer, int length,
-                                              ref LineEndingState lineEnding, ref int currentLineLength, ref int longestLineLength)
+        // Evil performance hack (but we are on a hot path here):
+        //  thresholdForInvalidCharacters should be '\u0001' if we are throwing on invalid characters.
+        //                                should be '\0' if we are not.
+        // (otherwise we need to check both a throwOnInvalidCharacters boolean and that c == 0).
+        private static ILineBreaks ParseBlock(char[] buffer, int length, char thresholdForInvalidCharacters,
+                                              ref NewlineState newlineState,
+                                              ref LeadingWhitespaceState leadingWhitespaceState,
+                                              ref int currentLineLength,
+                                              ref int longestLineLength,
+                                              ref bool nextCharIsStartOfLine)
         {
             // Note that the lineBreaks created here will (internally) use the pooled list of line breaks.
             IPooledLineBreaksEditor lineBreaks = LineBreakManager.CreatePooledLineBreakEditor(length);
@@ -121,8 +142,32 @@ namespace Microsoft.VisualStudio.Text.Implementation
                 int breakLength = TextUtilities.LengthOfLineBreak(buffer, index, length);
                 if (breakLength == 0)
                 {
+                    char c = buffer[index];
+
+                    // If we are checking for invalid characters, throw if we encounter a \0
+                    if (c < thresholdForInvalidCharacters)
+                        throw new FileFormatException("File contains NUL characters");
+
                     ++currentLineLength;
                     ++index;
+
+                    if (nextCharIsStartOfLine)
+                    {
+                        switch (c)
+                        {
+                            case ' ':
+                                leadingWhitespaceState.Increment(LeadingWhitespaceState.LineLeadingCharacter.Space, 1);
+                                break;
+                            case '\t':
+                                leadingWhitespaceState.Increment(LeadingWhitespaceState.LineLeadingCharacter.Tab, 1);
+                                break;
+                            default:
+                                leadingWhitespaceState.Increment(LeadingWhitespaceState.LineLeadingCharacter.Printable, 1);
+                                break;
+                        }
+
+                        nextCharIsStartOfLine = false;
+                    }
                 }
                 else
                 {
@@ -130,55 +175,39 @@ namespace Microsoft.VisualStudio.Text.Implementation
                     longestLineLength = Math.Max(longestLineLength, currentLineLength);
                     currentLineLength = 0;
 
-                    if (lineEnding != LineEndingState.Inconsistent)
-                    {
-                        if (breakLength == 2)
-                        {
-                            if (lineEnding == LineEndingState.Unknown)
-                                lineEnding = LineEndingState.CRLF;
-                            else if (lineEnding != LineEndingState.CRLF)
-                                lineEnding = LineEndingState.Inconsistent;
-                        }
-                        else
-                        {
-                            LineEndingState newLineEndingState;
-                            switch (buffer[index])
-                            {
-                                // This code needs to be kep consistent with TextUtilities.LengthOfLineBreak()
-                                case '\r': newLineEndingState = LineEndingState.CR; break;
-                                case '\n': newLineEndingState = LineEndingState.LF; break;
-                                case '\u0085': newLineEndingState = LineEndingState.NEL; break;
-                                case '\u2028': newLineEndingState = LineEndingState.LS; break;
-                                case '\u2029': newLineEndingState = LineEndingState.PS; break;
-                                default: throw new InvalidOperationException("Unexpected line ending");
-                            }
 
-                            if (lineEnding == LineEndingState.Unknown)
-                                lineEnding = newLineEndingState;
-                            else if (lineEnding != newLineEndingState)
-                                lineEnding = LineEndingState.Inconsistent;
+                    if (breakLength == 2)
+                    {
+                        newlineState.Increment(NewlineState.LineEnding.CRLF, 1);
+                    }
+                    else
+                    {
+                        switch (buffer[index])
+                        {
+                            // This code needs to be kep consistent with TextUtilities.LengthOfLineBreak()
+                            case '\r': newlineState.Increment(NewlineState.LineEnding.CR, 1); break;
+                            case '\n': newlineState.Increment(NewlineState.LineEnding.LF, 1); break;
+                            case '\u0085': newlineState.Increment(NewlineState.LineEnding.NEL, 1); break;
+                            case '\u2028': newlineState.Increment(NewlineState.LineEnding.LS, 1); break;
+                            case '\u2029': newlineState.Increment(NewlineState.LineEnding.PS, 1); break;
+                            default: throw new InvalidOperationException("Unexpected line ending");
                         }
                     }
 
-                    index += breakLength;
+                    if (nextCharIsStartOfLine)
+                    {
+                        leadingWhitespaceState.Increment(LeadingWhitespaceState.LineLeadingCharacter.Empty, 1);
+                    }
+
+                    nextCharIsStartOfLine = true;
                 }
+
+                index += breakLength;
             }
 
             lineBreaks.ReleasePooledLineBreaks();
 
             return lineBreaks;
-        }
-
-        internal enum LineEndingState
-        {
-            Unknown = 0,
-            CRLF = 1,
-            CR = 2,
-            LF = 3,
-            NEL = 4,            // unicode Next Line 0085
-            LS = 5,             // unicode Line Separator 2028
-            PS = 6,             // unicode Paragraph Separator 2029
-            Inconsistent = 7,
         }
 
         private static char[] pooledBuffer;
