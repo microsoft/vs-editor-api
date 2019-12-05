@@ -5,9 +5,6 @@
     <ProjectReference Include="$(MSBuildThisFileDirectory)Editor\Core\Def\CoreUtility.csproj">
       <Private>$(ReferencesVSEditorCopyToOutput)</Private>
     </ProjectReference>
-    <ProjectReference Include="$(MSBuildThisFileDirectory)Editor\Imaging\Def\Imaging.csproj">
-      <Private>$(ReferencesVSEditorCopyToOutput)</Private>
-    </ProjectReference>
     <ProjectReference Include="$(MSBuildThisFileDirectory)Editor\Text\Def\TextData\TextData.csproj">
       <Private>$(ReferencesVSEditorCopyToOutput)</Private>
     </ProjectReference>
@@ -27,9 +24,6 @@
       <Private>$(ReferencesVSEditorCopyToOutput)</Private>
     </ProjectReference>
     <ProjectReference Include="$(MSBuildThisFileDirectory)Editor\Text\Def\Internal\Internal.csproj">
-      <Private>$(ReferencesVSEditorCopyToOutput)</Private>
-    </ProjectReference>
-    <ProjectReference Include="$(MSBuildThisFileDirectory)Editor\Text\Def\Extras\Extras.csproj">
       <Private>$(ReferencesVSEditorCopyToOutput)</Private>
     </ProjectReference>
     <ProjectReference Include="$(MSBuildThisFileDirectory)Editor\Language\Def\StandardClassification\StandardClassification.csproj">

@@ -36,7 +36,7 @@
   </Target>
 
   <PropertyGroup>
-    <FPFRootPath>$(RepoRootPath)src\FPF\</FPFRootPath>
+    <FPFRootPath>$(RepoRootPath)src\Editor\FPF\</FPFRootPath>
     <FPFOutputPath>$(RepoBinPath)FPF\$(Configuration)\$(TargetFramework)\</FPFOutputPath>
   </PropertyGroup>
 
@@ -83,7 +83,7 @@
 
   <Target Name="Test" Condition="$(HasEditorUnitTests)">
     <PropertyGroup>
-      <StandaloneMacEditor>$(RepoBinPath)StandaloneMacEditor\$(Configuration)\$(TargetFramework)\MonoDevelop.Ide.app\Contents\MacOS\MonoDevelop.Ide</StandaloneMacEditor>
+      <StandaloneMacEditor>$(RepoBinPath)Editor\Text\Test\Util\StandaloneMacEditor\$(Configuration)\$(TargetFramework)\MonoDevelop.Ide.app\Contents\MacOS\MonoDevelop.Ide</StandaloneMacEditor>
     </PropertyGroup>
     <Exec Command="&quot;$(StandaloneMacEditor)&quot; xunit &quot;$(TargetPath)&quot; -xml &quot;$(RepoArtifactsPath)TestResults\$(TargetName).xml&quot;" />
   </Target>
