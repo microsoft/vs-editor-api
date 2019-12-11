@@ -15,12 +15,12 @@ namespace Microsoft.VisualStudio.Text.Utilities
 {
     class DifferenceBrushManager
     {
-        public static DifferenceBrushManager GetBrushManager(ITextView3 view, IEditorFormatMapService formatMapService)
+        public static DifferenceBrushManager GetBrushManager(ITextView view, IEditorFormatMapService formatMapService)
         {
             return view.Properties.GetOrCreateSingletonProperty(() => new DifferenceBrushManager(view, formatMapService.GetEditorFormatMap(view)));
         }
 
-        public static DifferenceBrushManager GetBrushManager(ITextView3 view, IEditorFormatMap formatMap)
+        public static DifferenceBrushManager GetBrushManager(ITextView view, IEditorFormatMap formatMap)
         {
             return view.Properties.GetOrCreateSingletonProperty(() => new DifferenceBrushManager(view, formatMap));
         }
@@ -53,14 +53,14 @@ namespace Microsoft.VisualStudio.Text.Utilities
 
         #endregion
 
-        internal DifferenceBrushManager(ITextView3 view, IEditorFormatMap formatMap)
+        internal DifferenceBrushManager(ITextView view, IEditorFormatMap formatMap)
         {
             _formatMap = formatMap;
 
             InitializeBrushes();
 
             _formatMap.FormatMappingChanged += FormatMapChanged;
-            view.Closed += (s,a) => { _formatMap.FormatMappingChanged -= FormatMapChanged; };
+            view.Closed += (s, a) => { _formatMap.FormatMappingChanged -= FormatMapChanged; };
         }
 
         void InitializeBrushes()

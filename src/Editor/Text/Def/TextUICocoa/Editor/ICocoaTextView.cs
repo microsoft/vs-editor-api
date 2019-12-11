@@ -7,10 +7,11 @@ using System;
 
 using AppKit;
 using CoreGraphics;
+using Microsoft.VisualStudio.Text.Formatting;
 
 namespace Microsoft.VisualStudio.Text.Editor
 {
-    public interface ICocoaTextView : ITextView3
+    public interface ICocoaTextView : ITextView2
     {
         /// <summary>
         /// Gets the <see cref="NSView"/> that renders the view.
@@ -35,5 +36,22 @@ namespace Microsoft.VisualStudio.Text.Editor
         void PushCursor(object context, NSCursor cursor);
 
         void PopCursor(object context);
+
+
+        /// <summary>
+        /// Gets or sets the Zoom level for the <see cref="ITextView3"/> between 20% to 400%
+        /// </summary>
+        double ZoomLevel { get; set; }
+
+        IXPlatAdornmentLayer GetXPlatAdornmentLayer(string name);
+
+        ITextViewLineSource FormattedLineSource { get; }
+
+        void Focus();
+
+        bool IsKeyboardFocused { get; }
+        event EventHandler IsKeyboardFocusedChanged;
+
+        IViewSynchronizationManager SynchronizationManager { get; set; }
     }
 }

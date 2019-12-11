@@ -24,7 +24,7 @@ namespace Microsoft.VisualStudio.Text.BraceCompletion.Implementation
         #region Private Members
 
         private ITrackingPoint _trackingPoint;
-        private ITextView3 _textView;
+        private ICocoaTextView _textView;
         private IXPlatAdornmentLayer _adornmentLayer;
         private readonly IEditorFormatMap _editorFormatMap;
         private Brush _brush;
@@ -33,9 +33,9 @@ namespace Microsoft.VisualStudio.Text.BraceCompletion.Implementation
 
         #region Constructors
 
-        public BraceCompletionAdornmentService(ITextView3 textView, IEditorFormatMap editorFormatMap)
+        public BraceCompletionAdornmentService(ITextView textView, IEditorFormatMap editorFormatMap)
         {
-            _textView = textView;
+            _textView = (ICocoaTextView)textView;
             _editorFormatMap = editorFormatMap;
 
             if (_textView == null) 

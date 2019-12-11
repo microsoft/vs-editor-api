@@ -1,0 +1,35 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AssemblyName>Microsoft.VisualStudio.Text.UI.Cocoa.Utilities</AssemblyName>
+    <RootNamespace>$(AssemblyName)</RootNamespace>
+
+    <!-- Need to have a TargetFramework tag for VS to recognize this as an SDK project. Just use the shared one. -->
+    <TargetFramework>$(FullNETFrameworkVersion)</TargetFramework>
+
+    <NoWarn>436;$(NoWarn)</NoWarn>
+    <AssemblyAttributeClsCompliant>true</AssemblyAttributeClsCompliant>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="System" />
+    <Reference Include="System.ComponentModel.Composition" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Drawing" />
+    <Reference Include="System.Runtime" />
+    <Reference Include="System.Xaml" />
+    <Reference Include="WindowsBase" />
+    <Reference Include="PresentationCore" />
+    <Reference Include="PresentationFramework" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\Core\Def\CoreUtility.csproj" />
+    <ProjectReference Include="..\..\Def\TextData\TextData.csproj" />
+    <ProjectReference Include="..\..\Def\TextLogic\TextLogic.csproj" />
+    <ProjectReference Include="..\..\Def\TextUI\TextUI.csproj" />
+    <ProjectReference Include="..\..\Def\TextUICocoa\TextUICocoa.csproj" />
+    <ProjectReference Include="..\..\Def\Internal\Internal.csproj" />
+    <ProjectReference Include="..\TextDataUtil\TextDataUtil.csproj" />
+    <ProjectReference Include="..\TextLogicUtil\TextLogicUtil.csproj" />
+    <ProjectReference Include="..\TextUIUtil\TextUIUtil.csproj" />
+  </ItemGroup>
+</Project>

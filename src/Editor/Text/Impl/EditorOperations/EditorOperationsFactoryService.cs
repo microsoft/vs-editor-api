@@ -15,6 +15,7 @@ namespace Microsoft.VisualStudio.Text.Operations.Implementation
     using Microsoft.VisualStudio.Utilities;
     using Microsoft.VisualStudio.Text.Outlining;
     using Microsoft.VisualStudio.Language.Intellisense.Utilities;
+    using Microsoft.VisualStudio.Text.Document;
 
     [Export(typeof(IEditorOperationsFactoryService))]
     internal sealed class EditorOperationsFactoryService : IEditorOperationsFactoryService
@@ -58,6 +59,12 @@ namespace Microsoft.VisualStudio.Text.Operations.Implementation
 
         [Import(AllowDefault = true)]
         internal IOutliningManagerService OutliningManagerService { get; set; }
+
+        [Import]
+        internal IWhitespaceManagerFactory WhitespaceManagerFactory { get; set; }
+
+        [Import]
+        internal ITextViewZoomManager ZoomManager { get; set; }
 
         /// <summary>
         /// Provides a operations implementation for a given text view.
