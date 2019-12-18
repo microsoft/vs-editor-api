@@ -27,6 +27,7 @@ namespace Microsoft.VisualStudio.Text.Operations.Implementation
     using Microsoft.VisualStudio.Text.Tagging;
     using Microsoft.VisualStudio.Language.Intellisense.Utilities;
     using Microsoft.VisualStudio.Text.Utilities;
+    using Microsoft.VisualStudio.Text.Data.Utilities;
 
     /// <summary>
     /// Provides a default operations set on top of the text editor
@@ -56,7 +57,7 @@ namespace Microsoft.VisualStudio.Text.Operations.Implementation
 
         #region Private Members
 
-        readonly ITextView3 _textView;
+        readonly ITextView _textView;
         readonly EditorOperationsFactoryService _factory;
         readonly ITextDocument _textDocument;
         readonly ITextStructureNavigator _textStructureNavigator;
@@ -96,7 +97,7 @@ namespace Microsoft.VisualStudio.Text.Operations.Implementation
             if (factory == null)
                 throw new ArgumentNullException(nameof(factory));
 
-            _textView = (Microsoft.VisualStudio.Text.Editor.ITextView3) textView;
+            _textView = textView;
             _factory = factory;
             _multiSelectionBroker = _textView.GetMultiSelectionBroker();
             _editorPrimitives = factory.EditorPrimitivesProvider.GetViewPrimitives(textView);
@@ -3188,14 +3189,20 @@ namespace Microsoft.VisualStudio.Text.Operations.Implementation
 
         public void ScrollColumnLeft()
         {
-            // A column is defined as the width of a space in the default font
-            _textView.ViewScroller.ScrollViewportHorizontallyByPixels(_textView.FormattedLineSource.ColumnWidth * -1.0);
+            if (_textView.ViewScroller is IViewScroller2 viewScroller)
+            {
+                // A column is defined as the width of a space in the default font
+                viewScroller.ScrollColumnLeft();
+            }
         }
 
         public void ScrollColumnRight()
         {
-            // A column is defined as the width of a space in the default font
-            _textView.ViewScroller.ScrollViewportHorizontallyByPixels(_textView.FormattedLineSource.ColumnWidth);
+            if (_textView.ViewScroller is IViewScroller2 viewScroller)
+            {
+                // A column is defined as the width of a space in the default font
+                viewScroller.ScrollColumnRight();
+            }
         }
 
         public void ScrollLineBottom()
@@ -3229,47 +3236,13 @@ namespace Microsoft.VisualStudio.Text.Operations.Implementation
             _undoHistory.CurrentTransaction.AddUndo(beforeTextBufferChangeUndoPrimitive);
         }
 
-        public bool CanZoomIn => CanZoomTo && _textView.ZoomLevel < _textView.Options.GlobalOptions.MaxZoom();
+        public bool CanZoomIn => CanZoomTo && _factory.ZoomManager.ZoomLevel(_textView) < _textView.Options.GlobalOptions.MaxZoom();
 
-        public void ZoomIn()
-        {
-            if (CanZoomIn)
-            {
-                var maxZoom = _textView.Options.GlobalOptions.MaxZoom();
-                double zoomLevel = Math.Min(_textView.ZoomLevel * ZoomConstants.ScalingFactor, maxZoom);
-                if (zoomLevel < maxZoom || Math.Abs(zoomLevel - maxZoom) < 0.00001)
-                {
-                    _textView.Options.GlobalOptions.SetOptionValue(DefaultTextViewOptions.ZoomLevelId, zoomLevel);
-                }
-            }
-        }
-
-        public bool CanZoomOut => CanZoomTo && _textView.ZoomLevel > _textView.Options.GlobalOptions.MinZoom();
-
-        public void ZoomOut()
-        {
-            if (CanZoomOut)
-            {
-                var minZoom = _textView.Options.GlobalOptions.MinZoom();
-                double zoomLevel = Math.Max(_textView.ZoomLevel / ZoomConstants.ScalingFactor, minZoom);
-                if (zoomLevel > minZoom || Math.Abs(zoomLevel - minZoom) < 0.00001)
-                {
-                    _textView.Options.GlobalOptions.SetOptionValue(DefaultTextViewOptions.ZoomLevelId, zoomLevel);
-                }
-            }
-        }
+        public bool CanZoomOut => CanZoomTo && _factory.ZoomManager.ZoomLevel(_textView) > _textView.Options.GlobalOptions.MinZoom();
 
         public bool CanZoomTo => _textView.Roles.Contains(PredefinedTextViewRoles.Zoomable);
 
-        public void ZoomTo(double zoomLevel)
-        {
-            if (CanZoomTo)
-            {
-                _textView.Options.GlobalOptions.SetZoomLevel(zoomLevel);
-            }
-        }
-
-        public bool CanZoomReset => CanZoomTo && _textView.ZoomLevel != ZoomConstants.DefaultZoom;
+        public bool CanZoomReset => CanZoomTo && _factory.ZoomManager.ZoomLevel(_textView) != ZoomConstants.DefaultZoom;
 
         public void ZoomReset()
         {
@@ -3277,6 +3250,21 @@ namespace Microsoft.VisualStudio.Text.Operations.Implementation
             {
                 ZoomTo(ZoomConstants.DefaultZoom);
             }
+        }
+
+        public void ZoomIn()
+        {
+            _factory.ZoomManager.ZoomIn(_textView);
+        }
+
+        public void ZoomOut()
+        {
+            _factory.ZoomManager.ZoomOut(_textView);
+        }
+
+        public void ZoomTo(double zoomLevel)
+        {
+            _factory.ZoomManager.ZoomTo(_textView, zoomLevel);
         }
 
         #endregion // IEditorOperations Members
@@ -5348,6 +5336,18 @@ namespace Microsoft.VisualStudio.Text.Operations.Implementation
                         return ReplaceHelper(span2, newLine);
                     }, SelectionUpdate.Ignore, true);
                 });
+            }
+        }
+
+        public string NormalizeNewlinesInString(string text)
+        {
+            if (_factory.WhitespaceManagerFactory.TryGetExistingWhitespaceManager(_textView.TextDataModel.DocumentBuffer, out var whitespaceManager))
+            {
+                return whitespaceManager.NewlineState.NormalizeNewlines(text);
+            }
+            else
+            {
+                return text;
             }
         }
     }

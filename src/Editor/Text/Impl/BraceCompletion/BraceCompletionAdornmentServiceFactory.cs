@@ -29,7 +29,7 @@ namespace Microsoft.VisualStudio.Text.BraceCompletion.Implementation
         {
             // Get the service from the view's property bag
             return textView.Properties.GetOrCreateSingletonProperty<IBraceCompletionAdornmentService>(
-                () => new BraceCompletionAdornmentService((ITextView3)textView, _editorFormatMapService.GetEditorFormatMap(textView)));
+                () => new BraceCompletionAdornmentService(textView, _editorFormatMapService.GetEditorFormatMap(textView)));
         }
 
         #endregion

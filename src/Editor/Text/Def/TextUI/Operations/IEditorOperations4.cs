@@ -1,14 +1,25 @@
-//
-//  Copyright (c) Microsoft Corporation. All rights reserved.
-//  Licensed under the MIT License. See License.txt in the project root for license information.
-//
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using Microsoft.VisualStudio.Text.Operations;
+
 namespace Microsoft.VisualStudio.Text.Operations
 {
     /// <summary>
     /// Defines operations relating to the editor, in addition to operations defined by <see cref="IEditorOperations3"/>.
     /// </summary>
-    public interface IEditorOperations4 : IEditorOperations3
+    internal interface IEditorOperations4 : IEditorOperations3
     {
+        /// <summary>
+        /// Returns a string with the original content except for newlines, which are replaced to match the document
+        /// </summary>
+        /// <param name="text">Text to normalize newlines</param>
+        /// <returns>The normalized string, if the document has enough information to normalize with. The original string otherwise.</returns>
+        /// <remarks>This method uses the newline state associated with the document buffer.</remarks>
+        string NormalizeNewlinesInString(string text);
+
         /// <summary>
         /// Determines whether zooming operations are possible.
         /// </summary>

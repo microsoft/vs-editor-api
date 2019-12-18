@@ -7,6 +7,55 @@ namespace Microsoft.VisualStudio.Text.MultiSelection
 {
     public static class ExtensionMethods
     {
+        /// <summary>
+        /// Remaps a given x-coordinate to a valid point. If the provided x-coordinate is past the right end of the line, it will
+        /// be clipped to the correct position depending on the virtual space settings. If the ISmartIndent is providing indentation
+        /// settings, the x-coordinate will be changed based on that.
+        /// </summary>
+        public static double MapXCoordinate(this ITextViewLine textLine, ITextView textView,
+            double xCoordinate, ISmartIndentationService smartIndentationService, bool userSpecifiedXCoordinate)
+        {
+            if (textLine == null)
+            {
+                throw new ArgumentNullException(nameof(textLine));
+            }
+
+            if (textView == null)
+            {
+                throw new ArgumentNullException(nameof(textView));
+            }
+
+            // if the clicked point is to the right of the text and virtual space is disabled, the coordinate
+            // needs to be fixed
+            if ((xCoordinate > textLine.TextRight) && !textView.IsVirtualSpaceOrBoxSelectionEnabled())
+            {
+                double indentationWidth = 0.0;
+
+                // ask the ISmartIndent to see if any indentation is necessary for empty lines
+                if (textLine.End == textLine.Start)
+                {
+                    int? indentation = smartIndentationService?.GetDesiredIndentation(textView, textLine.Start.GetContainingLine());
+                    if (indentation.HasValue)
+                    {
+                        //The indentation specified by the smart indent service is desired column position of the caret. Find out how much virtual space
+                        //need to be at the end of the line to satisfy that.
+                        double columnWidth = (textView.ViewScroller is IViewScroller2 viewScroller) ? viewScroller.ColumnWidth : 7;
+                        indentationWidth = Math.Max(0.0, (((double)indentation.Value) * columnWidth - textLine.TextWidth));
+
+                        // if the coordinate is specified by the user and the user has selected a coordinate to the left
+                        // of the indentation suggested by ISmartIndent, overrule the ISmartIndent provided value and
+                        // do not use any indentation.
+                        if (userSpecifiedXCoordinate && (xCoordinate < (textLine.TextRight + indentationWidth)))
+                            indentationWidth = 0.0;
+                    }
+                }
+
+                xCoordinate = textLine.TextRight + indentationWidth;
+            }
+
+            return xCoordinate;
+        }
+
         public static VirtualSnapshotPoint NormalizePoint(this ITextView view, VirtualSnapshotPoint point)
         {
             var line = view.GetTextViewLineContainingBufferPosition(point.Position);
@@ -46,56 +95,6 @@ namespace Microsoft.VisualStudio.Text.MultiSelection
             }
 
             return new Selection(newInsertion, newAnchor, newActive, positionAffinity);
-        }
-
-        /// <summary>
-        /// Remaps a given x-coordinate to a valid point. If the provided x-coordinate is past the right end of the line, it will
-        /// be clipped to the correct position depending on the virtual space settings. If the ISmartIndent is providing indentation
-        /// settings, the x-coordinate will be changed based on that.
-        /// </summary>
-        public static double MapXCoordinate(this ITextViewLine textLine, ITextView textView,
-            double xCoordinate, ISmartIndentationService smartIndentationService, bool userSpecifiedXCoordinate)
-        {
-            if (textLine == null)
-            {
-                throw new ArgumentNullException(nameof(textLine));
-            }
-
-            if (textView == null)
-            {
-                throw new ArgumentNullException(nameof(textView));
-            }
-
-            // if the clicked point is to the right of the text and virtual space is disabled, the coordinate
-            // needs to be fixed
-            if ((xCoordinate > textLine.TextRight) && !textView.IsVirtualSpaceOrBoxSelectionEnabled())
-            {
-                double indentationWidth = 0.0;
-
-                // ask the ISmartIndent to see if any indentation is necessary for empty lines
-                if (textLine.End == textLine.Start)
-                {
-                    int? indentation = smartIndentationService?.GetDesiredIndentation(textView, textLine.Start.GetContainingLine());
-                    if (indentation.HasValue)
-                    {
-                        //The indentation specified by the smart indent service is desired column position of the caret. Find out how much virtual space
-                        //need to be at the end of the line to satisfy that.
-                        // TODO: need a way to determine column width in xplat scenarios, bug https://devdiv.visualstudio.com/DevDiv/_workitems/edit/637741
-                        double columnWidth = (textView is ITextView3 textView3) ? textView3.FormattedLineSource.ColumnWidth : throw new NotSupportedException();
-                        indentationWidth = Math.Max(0.0, (((double)indentation.Value) * columnWidth - textLine.TextWidth));
-
-                        // if the coordinate is specified by the user and the user has selected a coordinate to the left
-                        // of the indentation suggested by ISmartIndent, overrule the ISmartIndent provided value and
-                        // do not use any indentation.
-                        if (userSpecifiedXCoordinate && (xCoordinate < (textLine.TextRight + indentationWidth)))
-                            indentationWidth = 0.0;
-                    }
-                }
-
-                xCoordinate = textLine.TextRight + indentationWidth;
-            }
-
-            return xCoordinate;
         }
 
         /// <summary>

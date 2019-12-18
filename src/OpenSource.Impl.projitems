@@ -45,10 +45,6 @@
       <Private>$(ReferencesVSEditorCopyToOutput)</Private>
       <Consolidate>true</Consolidate>
     </ProjectReference>
-    <ProjectReference Include="$(MSBuildThisFileDirectory)Editor\Text\Impl\BraceCompletion\BraceCompletionImpl.csproj">
-      <Private>$(ReferencesVSEditorCopyToOutput)</Private>
-      <Consolidate>true</Consolidate>
-    </ProjectReference>
     <ProjectReference Include="$(MSBuildThisFileDirectory)Editor\Text\Impl\TextBufferUndoManager\TextBufferUndoManagerImpl.csproj">
       <Private>$(ReferencesVSEditorCopyToOutput)</Private>
       <Consolidate>true</Consolidate>
@@ -118,6 +114,18 @@
       <Consolidate>true</Consolidate>
     </ProjectReference>
     <ProjectReference Include="$(MSBuildThisFileDirectory)Editor\Text\Impl\PatternMatching\PatternMatchingImpl.csproj">
+      <Private>$(ReferencesVSEditorCopyToOutput)</Private>
+      <Consolidate>true</Consolidate>
+    </ProjectReference>
+  </ItemGroup>
+
+  <!-- Cocoa Projects -->
+  <ItemGroup Condition="$(HaveXamarinMac)">
+    <ProjectReference Include="$(MSBuildThisFileDirectory)Editor\Text\Util\TextUICocoaUtil\TextUICocoaUtil.csproj">
+      <Private>$(ReferencesVSEditorCopyToOutput)</Private>
+      <Consolidate>true</Consolidate>
+    </ProjectReference>
+    <ProjectReference Include="$(MSBuildThisFileDirectory)Editor\Text\Impl\BraceCompletion\BraceCompletionImpl.csproj">
       <Private>$(ReferencesVSEditorCopyToOutput)</Private>
       <Consolidate>true</Consolidate>
     </ProjectReference>
