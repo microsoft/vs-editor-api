@@ -13,6 +13,6 @@ namespace Microsoft.VisualStudio.Text.Extras.GoToLine
     {
         void Show();
         void Hide();
-        bool NavigateToLine(int lineNumber);
+        bool NavigateToLine(int lineNumber, int? columnNumber);
     }
 }

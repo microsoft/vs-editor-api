@@ -88,6 +88,7 @@ namespace Microsoft.VisualStudio.Text.Editor
 
         public static void NavigateToLineAndColumn(this ITextView textView, int lineNumber, int columnNumber = 0)
         {
+            textView.Selection.Clear();
             var point = textView.TextSnapshot.TryGetSnapshotPoint(lineNumber, columnNumber) ?? default;
             if (point != default)
             {
