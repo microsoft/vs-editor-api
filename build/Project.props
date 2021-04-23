@@ -16,7 +16,7 @@
     <FullNETFrameworkVersion>net472</FullNETFrameworkVersion>
     <PortableTargetFrameworks>netstandard2.0;net472</PortableTargetFrameworks>
     <NetStandardVersion>netstandard2.0</NetStandardVersion>
-    <LangVersion>8.0</LangVersion>
+    <LangVersion>latest</LangVersion>
     <DefineConstants Condition="$([MSBuild]::IsOSPlatform('OSX')) == 'true'">__MACOS__;$(DefineConstants)</DefineConstants>
   </PropertyGroup>
 
