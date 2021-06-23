@@ -28,7 +28,6 @@
     <ProjectReference Include="..\..\Def\TextData\TextData.csproj" />
     <ProjectReference Include="..\..\Def\TextLogic\TextLogic.csproj" />
     <ProjectReference Include="..\..\Def\TextUI\TextUI.csproj" />
-    <ProjectReference Include="..\..\Def\TextUICocoa\TextUICocoa.csproj" />
     <ProjectReference Include="..\..\Util\TextDataUtil\TextDataUtil.csproj" />
     <ProjectReference Include="..\..\Def\Internal\Internal.csproj" />
   </ItemGroup>

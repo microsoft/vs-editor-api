@@ -336,7 +336,7 @@ namespace Microsoft.VisualStudio.Text.Find.Implementation
         /// <summary>
         /// Translate start point to current snapshot
         /// </summary>
-        private void UpdateStartPoint(ITextSnapshot? targetSnapshot)
+        private void UpdateStartPoint(ITextSnapshot targetSnapshot)
         {
             if (targetSnapshot != null && _startPoint.HasValue && _startPoint.Value.Snapshot != _buffer.CurrentSnapshot)
             {
@@ -528,7 +528,7 @@ namespace Microsoft.VisualStudio.Text.Find.Implementation
 
         public void Dispose()
         {
-            _buffer.Changed -= this.OnTextBufferChanged();
+            _buffer.Changed -= this.OnTextBufferChanged;
         }
     }
 }
