@@ -21,7 +21,7 @@ namespace Microsoft.VisualStudio.Text.Find.Implementation
 
         #region ITextSearchNavigatorFactoryService Members
 
-        public ITextSearchNavigator CreateSearchNavigator(ITextBuffer buffer)
+        public ITextSearchNavigator3 CreateSearchNavigator(ITextBuffer buffer)
         {
             if (buffer == null)
             {

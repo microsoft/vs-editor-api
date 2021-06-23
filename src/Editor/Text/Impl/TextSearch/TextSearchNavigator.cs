@@ -14,7 +14,7 @@ namespace Microsoft.VisualStudio.Text.Find.Implementation
     using Microsoft.VisualStudio.Text;
     using Microsoft.VisualStudio.Text.Operations;
 
-    class TextSearchNavigator : ITextSearchNavigator2
+    class TextSearchNavigator : ITextSearchNavigator3
     {
         readonly ITextBuffer _buffer;
         readonly ITextSearchService2 _textSearchService;
@@ -23,16 +23,24 @@ namespace Microsoft.VisualStudio.Text.Find.Implementation
         {
             _buffer = buffer;
             _textSearchService = textSearchService;
+
+            _buffer.Changed += this.OnTextBufferChanged;
         }
 
-        #region Private Helpers
+        private void OnTextBufferChanged(object sender, TextContentChangedEventArgs e)
+        {
+            this.AdvanceToSnapshot(e.After);
+            this.UpdateStartPoint(e.After);
+        }
 
-        /// <summary>
-        /// Calculates the search start point for the next search operation. Always returns a point on the buffer's
-        /// current snapshot. If no point is returned, then we're at ends of the buffer (or search range)
-        /// and wrap is turned off.
-        /// </summary>
-        private SnapshotPoint? CalculateStartPoint(ITextSnapshot searchSnapshot, bool wrap, bool forward)
+    #region Private Helpers
+
+    /// <summary>
+    /// Calculates the search start point for the next search operation. Always returns a point on the buffer's
+    /// current snapshot. If no point is returned, then we're at ends of the buffer (or search range)
+    /// and wrap is turned off.
+    /// </summary>
+    private SnapshotPoint? CalculateStartPoint(ITextSnapshot searchSnapshot, bool wrap, bool forward)
         {
             // If there is a current result, then use its span to figure out the next starting point, otherwise
             // use the StartPoint itself
@@ -137,7 +145,7 @@ namespace Microsoft.VisualStudio.Text.Find.Implementation
         {
             get
             {
-                UpdateStartPoint();
+                UpdateStartPoint(_buffer?.CurrentSnapshot);
                 return _startPoint;
             }
             set
@@ -328,12 +336,12 @@ namespace Microsoft.VisualStudio.Text.Find.Implementation
         /// <summary>
         /// Translate start point to current snapshot
         /// </summary>
-        private void UpdateStartPoint()
+        private void UpdateStartPoint(ITextSnapshot? targetSnapshot)
         {
-            if (_startPoint.HasValue && _startPoint.Value.Snapshot != _buffer.CurrentSnapshot)
+            if (targetSnapshot != null && _startPoint.HasValue && _startPoint.Value.Snapshot != _buffer.CurrentSnapshot)
             {
                 ITextVersion currentVersion = _startPoint.Value.Snapshot.Version;
-                ITextVersion targetVersion = _buffer.CurrentSnapshot.Version;
+                ITextVersion targetVersion = targetSnapshot.Version;
                 bool reverse = this.SearchOptions.HasFlag(Text.Operations.FindOptions.SearchReverse);
                 int currentStartPointPosition = _startPoint.Value.Position;
 
@@ -410,7 +418,7 @@ namespace Microsoft.VisualStudio.Text.Find.Implementation
                     currentVersion = currentVersion.Next;
                 }
 
-                _startPoint = new SnapshotPoint(_buffer.CurrentSnapshot, currentStartPointPosition);
+                _startPoint = new SnapshotPoint(targetSnapshot, currentStartPointPosition);
             }
         }
 
@@ -516,6 +524,11 @@ namespace Microsoft.VisualStudio.Text.Find.Implementation
             //None of the spans contains point. lo is the index of the span that follows point
             index = lo;
             return false;
+        }
+
+        public void Dispose()
+        {
+            _buffer.Changed -= this.OnTextBufferChanged();
         }
     }
 }
