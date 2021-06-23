@@ -31,6 +31,6 @@ namespace Microsoft.VisualStudio.Text.Operations
         /// <returns>
         /// An <see cref="ITextSearchNavigator"/> that searches the provided <see cref="ITextBuffer"/>.
         /// </returns>
-        ITextSearchNavigator CreateSearchNavigator(ITextBuffer buffer);
+        ITextSearchNavigator3 CreateSearchNavigator(ITextBuffer buffer);
     }
 }
