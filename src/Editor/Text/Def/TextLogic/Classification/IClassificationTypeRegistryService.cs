@@ -86,5 +86,35 @@ namespace Microsoft.VisualStudio.Text.Classification
         /// </para>
         /// </remarks>
         IClassificationType CreateTransientClassificationType(params IClassificationType[] baseTypes);
+
+        /// <summary>
+        /// Gets the <see cref="IClassificationType"></see> object identified by the specified <paramref name="type"/>.
+        /// </summary>
+        /// <param name="layer">
+        /// Specifies the layer to which this classification belongs. Layers are specializations
+        /// of <see cref="IClassificationType"/>s that can be used to make all classifications from
+        /// one source supersede another.
+        /// </param>
+        /// <param name="type">
+        /// The name of the classification type.
+        /// </param>
+        /// <returns>
+        /// The classification type, <c>null</c> if there is no classification type of that name.
+        /// </returns>
+        ILayeredClassificationType GetClassificationType(ClassificationLayer layer, string type);
+
+        /// <summary>
+        /// Initializes a new instance of a <see cref="IClassificationType"/> and adds it to the registry.
+        /// </summary>
+        /// <param name="layer">
+        /// Specifies the layer to which this classification belongs. Layers are specializations
+        /// of <see cref="IClassificationType"/>s that can be used to make all classifications from
+        /// one source supersede another.
+        /// </param>
+        /// <param name="type">The name of the classification type to create.</param>
+        /// <param name="baseTypes">The base types of the classification.</param>
+        /// <returns>A new <see cref="IClassificationType"/>.</returns>
+        /// <exception cref="InvalidOperationException"><paramref name="type"/> is already in the registry.</exception>
+        ILayeredClassificationType CreateClassificationType(ClassificationLayer layer, string type, IEnumerable<IClassificationType> baseTypes);
     }
 }

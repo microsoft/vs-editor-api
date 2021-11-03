@@ -9,11 +9,9 @@ namespace Microsoft.VisualStudio.Text.Classification.Implementation
 {
     using System;
     using System.Collections.Generic;
-    using System.Linq;
-    using System.Text;
     using System.ComponentModel.Composition;
+    using System.Text;
     using Microsoft.VisualStudio.Utilities;
-    using System.Collections;
 
     public interface IClassificationTypeDefinitionMetadata
     {
@@ -37,7 +35,7 @@ namespace Microsoft.VisualStudio.Text.Classification.Implementation
         public ClassificationTypeDefinition textClassificationType;
 
         #region Private Members
-        private Dictionary<string, ClassificationTypeImpl> _classificationTypes;
+        private Dictionary<ClassificationKey, ClassificationTypeImpl> _classificationTypes;
         private Dictionary<string, ClassificationTypeImpl> _transientClassificationTypes;
 
         #endregion // Private Members
@@ -45,10 +43,12 @@ namespace Microsoft.VisualStudio.Text.Classification.Implementation
         #region Public Members
         public IClassificationType GetClassificationType(string type)
         {
-            ClassificationTypeImpl classificationType = null;
+            return this.GetClassificationType(ClassificationLayer.Default, type);
+        }
 
-            this.ClassificationTypes.TryGetValue(type, out classificationType);
-
+        public ILayeredClassificationType GetClassificationType(ClassificationLayer layer, string type)
+        {
+            this.ClassificationTypes.TryGetValue(new ClassificationKey(type, layer), out ClassificationTypeImpl classificationType);
             return classificationType;
         }
 
@@ -56,6 +56,11 @@ namespace Microsoft.VisualStudio.Text.Classification.Implementation
         /// Create a new classification type and add it to the registry.
         /// </summary>
         public IClassificationType CreateClassificationType(string type, IEnumerable<IClassificationType> baseTypes)
+        {
+            return this.CreateClassificationType(ClassificationLayer.Default, type, baseTypes);
+        }
+
+        public ILayeredClassificationType CreateClassificationType(ClassificationLayer layer, string type, IEnumerable<IClassificationType> baseTypes)
         {
             if (type == null)
             {
@@ -66,7 +71,9 @@ namespace Microsoft.VisualStudio.Text.Classification.Implementation
             {
                 throw new ArgumentNullException(nameof(baseTypes));
             }
-            if (ClassificationTypes.ContainsKey(type))
+
+            ClassificationKey key = new ClassificationKey(type, layer);
+            if (ClassificationTypes.ContainsKey(key))
             {
                 throw new InvalidOperationException(LookUp.Strings.ClassificationAlreadyAdded);
             }
@@ -78,7 +85,7 @@ namespace Microsoft.VisualStudio.Text.Classification.Implementation
                 classificationType.AddBaseType(baseType);
             }
 
-            ClassificationTypes.Add(type, classificationType);
+            ClassificationTypes.Add(key, classificationType);
 
             return classificationType;
         }
@@ -135,7 +142,7 @@ namespace Microsoft.VisualStudio.Text.Classification.Implementation
         {
             get
             {
-                return ClassificationTypes["(TRANSIENT)"];
+                return ClassificationTypes[new ClassificationKey("(TRANSIENT)")];
             }
         }
 
@@ -144,13 +151,13 @@ namespace Microsoft.VisualStudio.Text.Classification.Implementation
         /// 
         /// Used to lazily init the map.
         /// </summary>
-        private Dictionary<string, ClassificationTypeImpl> ClassificationTypes
+        private Dictionary<ClassificationKey, ClassificationTypeImpl> ClassificationTypes
         {
             get
             {
                 if (_classificationTypes == null)
                 {
-                    _classificationTypes = new Dictionary<string, ClassificationTypeImpl>(StringComparer.OrdinalIgnoreCase);
+                    _classificationTypes = new Dictionary<ClassificationKey, ClassificationTypeImpl>();
                     BuildClassificationTypes(_classificationTypes);
                 }
                 return _classificationTypes;
@@ -161,19 +168,19 @@ namespace Microsoft.VisualStudio.Text.Classification.Implementation
         /// Consumes all of the IClassificationTypeProvisions in the system to build the 
         /// list of classification types in the system.
         /// </summary>
-        private void BuildClassificationTypes(Dictionary<string,ClassificationTypeImpl> classificationTypes)
+        private void BuildClassificationTypes(Dictionary<ClassificationKey, ClassificationTypeImpl> classificationTypes)
         {
             // For each content baseType provision, create an IClassificationType.
             foreach (Lazy<ClassificationTypeDefinition, IClassificationTypeDefinitionMetadata> classificationTypeDefinition in _classificationTypeDefinitions)
             {
                 string classificationName = classificationTypeDefinition.Metadata.Name;
-
+                ClassificationKey key = new ClassificationKey(classificationName);
                 ClassificationTypeImpl type = null;
 
-                if (!classificationTypes.TryGetValue(classificationName, out type))
+                if (!classificationTypes.TryGetValue(key, out type))
                 {
                     type = new ClassificationTypeImpl(classificationName);
-                    classificationTypes.Add(classificationName, type);
+                    classificationTypes.Add(key, type);
                 }
 
                 IEnumerable<string> baseTypes = classificationTypeDefinition.Metadata.BaseDefinition;
@@ -183,10 +190,11 @@ namespace Microsoft.VisualStudio.Text.Classification.Implementation
 
                     foreach (string baseClassificationType in baseTypes)
                     {
-                        if (!classificationTypes.TryGetValue(baseClassificationType, out baseType))
+                        ClassificationKey baseKey = new ClassificationKey(baseClassificationType);
+                        if (!classificationTypes.TryGetValue(baseKey, out baseType))
                         {
                             baseType = new ClassificationTypeImpl(baseClassificationType);
-                            classificationTypes.Add(baseClassificationType, baseType);
+                            classificationTypes.Add(baseKey, baseType);
                         }
 
                         type.AddBaseType(baseType);
@@ -248,6 +256,7 @@ namespace Microsoft.VisualStudio.Text.Classification.Implementation
 
             return transientType;
         }
+
         #endregion // Private Methods
     }
 }

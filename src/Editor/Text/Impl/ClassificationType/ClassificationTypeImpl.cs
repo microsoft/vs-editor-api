@@ -6,19 +6,25 @@
 // Use at your own risk.
 //
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using Microsoft.VisualStudio.Text.Utilities;
 
 namespace Microsoft.VisualStudio.Text.Classification.Implementation
 {
-    internal class ClassificationTypeImpl : IClassificationType
+    [DebuggerDisplay("{key}")]
+    internal class ClassificationTypeImpl : ILayeredClassificationType, IClassificationType
     {
-        private string name;
+        private ClassificationKey key;
         private FrugalList<IClassificationType> baseTypes;
 
-        internal ClassificationTypeImpl(string name)
+        internal ClassificationTypeImpl(string name) : this(new ClassificationKey(name))
         {
-            this.name = name;
+        }
+
+        internal ClassificationTypeImpl(ClassificationKey key)
+        {
+            this.key = key;
         }
 
         internal void AddBaseType(IClassificationType baseType)
@@ -31,14 +37,12 @@ namespace Microsoft.VisualStudio.Text.Classification.Implementation
             this.baseTypes.Add(baseType);
         }
 
-        public string Classification
-        {
-            get { return this.name; }
-        }
+        public string Classification => this.key.Name;
+        public ClassificationLayer Layer => this.key.Layer;
 
         public bool IsOfType(string type)
         {
-            if (string.Equals(this.name, type, System.StringComparison.Ordinal))
+            if (string.Equals(this.key.Name, type, System.StringComparison.OrdinalIgnoreCase))
                 return true;
             else if (this.baseTypes != null)
             {
@@ -59,7 +63,7 @@ namespace Microsoft.VisualStudio.Text.Classification.Implementation
 
         public override string ToString()
         {
-            return this.name;
+            return this.key.ToString();
         }
     }
 }
